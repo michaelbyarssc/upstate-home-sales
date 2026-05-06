@@ -13,7 +13,7 @@ max_rows = 1000
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+major_version = 17
 
 [studio]
 enabled = true
@@ -28,7 +28,6 @@ additional_redirect_urls = [
 ]
 jwt_expiry = 3600
 enable_signup = false
-enable_confirmations = true
 
 [auth.email]
 enable_signup = false

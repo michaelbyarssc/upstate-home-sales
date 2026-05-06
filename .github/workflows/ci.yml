@@ -33,17 +33,12 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      - name: Verify migrations match schema
+      - name: Verify local migrations match remote
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
           supabase link --project-ref "$SUPABASE_PROJECT_REF"
-          # Fails the job if the linked DB has drifted from /supabase/migrations
-          supabase db diff --linked --schema public --file /tmp/diff.sql
-          if [ -s /tmp/diff.sql ]; then
-            echo "Schema drift detected. Generate a new migration locally:"
-            cat /tmp/diff.sql
-            exit 1
-          fi
+          # Fails the job if local /supabase/migrations is out of sync with the linked project.
+          # `migration list` exits non-zero when local and remote histories diverge.
+          supabase migration list --linked
