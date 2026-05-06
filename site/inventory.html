@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Browse 242 homes — Upstate Homes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/site.css">
+<style>
+  .inv-header {
+    background: var(--c-bg);
+    padding: var(--s-10) var(--gutter) var(--s-6);
+    border-bottom: 1px solid var(--c-line);
+  }
+  .inv-header-inner { max-width: var(--container); margin: 0 auto; }
+  .inv-header h1 { font-size: clamp(36px, 4.5vw, 56px); margin: var(--s-3) 0 var(--s-3); }
+  .inv-header h1 em { font-style: italic; font-weight: 400; }
+  .inv-header .summary { font: 400 16px/1.5 var(--f-body); color: var(--c-ink-soft); max-width: 640px; }
+  .inv-header .summary strong { color: var(--c-ink); font-weight: 600; }
+
+  /* Filter bar */
+  .filter-bar {
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-line);
+    padding: var(--s-4) var(--gutter);
+    position: sticky;
+    top: 64px;
+    z-index: 40;
+  }
+  .filter-inner { max-width: var(--container); margin: 0 auto; display: flex; gap: var(--s-3); align-items: center; flex-wrap: wrap; }
+  .filter-group { display: flex; gap: 6px; align-items: center; }
+  .filter-group .label-inline { font: 600 11px/1 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-ink-mute); margin-right: 6px; }
+  .chip-filter { display: inline-flex; align-items: center; gap: 6px; font: 500 13px/1 var(--f-body); padding: 8px 12px; border-radius: var(--r-pill); background: var(--c-surface); color: var(--c-ink); border: 1px solid var(--c-line); cursor: pointer; white-space: nowrap; transition: all var(--d-fast) var(--ease); }
+  .chip-filter:hover { border-color: var(--c-ink); }
+  .chip-filter.active { background: var(--c-ink); color: var(--c-bg); border-color: var(--c-ink); }
+  .chip-filter .x { font-size: 14px; opacity: 0.7; }
+  .filter-spacer { flex: 1; }
+  .sort-select { font: 500 13px/1 var(--f-body); padding: 8px 14px; border: 1px solid var(--c-line); border-radius: var(--r-1); background: var(--c-surface); color: var(--c-ink); }
+
+  /* Layout */
+  .inv-layout {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: var(--s-8) var(--gutter) var(--s-16);
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: var(--s-8);
+  }
+  @media (max-width: 1000px) { .inv-layout { grid-template-columns: 1fr; } .inv-aside { display: none; } }
+
+  /* Aside (filters detail) */
+  .inv-aside { position: sticky; top: 140px; align-self: start; max-height: calc(100vh - 160px); overflow-y: auto; }
+  .filter-block { padding: var(--s-5) 0; border-bottom: 1px solid var(--c-line); }
+  .filter-block:first-child { padding-top: 0; }
+  .filter-block:last-child { border-bottom: none; }
+  .filter-block h4 { font: 600 12px/1 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-ink); margin-bottom: var(--s-3); }
+  .filter-block label { display: flex; gap: 8px; align-items: center; padding: 6px 0; font: 400 14px/1 var(--f-body); color: var(--c-ink-soft); cursor: pointer; }
+  .filter-block label input { accent-color: var(--c-accent); }
+  .filter-block label .ct { margin-left: auto; font: 400 12px/1 var(--f-body); color: var(--c-ink-mute); }
+  .price-range { display: flex; gap: var(--s-2); align-items: center; margin-top: var(--s-2); }
+  .price-range input { flex: 1; padding: 9px 10px; border: 1px solid var(--c-line); border-radius: var(--r-1); font: 400 13px/1 var(--f-body); }
+  .price-range span { font: 400 13px/1 var(--f-body); color: var(--c-ink-mute); }
+
+  /* Results */
+  .results-count { font: 500 13px/1 var(--f-body); color: var(--c-ink-mute); margin-bottom: var(--s-5); }
+  .results-count strong { color: var(--c-ink); font-weight: 600; }
+  .home-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-5); }
+  @media (max-width: 1100px) { .home-grid-3 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .home-grid-3 { grid-template-columns: 1fr; } }
+
+  /* Pagination */
+  .pagination {
+    display: flex; gap: var(--s-2); align-items: center; justify-content: center;
+    margin-top: var(--s-12); padding: var(--s-6); border-top: 1px solid var(--c-line);
+  }
+  .pagination .page-btn { font: 500 13px/1 var(--f-body); padding: 9px 13px; border: 1px solid var(--c-line); background: var(--c-surface); color: var(--c-ink); border-radius: var(--r-1); cursor: pointer; min-width: 38px; }
+  .pagination .page-btn.active { background: var(--c-ink); color: var(--c-bg); border-color: var(--c-ink); }
+  .pagination .page-btn:hover:not(.active) { border-color: var(--c-ink); }
+  .pagination .page-info { font: 500 13px/1 var(--f-body); color: var(--c-ink-mute); margin: 0 var(--s-3); }
+</style>
+</head>
+<body>
+
+<!-- Top bar + nav (shared chrome) -->
+<div class="uhs-topbar">
+  <div class="uhs-topbar-inner">
+    <span>Lexington, SC · Mon–Sat 9–6</span>
+    <span class="spacer"></span>
+    <a href="financing.html">Financing</a>
+    <a href="trade-in.html">Trade-In</a>
+    <a href="locations.html">Visit our lot</a>
+    <a href="tel:8035551234" class="phone">(803) 555-1234</a>
+  </div>
+</div>
+<nav class="uhs-nav">
+  <div class="uhs-nav-inner">
+    <a href="home.html" class="uhs-brand"><span class="name">Upstate <em>Homes</em></span></a>
+    <span class="spacer"></span>
+    <div class="uhs-nav-links">
+      <a href="inventory.html" class="active">Browse homes</a>
+      <a href="manufacturers.html">Manufacturers</a>
+      <a href="land-and-home.html">Land + Home</a>
+      <a href="financing.html">Financing</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="about.html">About</a>
+    </div>
+    <div class="uhs-nav-cta"><a href="#" class="btn btn-primary btn-sm">Get a quote</a></div>
+  </div>
+</nav>
+
+<!-- Header -->
+<header class="inv-header">
+  <div class="inv-header-inner">
+    <span class="eyebrow">Inventory · Updated daily</span>
+    <h1>242 homes ready for delivery</h1>
+    <p class="summary"><strong>9 manufacturers</strong>. Real prices, real photos, real availability — sortable by what you actually care about. Filters narrow to your county; saved homes persist on this device.</p>
+  </div>
+</header>
+
+<!-- Sticky filter bar -->
+<div class="filter-bar">
+  <div class="filter-inner">
+    <span class="filter-group">
+      <span class="label-inline">Quick</span>
+      <button class="chip-filter active">In stock <span class="x">×</span></button>
+      <button class="chip-filter active">Under $200k <span class="x">×</span></button>
+      <button class="chip-filter">3+ beds</button>
+      <button class="chip-filter">Has 3D tour</button>
+      <button class="chip-filter">Just arrived</button>
+    </span>
+    <span class="filter-spacer"></span>
+    <span class="filter-group">
+      <span class="label-inline">Sort</span>
+      <select class="sort-select">
+        <option>Newest first</option>
+        <option>Price: Low to high</option>
+        <option>Price: High to low</option>
+        <option>Largest first</option>
+        <option>Most popular</option>
+      </select>
+    </span>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="inv-layout">
+
+  <!-- Filter sidebar -->
+  <aside class="inv-aside">
+    <div class="filter-block">
+      <h4>Price</h4>
+      <div class="price-range">
+        <input type="text" placeholder="Min" value="$80k">
+        <span>—</span>
+        <input type="text" placeholder="Max" value="$220k">
+      </div>
+    </div>
+    <div class="filter-block">
+      <h4>Bedrooms</h4>
+      <label><input type="checkbox"> 1 bedroom <span class="ct">8</span></label>
+      <label><input type="checkbox" checked> 2 bedrooms <span class="ct">42</span></label>
+      <label><input type="checkbox" checked> 3 bedrooms <span class="ct">94</span></label>
+      <label><input type="checkbox"> 4+ bedrooms <span class="ct">38</span></label>
+    </div>
+    <div class="filter-block">
+      <h4>Bathrooms</h4>
+      <label><input type="checkbox"> 1 <span class="ct">12</span></label>
+      <label><input type="checkbox" checked> 2 <span class="ct">163</span></label>
+      <label><input type="checkbox"> 3+ <span class="ct">22</span></label>
+    </div>
+    <div class="filter-block">
+      <h4>Home type</h4>
+      <label><input type="checkbox" checked> Single-wide <span class="ct">68</span></label>
+      <label><input type="checkbox" checked> Double-wide <span class="ct">142</span></label>
+      <label><input type="checkbox"> Modular <span class="ct">22</span></label>
+      <label><input type="checkbox"> Park model <span class="ct">10</span></label>
+    </div>
+    <div class="filter-block">
+      <h4>Manufacturer</h4>
+      <label><input type="checkbox" checked> Clayton Built <span class="ct">38</span></label>
+      <label><input type="checkbox" checked> Champion <span class="ct">29</span></label>
+      <label><input type="checkbox" checked> Cavco <span class="ct">31</span></label>
+      <label><input type="checkbox"> Live Oak <span class="ct">22</span></label>
+      <label><input type="checkbox"> Franklin <span class="ct">18</span></label>
+      <label><input type="checkbox"> Deer Valley <span class="ct">14</span></label>
+      <label><input type="checkbox"> Skyline <span class="ct">12</span></label>
+      <label><input type="checkbox"> TruMH <span class="ct">9</span></label>
+    </div>
+    <div class="filter-block">
+      <h4>Square footage</h4>
+      <label><input type="checkbox"> Under 1,000 <span class="ct">14</span></label>
+      <label><input type="checkbox"> 1,000–1,500 <span class="ct">82</span></label>
+      <label><input type="checkbox"> 1,500–2,000 <span class="ct">96</span></label>
+      <label><input type="checkbox"> 2,000+ <span class="ct">50</span></label>
+    </div>
+    <div class="filter-block">
+      <h4>Features</h4>
+      <label><input type="checkbox"> Energy-Star <span class="ct">87</span></label>
+      <label><input type="checkbox"> Has 3D tour <span class="ct">56</span></label>
+      <label><input type="checkbox"> Front porch <span class="ct">41</span></label>
+      <label><input type="checkbox"> Open floor plan <span class="ct">128</span></label>
+    </div>
+  </aside>
+
+  <!-- Results grid -->
+  <div>
+    <div class="results-count"><strong>87 homes</strong> match your filters · Lexington, SC</div>
+
+    <div class="home-grid-3" id="grid"></div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <button class="page-btn">‹</button>
+      <button class="page-btn active">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <span class="page-info">…</span>
+      <button class="page-btn">8</button>
+      <button class="page-btn">›</button>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="uhs-footer">
+  <div class="uhs-footer-inner">
+    <div class="uhs-footer-grid">
+      <div class="brandblock">
+        <div class="name">Upstate <em>Homes</em></div>
+        <p>Family-owned manufactured-home dealer serving SC &amp; western NC since 2024.</p>
+      </div>
+      <div><h4>Browse</h4><ul><li><a href="inventory.html">All homes</a></li><li><a href="manufacturers.html">By manufacturer</a></li></ul></div>
+      <div><h4>Programs</h4><ul><li><a href="financing.html">Financing</a></li><li><a href="land-and-home.html">Land + Home</a></li><li><a href="trade-in.html">Trade-In</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="about.html">About</a></li><li><a href="locations.html">Visit our lot</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+      <div><h4>Help</h4><ul><li><a href="how-it-works.html">How it works</a></li><li><a href="faq.html">FAQ</a></li></ul></div>
+    </div>
+    <div class="uhs-footer-bottom"><span>© 2025 Upstate Homes, LLC.</span><span class="spacer"></span><span>SC #44218 · NC #L-2841</span></div>
+  </div>
+</footer>
+
+<script>
+// Generate 18 home cards programmatically — keeps file small, looks like real inventory
+const HOMES = [
+  { mfr: "Clayton Built", series: "The Aspect",       name: "1434 Southern Belle",   beds:3, baths:2, sqft:1813, price:148400, badge:"In Stock", ph:"ph-2" },
+  { mfr: "Champion",      series: "Athens 2864",      name: "2106 Magnolia Ridge",   beds:4, baths:2, sqft:2128, price:184900, badge:"new",      ph:"ph-3" },
+  { mfr: "Cavco",         series: "The Carolina",     name: "3201 Pine Grove",       beds:3, baths:2, sqft:1560, price:132800, badge:"In Stock", ph:"ph-4" },
+  { mfr: "Franklin",      series: "The Heritage",     name: "817 Riverbend",         beds:2, baths:2, sqft:1140, price:112500, badge:"In Stock", ph:"ph-1" },
+  { mfr: "Live Oak",      series: "The Magnolia",     name: "1209 Old Forest Lane",  beds:4, baths:3, sqft:2432, price:216200, badge:"In Stock", ph:"ph-5" },
+  { mfr: "Clayton Built", series: "The Edge",         name: "503 Cypress Trail",     beds:3, baths:2, sqft:1680, price:155750, badge:"new",      ph:"ph-6" },
+  { mfr: "Deer Valley",   series: "Briarwood",        name: "2918 Sandhill Road",    beds:3, baths:2, sqft:1798, price:168400, badge:"In Stock", ph:"ph-7" },
+  { mfr: "Champion",      series: "Crestwood 5616",   name: "104 Lake Murray Way",   beds:3, baths:2, sqft:1456, price:139900, badge:"In Stock", ph:"ph-8" },
+  { mfr: "Cavco",         series: "Anniversary",      name: "611 Persimmon Court",   beds:2, baths:2, sqft:1296, price:126500, badge:"In Stock", ph:"ph-9" },
+  { mfr: "Skyline",       series: "The Coastal",      name: "1804 Charleston Pike",  beds:3, baths:2, sqft:1632, price:144800, badge:"In Stock", ph:"ph-2" },
+  { mfr: "Clayton Built", series: "The Sweetbay",     name: "2307 Greenville Run",   beds:4, baths:2, sqft:2080, price:179300, badge:"new",      ph:"ph-3" },
+  { mfr: "TruMH",         series: "Thrill",           name: "418 Foxfire Drive",     beds:2, baths:1, sqft:980,  price:89400,  badge:"In Stock", ph:"ph-4" },
+  { mfr: "Live Oak",      series: "The Cooper",       name: "1611 Saluda Heights",   beds:3, baths:2, sqft:1740, price:163200, badge:"In Stock", ph:"ph-5" },
+  { mfr: "Champion",      series: "The Madison",      name: "709 Whitehall Trace",   beds:3, baths:2, sqft:1854, price:171500, badge:"In Stock", ph:"ph-6" },
+  { mfr: "Franklin",      series: "The Carolinian",   name: "2042 Pickens Pass",     beds:4, baths:2, sqft:2210, price:198400, badge:"In Stock", ph:"ph-7" },
+  { mfr: "Cavco",         series: "Park Series",      name: "85 Edisto Walk",        beds:1, baths:1, sqft:540,  price:74900,  badge:"In Stock", ph:"ph-8" },
+  { mfr: "Clayton Built", series: "The Ingram",       name: "3318 Anderson Mill",    beds:3, baths:2, sqft:1612, price:152300, badge:"In Stock", ph:"ph-9" },
+  { mfr: "Deer Valley",   series: "Glenwood",         name: "1129 Aiken Country",    beds:3, baths:2, sqft:1944, price:188900, badge:"new",      ph:"ph-1" },
+];
+
+const grid = document.getElementById('grid');
+HOMES.forEach(h => {
+  const badgeCls = h.badge === 'new' ? 'new' : '';
+  const badgeText = h.badge === 'new' ? 'Just Arrived' : h.badge;
+  grid.insertAdjacentHTML('beforeend', `
+    <a href="home-detail.html" class="home-card">
+      <div class="photo ${h.ph}">
+        <span class="badge ${badgeCls}">${badgeText}</span>
+        <button class="fav" aria-label="Save">♡</button>
+        <div class="placeholder"></div>
+      </div>
+      <div class="body">
+        <div class="eyebrow-card">${h.mfr} · ${h.series}</div>
+        <div class="name">${h.name}</div>
+        <div class="specs">${h.beds} beds · ${h.baths} baths · ${h.sqft.toLocaleString()} sq ft</div>
+        <div class="price-row">
+          <div>
+            <div class="price">$${h.price.toLocaleString()}</div>
+            <div class="price-caveat">Starting · before delivery</div>
+          </div>
+          <span class="view">View →</span>
+        </div>
+      </div>
+    </a>
+  `);
+});
+</script>
+</body>
+</html>

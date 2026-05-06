@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Leads — UHS Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/admin.css">
+<style>
+  .leads-grid { display: grid; grid-template-columns: 380px 1fr; gap: 0; height: calc(100vh - 52px); }
+  .leads-list { border-right: 1px solid var(--adm-line); background: var(--adm-surface); overflow-y: auto; }
+  .leads-list .filter-row { padding: 14px 16px; border-bottom: 1px solid var(--adm-line); display: flex; gap: 8px; flex-wrap: wrap; }
+  .leads-list .lead-item { padding: 14px 18px; border-bottom: 1px solid var(--adm-line-soft); cursor: pointer; transition: background 100ms ease; }
+  .leads-list .lead-item:hover { background: var(--adm-bg); }
+  .leads-list .lead-item.active { background: rgba(185,83,42,0.06); border-left: 3px solid var(--adm-accent); padding-left: 15px; }
+  .leads-list .lead-item .top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .leads-list .lead-item .name { font: 500 14px/1.2 var(--f-body); color: var(--adm-ink); flex: 1; }
+  .leads-list .lead-item .time { font: 400 11px/1 var(--f-body); color: var(--adm-ink-mute); }
+  .leads-list .lead-item .preview { font: 400 12px/1.4 var(--f-body); color: var(--adm-ink-mute); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: 8px; }
+  .leads-list .lead-item .meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .leads-list .lead-item.unread .name::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--adm-accent); margin-right: 7px; vertical-align: middle; }
+
+  .lead-detail { background: var(--adm-bg); overflow-y: auto; }
+  .lead-detail .head { background: var(--adm-surface); border-bottom: 1px solid var(--adm-line); padding: 18px 28px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 5; }
+  .lead-detail .head h2 { font: 500 18px/1.1 var(--f-body); margin: 0 0 3px; }
+  .lead-detail .head .sub { font: 400 12px/1.3 var(--f-body); color: var(--adm-ink-mute); }
+  .lead-body { display: grid; grid-template-columns: 1fr 320px; gap: 20px; padding: 24px 28px; align-items: start; }
+  .timeline { display: flex; flex-direction: column; gap: 12px; }
+  .tl-item { background: var(--adm-surface); border: 1px solid var(--adm-line); border-radius: 8px; padding: 14px 16px; }
+  .tl-item.note { background: #FAF4EB; border-color: #d8c9b5; }
+  .tl-item.system { background: var(--adm-panel); border-style: dashed; }
+  .tl-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font: 500 12px/1 var(--f-body); }
+  .tl-head .who { color: var(--adm-ink); }
+  .tl-head .when { color: var(--adm-ink-mute); font-weight: 400; margin-left: auto; }
+  .tl-body { font: 400 13px/1.5 var(--f-body); color: var(--adm-ink-soft); }
+  .compose { background: var(--adm-surface); border: 1px solid var(--adm-line); border-radius: 8px; padding: 14px; margin-top: 16px; }
+  .compose-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+  .compose-tab { padding: 6px 12px; font: 500 12px/1 var(--f-body); border-radius: 5px; cursor: pointer; color: var(--adm-ink-mute); border: 1px solid transparent; background: transparent; }
+  .compose-tab.active { background: var(--adm-bg); color: var(--adm-ink); border-color: var(--adm-line); }
+</style>
+</head><body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-brand"><div class="mark">U</div><div class="name">Upstate <em>Homes</em></div></div>
+    <a href="org-switcher.html" class="sb-org-switcher"><div class="avatar">UH</div><div class="org-info"><div class="org-name">Upstate Homes — Lexington</div><div class="org-role">OWNER</div></div><div class="caret">⇅</div></a>
+    <div class="sb-section">Workspace</div>
+    <nav class="sb-nav">
+      <a class="sb-link" href="dashboard.html"><span class="ico">⌂</span>Dashboard</a>
+      <a class="sb-link" href="inventory-list.html"><span class="ico">▦</span>Inventory<span class="badge">242</span></a>
+      <a class="sb-link active" href="leads-inbox.html"><span class="ico">✉</span>Leads<span class="badge">38</span></a>
+      <a class="sb-link" href="#"><span class="ico">⊞</span>Quotes</a>
+      <a class="sb-link" href="#"><span class="ico">↻</span>Trade-ins</a>
+    </nav>
+    <div class="sb-section">Settings</div>
+    <nav class="sb-nav">
+      <a class="sb-link" href="users.html"><span class="ico">👥</span>Users &amp; roles</a>
+      <a class="sb-link" href="settings.html"><span class="ico">⚙</span>Org settings</a>
+    </nav>
+    <div class="sb-foot"><div class="avatar" style="background:#5e7b6f;">MP</div><div class="who">Marlena Pope<span>Owner</span></div></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="crumb"><a href="dashboard.html">Workspace</a><span class="sep">/</span><span class="here">Leads</span></div>
+      <div class="spacer"></div>
+      <div class="search">🔎<input placeholder="Search leads…"><span class="kbd">⌘K</span></div>
+      <button class="icon-btn">🔔<span class="dot"></span></button>
+    </div>
+
+    <div class="leads-grid">
+      <!-- LEFT: lead list -->
+      <div class="leads-list">
+        <div class="filter-row">
+          <select class="select" style="flex:1;"><option>All leads (38)</option><option>Mine (12)</option><option>Unassigned (8)</option><option>Hot (5)</option></select>
+          <select class="select"><option>All sources</option><option>Quote form</option><option>Phone</option><option>Walk-in</option><option>Trade-in</option></select>
+        </div>
+        <div class="tabs-row" style="margin: 0; padding: 0 12px;">
+          <button class="tab active">New <span style="color:var(--adm-ink-mute);font-weight:400;">12</span></button>
+          <button class="tab">In progress <span style="color:var(--adm-ink-mute);font-weight:400;">18</span></button>
+          <button class="tab">Quoted <span style="color:var(--adm-ink-mute);font-weight:400;">5</span></button>
+          <button class="tab">Closed <span style="color:var(--adm-ink-mute);font-weight:400;">3</span></button>
+        </div>
+        <div id="lead-items"></div>
+      </div>
+
+      <!-- RIGHT: lead detail -->
+      <div class="lead-detail">
+        <div class="head">
+          <div class="av av-lg" style="background:#8a5a3c;">DR</div>
+          <div style="flex:1;">
+            <h2>Daniel &amp; Rebekah Houser</h2>
+            <div class="sub">Lexington, SC · Lead since 28 minutes ago · From <a href="#" style="color:var(--adm-accent);">1434 Southern Belle</a> quote form</div>
+          </div>
+          <span class="bd bd-warn bd-dot">Hot lead</span>
+          <button class="btn btn-sec btn-sm">Assign</button>
+          <button class="btn btn-pri btn-sm">Send quote</button>
+        </div>
+
+        <div class="lead-body">
+          <div>
+            <div class="timeline">
+              <div class="tl-item">
+                <div class="tl-head"><span class="who">Daniel Houser</span><span class="bd bd-info" style="font-size:10px;padding:2px 6px;">Quote form</span><span class="when">28 min ago</span></div>
+                <div class="tl-body">
+                  Hi — interested in the 1434 Southern Belle. We have 1.5 acres outside Lexington, septic in. Looking to be in by spring. We currently rent and have around $32,000 saved. Best contact is text after 5pm.
+                  <div style="margin-top:10px;padding:10px 12px;background:var(--adm-panel);border-radius:5px;font-size:12px;">
+                    <div style="display:flex;gap:18px;flex-wrap:wrap;color:var(--adm-ink-mute);"><span><strong style="color:var(--adm-ink);">Beds:</strong> 3</span><span><strong style="color:var(--adm-ink);">Baths:</strong> 2</span><span><strong style="color:var(--adm-ink);">Budget:</strong> Up to $175k</span><span><strong style="color:var(--adm-ink);">Has land:</strong> Yes</span><span><strong style="color:var(--adm-ink);">Trade-in:</strong> No</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tl-item system">
+                <div class="tl-head"><span style="color:var(--adm-ink-mute);">⊙ Auto-reply sent — "We got your message…"</span><span class="when">28 min ago</span></div>
+              </div>
+
+              <div class="tl-item note">
+                <div class="tl-head"><span class="who">📌 Marlena Pope</span><span style="color:var(--adm-warn);font-weight:500;">Internal note</span><span class="when">22 min ago</span></div>
+                <div class="tl-body">Looks strong — septic + land + cash down. Pull credit pre-qual link before sending quote. Let's price the Aspect at 15% with skirting + deck add-on.</div>
+              </div>
+
+              <div class="tl-item">
+                <div class="tl-head"><span class="who">Marlena Pope → Daniel</span><span class="bd bd-soft" style="font-size:10px;padding:2px 6px;">Email</span><span class="when">14 min ago</span></div>
+                <div class="tl-body">
+                  Hi Daniel — Marlena from Upstate Homes. Great choice. The Southern Belle on the lot today is the exact one in the photos. I'd love to schedule a walk-through this Saturday. Also sending over our financing pre-qual link — takes 4 minutes, soft pull only.
+                </div>
+              </div>
+
+              <div class="tl-item system">
+                <div class="tl-head"><span style="color:var(--adm-ink-mute);">⊙ Pre-qual link clicked · application started</span><span class="when">3 min ago</span></div>
+              </div>
+            </div>
+
+            <div class="compose">
+              <div class="compose-tabs">
+                <button class="compose-tab active">✉ Email</button>
+                <button class="compose-tab">💬 SMS</button>
+                <button class="compose-tab">📌 Internal note</button>
+                <button class="compose-tab">📞 Log call</button>
+              </div>
+              <textarea class="textarea" rows="3" placeholder="Reply to Daniel…"></textarea>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+                <select class="select" style="font-size:12px;"><option>+ Insert template…</option><option>Quote follow-up</option><option>Walk-through confirm</option><option>Pre-qual reminder</option></select>
+                <button class="btn btn-sec btn-sm">📎 Attach quote</button>
+                <span class="spacer" style="flex:1;"></span>
+                <button class="btn btn-pri btn-sm">Send</button>
+              </div>
+            </div>
+          </div>
+
+          <aside style="display:flex;flex-direction:column;gap:14px;">
+            <div class="card">
+              <div class="card-head"><h3>Contact</h3></div>
+              <div class="card-body">
+                <div style="font:400 13px/1.6 var(--f-body);color:var(--adm-ink-soft);">
+                  <div><strong style="color:var(--adm-ink);">📞</strong> <a href="tel:" style="color:var(--adm-ink-soft);text-decoration:none;">(803) 555-0142</a></div>
+                  <div><strong style="color:var(--adm-ink);">✉</strong> <a href="mailto:" style="color:var(--adm-ink-soft);text-decoration:none;">d.houser@gmail.com</a></div>
+                  <div style="margin-top:6px;color:var(--adm-ink-mute);font-size:12px;">Best contact: text after 5pm</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Pipeline</h3></div>
+              <div class="card-body">
+                <div class="field">
+                  <label class="label">Stage</label>
+                  <select class="select"><option>New</option><option selected>In progress</option><option>Quoted</option><option>Contract sent</option><option>Closed-won</option><option>Closed-lost</option></select>
+                </div>
+                <div class="field">
+                  <label class="label">Assignee</label>
+                  <select class="select"><option>Marlena Pope (you)</option><option>Travis Booker</option><option>Karen Eubanks</option></select>
+                </div>
+                <div class="field" style="margin-bottom:0;">
+                  <label class="label">Next action</label>
+                  <input class="input" value="Confirm Saturday walk-through">
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Interested home</h3></div>
+              <div class="card-body" style="padding:12px;">
+                <div style="aspect-ratio:4/3;border-radius:5px;background:linear-gradient(140deg,#b8a384,#5e4f3a);margin-bottom:8px;"></div>
+                <div style="font:500 13px/1.3 var(--f-body);">1434 Southern Belle</div>
+                <div style="font:400 11px/1.3 var(--f-body);color:var(--adm-ink-mute);">UH-1434-AS · $159,650</div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const LEADS = [
+  { name:"Daniel & Rebekah Houser", time:"28m", source:"Quote form", home:"1434 Southern Belle", preview:"Hi — interested in the 1434 Southern Belle. We have 1.5 acres outside Lexington, septic in…", unread:true, hot:true, active:true, av:"DR", color:"#8a5a3c" },
+  { name:"Krystal Adkins",          time:"1h",  source:"Phone",      home:"2106 Magnolia Ridge", preview:"Called about land+home package. Has lot in Aiken County, no well yet. Wants Saturday call back.", unread:true, av:"KA", color:"#5e7b6f" },
+  { name:"Jermaine Booker",         time:"2h",  source:"Trade-in",   home:"503 Cypress Trail",   preview:"Submitted trade-in form. 2009 Champion 28×60, 3/2, asking ~$58k cash difference. Photos attached.", unread:true, av:"JB", color:"#7a4f4f" },
+  { name:"Tasha & Wendell Floyd",   time:"3h",  source:"Walk-in",    home:"104 Lake Murray Way", preview:"Walked the lot Saturday. Loved Lake Murray. Wife wants ironing closet. Husband budget-focused.", unread:true, av:"TF", color:"#5a6b8a" },
+  { name:"Lori Pendarvis",          time:"5h",  source:"Quote form", home:"817 Riverbend",       preview:"Single, fixed income, looking for 2BR around $80–90k. Has small lot in Saluda.", av:"LP", color:"#8a7a5a" },
+  { name:"Mike Trotman",            time:"yest",source:"Phone",      home:"3201 Pine Grove",     preview:"Pre-approved $145k through Vanderbilt. Wants to walk Tuesday after work.", av:"MT", color:"#4f7a8a" },
+  { name:"Aurelia Crispin",         time:"yest",source:"Quote form", home:"2042 Pickens Pass",   preview:"Cash buyer. Modular preferred for permanent foundation. 3-acre parcel near Pickens.", av:"AC", color:"#8a5a7a" },
+  { name:"Lonnie & June Easter",    time:"2d",  source:"Quote form", home:"1209 Old Forest Lane",preview:"Retiring from up north. Looking for 4BR for grandkids visiting. Need delivery to NC side.", av:"LE", color:"#5a8a6f" },
+  { name:"Cordell Mims",            time:"2d",  source:"Phone",      home:"611 Persimmon Court", preview:"VA loan question. Wife is veteran. Needs ramp-ready entry, 32-inch interior doors.", av:"CM", color:"#6f5a8a" },
+];
+const sourceBadge = s => {
+  const map = { "Quote form":"bd-info", "Phone":"bd-soft", "Trade-in":"bd-warn", "Walk-in":"bd-success" };
+  return `<span class="bd ${map[s] || 'bd-soft'}" style="font-size:10px;padding:2px 6px;">${s}</span>`;
+};
+document.getElementById('lead-items').innerHTML = LEADS.map(l => `
+  <div class="lead-item ${l.active ? 'active' : ''} ${l.unread ? 'unread' : ''}">
+    <div class="top">
+      <div class="av av-sm" style="background:${l.color};">${l.av}</div>
+      <div class="name">${l.name}</div>
+      <div class="time">${l.time}</div>
+    </div>
+    <div class="preview">${l.preview}</div>
+    <div class="meta">
+      ${sourceBadge(l.source)}
+      <span style="font:400 11px/1 var(--f-body);color:var(--adm-ink-mute);">→ ${l.home}</span>
+      ${l.hot ? '<span class="bd bd-danger" style="font-size:10px;padding:2px 6px;">Hot</span>' : ''}
+    </div>
+  </div>
+`).join('');
+</script>
+</body></html>

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Org settings — UHS Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/admin.css">
+<style>
+  .settings-layout { display: grid; grid-template-columns: 220px 1fr; gap: 28px; align-items: start; }
+  .settings-nav { position: sticky; top: 64px; display: flex; flex-direction: column; gap: 2px; }
+  .settings-nav a { padding: 8px 12px; border-radius: 5px; font: 500 13px/1.2 var(--f-body); color: var(--adm-ink-soft); text-decoration: none; }
+  .settings-nav a:hover { background: var(--adm-bg); color: var(--adm-ink); }
+  .settings-nav a.active { background: var(--adm-ink); color: #fff; }
+  .settings-nav .group { font: 500 10px/1 var(--f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--adm-ink-mute); padding: 14px 12px 6px; }
+  .settings-nav .group:first-child { padding-top: 0; }
+</style>
+</head><body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-brand"><div class="mark">U</div><div class="name">Upstate <em>Homes</em></div></div>
+    <a href="org-switcher.html" class="sb-org-switcher"><div class="avatar">UH</div><div class="org-info"><div class="org-name">Upstate Homes — Lexington</div><div class="org-role">OWNER</div></div><div class="caret">⇅</div></a>
+    <div class="sb-section">Workspace</div>
+    <nav class="sb-nav">
+      <a class="sb-link" href="dashboard.html"><span class="ico">⌂</span>Dashboard</a>
+      <a class="sb-link" href="inventory-list.html"><span class="ico">▦</span>Inventory<span class="badge">242</span></a>
+      <a class="sb-link" href="leads-inbox.html"><span class="ico">✉</span>Leads<span class="badge">38</span></a>
+      <a class="sb-link" href="#"><span class="ico">⊞</span>Quotes</a>
+      <a class="sb-link" href="#"><span class="ico">↻</span>Trade-ins</a>
+    </nav>
+    <div class="sb-section">Settings</div>
+    <nav class="sb-nav">
+      <a class="sb-link" href="users.html"><span class="ico">👥</span>Users &amp; roles</a>
+      <a class="sb-link active" href="settings.html"><span class="ico">⚙</span>Org settings</a>
+    </nav>
+    <div class="sb-foot"><div class="avatar" style="background:#5e7b6f;">MP</div><div class="who">Marlena Pope<span>Owner</span></div></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="crumb"><a href="dashboard.html">Workspace</a><span class="sep">/</span><span class="here">Org settings</span></div>
+      <div class="spacer"></div>
+      <button class="btn btn-pri btn-sm">Save changes</button>
+    </div>
+
+    <div class="page" style="max-width:1200px;">
+      <div class="page-head">
+        <div><h1>Org settings</h1><div class="sub">Branding, defaults, and tenant-level configuration for <strong>Upstate Homes — Lexington</strong></div></div>
+      </div>
+
+      <div class="settings-layout">
+        <nav class="settings-nav">
+          <div class="group">Org</div>
+          <a href="#general" class="active">General</a>
+          <a href="#branding">Branding</a>
+          <a href="#lots">Lots &amp; locations</a>
+          <div class="group">Sales</div>
+          <a href="#pricing">Pricing defaults</a>
+          <a href="#financing">Financing partners</a>
+          <a href="#manufacturers">Manufacturers</a>
+          <div class="group">System</div>
+          <a href="#integrations">Integrations</a>
+          <a href="#billing">Billing</a>
+          <a href="#danger">Danger zone</a>
+        </nav>
+
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <div class="card" id="general">
+            <div class="card-head"><h3>General</h3></div>
+            <div class="card-body">
+              <div class="field-row">
+                <div class="field"><label class="label">Org name</label><input class="input" value="Upstate Homes — Lexington"></div>
+                <div class="field"><label class="label">Public URL</label><div class="input-prefix"><span class="px" style="font-size:12px;">https://</span><input class="input" style="padding-left:54px;" value="upstatehomes.com"></div></div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label class="label">Main phone</label><input class="input" value="(803) 555-0100"></div>
+                <div class="field"><label class="label">Main email</label><input class="input" value="hello@upstatehomes.com"></div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label class="label">Service area states</label><select class="select"><option>South Carolina + North Carolina</option><option>SC only</option><option>Custom radius…</option></select></div>
+                <div class="field"><label class="label">Time zone</label><select class="select"><option>America/New_York (EST)</option></select></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="branding">
+            <div class="card-head"><h3>Branding</h3><div class="sub">Used on the public site and customer-facing PDFs</div></div>
+            <div class="card-body">
+              <div class="field-row">
+                <div class="field">
+                  <label class="label">Logo</label>
+                  <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--adm-panel);border:1px solid var(--adm-line);border-radius:6px;">
+                    <div style="width:48px;height:48px;border-radius:6px;background:var(--adm-accent);display:grid;place-items:center;color:#fff;font:600 20px/1 var(--f-body);">U</div>
+                    <div style="flex:1;font:400 12px/1.4 var(--f-body);color:var(--adm-ink-mute);">UHS-wordmark.svg<br>Updated 2 days ago</div>
+                    <button class="btn btn-sec btn-sm">Replace</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="label">Primary color</label>
+                  <div style="display:flex;gap:8px;">
+                    <div style="width:36px;height:36px;border-radius:5px;background:#B9532A;border:1px solid var(--adm-line);"></div>
+                    <input class="input" value="#B9532A" style="flex:1;">
+                  </div>
+                  <div class="help">Used for buttons, links, and accents on the public site.</div>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label">Tagline</label>
+                <input class="input" value="South Carolina's straight-talking manufactured home dealer">
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="pricing">
+            <div class="card-head"><h3>Pricing defaults</h3><div class="sub">These apply to new homes by default — override per-listing on the edit page</div></div>
+            <div class="card-body">
+              <div class="field-row">
+                <div class="field">
+                  <label class="label">Default markup %</label>
+                  <div class="input-suffix"><input class="input" value="15"><span class="sx">%</span></div>
+                  <div class="help">Applied to manufacturer base price.</div>
+                </div>
+                <div class="field">
+                  <label class="label">Default setup &amp; delivery</label>
+                  <div class="input-prefix"><span class="px">$</span><input class="input" value="6800"></div>
+                  <div class="help">Bundled into listed price unless toggled off.</div>
+                </div>
+              </div>
+              <div class="field-row" style="margin-top:6px;">
+                <label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="lbl">Show prices on public site</span></label>
+                <label class="toggle"><input type="checkbox"><span class="track"></span><span class="lbl">Round listed prices to nearest $100</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="financing">
+            <div class="card-head"><h3>Financing partners</h3><div class="sub">Lenders that appear on the financing page and pre-qual flow</div></div>
+            <div class="card-body" style="padding:0;">
+              <table class="tbl">
+                <thead><tr><th>Lender</th><th>Min FICO</th><th>Loan products</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td><strong>Vanderbilt Mortgage</strong></td><td>580</td><td>Chattel, Land+Home</td><td><span class="bd bd-success bd-dot">Active</span></td><td style="text-align:right;"><button class="btn btn-ghost btn-sm">Edit</button></td></tr>
+                  <tr><td><strong>21st Mortgage</strong></td><td>575</td><td>Chattel</td><td><span class="bd bd-success bd-dot">Active</span></td><td style="text-align:right;"><button class="btn btn-ghost btn-sm">Edit</button></td></tr>
+                  <tr><td><strong>Triad Financial</strong></td><td>620</td><td>Chattel, Land+Home, FHA</td><td><span class="bd bd-success bd-dot">Active</span></td><td style="text-align:right;"><button class="btn btn-ghost btn-sm">Edit</button></td></tr>
+                  <tr><td><strong>Cascade Loans</strong></td><td>600</td><td>FHA, VA</td><td><span class="bd bd-soft">Inactive</span></td><td style="text-align:right;"><button class="btn btn-ghost btn-sm">Edit</button></td></tr>
+                </tbody>
+              </table>
+              <div style="padding:12px 16px;border-top:1px solid var(--adm-line-soft);"><button class="btn btn-sec btn-sm">+ Add lender</button></div>
+            </div>
+          </div>
+
+          <div class="card" id="lots">
+            <div class="card-head"><h3>Lots &amp; locations</h3></div>
+            <div class="card-body" style="padding:0;">
+              <table class="tbl">
+                <thead><tr><th>Lot</th><th>Address</th><th>Active homes</th><th>Manager</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td><strong>Lexington</strong> <span class="bd bd-soft" style="font-size:10px;padding:2px 6px;">Primary</span></td><td>2814 Augusta Hwy, Lexington SC</td><td>148</td><td>Karen Eubanks</td><td style="text-align:right;"><button class="btn btn-ghost btn-sm">Edit</button></td></tr>
+                  <tr><td><strong>Anderson</strong></td><td>1109 N Main St, Anderson SC</td><td>94</td><td>DeShawn Liles</td><td style="text-align:right;"><button class="btn btn-ghost btn-sm">Edit</button></td></tr>
+                </tbody>
+              </table>
+              <div style="padding:12px 16px;border-top:1px solid var(--adm-line-soft);"><button class="btn btn-sec btn-sm">+ Add lot</button></div>
+            </div>
+          </div>
+
+          <div class="card" id="integrations">
+            <div class="card-head"><h3>Integrations</h3></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;gap:14px;padding:12px;border:1px solid var(--adm-line);border-radius:6px;">
+                  <div style="width:36px;height:36px;border-radius:5px;background:#3F8AE0;display:grid;place-items:center;color:#fff;font:600 14px/1 var(--f-body);">SB</div>
+                  <div style="flex:1;"><div style="font:500 13px/1.2 var(--f-body);">Supabase</div><div style="font:400 11px/1.3 var(--f-body);color:var(--adm-ink-mute);">Multi-tenant Postgres + auth backbone</div></div>
+                  <span class="bd bd-success bd-dot">Connected</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;padding:12px;border:1px solid var(--adm-line);border-radius:6px;">
+                  <div style="width:36px;height:36px;border-radius:5px;background:#7B61FF;display:grid;place-items:center;color:#fff;font:600 14px/1 var(--f-body);">SG</div>
+                  <div style="flex:1;"><div style="font:500 13px/1.2 var(--f-body);">SendGrid</div><div style="font:400 11px/1.3 var(--f-body);color:var(--adm-ink-mute);">Transactional email for leads &amp; quotes</div></div>
+                  <span class="bd bd-success bd-dot">Connected</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;padding:12px;border:1px solid var(--adm-line);border-radius:6px;">
+                  <div style="width:36px;height:36px;border-radius:5px;background:#3D9B6E;display:grid;place-items:center;color:#fff;font:600 14px/1 var(--f-body);">TW</div>
+                  <div style="flex:1;"><div style="font:500 13px/1.2 var(--f-body);">Twilio</div><div style="font:400 11px/1.3 var(--f-body);color:var(--adm-ink-mute);">SMS replies on leads</div></div>
+                  <button class="btn btn-sec btn-sm">Connect</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;padding:12px;border:1px solid var(--adm-line);border-radius:6px;">
+                  <div style="width:36px;height:36px;border-radius:5px;background:#FF6B35;display:grid;place-items:center;color:#fff;font:600 14px/1 var(--f-body);">GA</div>
+                  <div style="flex:1;"><div style="font:500 13px/1.2 var(--f-body);">Google Analytics</div><div style="font:400 11px/1.3 var(--f-body);color:var(--adm-ink-mute);">Public site traffic</div></div>
+                  <button class="btn btn-sec btn-sm">Connect</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="danger" style="border-color:#e0c0bc;">
+            <div class="card-head" style="background:#FAEDEB;">
+              <h3 style="color:var(--adm-danger);">Danger zone</h3>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--adm-line-soft);">
+                <div style="flex:1;"><div style="font:500 13px/1.3 var(--f-body);">Transfer ownership</div><div style="font:400 12px/1.4 var(--f-body);color:var(--adm-ink-mute);">Move owner role to another active member.</div></div>
+                <button class="btn btn-sec">Transfer</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;padding:12px 0;">
+                <div style="flex:1;"><div style="font:500 13px/1.3 var(--f-body);">Delete this org</div><div style="font:400 12px/1.4 var(--f-body);color:var(--adm-ink-mute);">Removes all data permanently. Cannot be undone.</div></div>
+                <button class="btn btn-danger">Delete org</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body></html>

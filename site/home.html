@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upstate Homes — Manufactured homes for the Carolinas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/site.css">
+<style>
+  /* ─── Hero ─── */
+  .hero {
+    background: var(--c-bg);
+    padding: var(--s-16) var(--gutter) var(--s-12);
+    border-bottom: 1px solid var(--c-line);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: var(--s-12);
+    align-items: center;
+  }
+  .hero h1 {
+    font-size: clamp(44px, 5.5vw, 76px);
+    line-height: 1.02;
+    margin: var(--s-4) 0 var(--s-5);
+    letter-spacing: -0.02em;
+  }
+  .hero h1 em { font-style: italic; font-weight: 400; color: var(--c-accent); }
+  .hero p.lede {
+    font-size: 19px; max-width: 520px;
+    color: var(--c-ink-soft);
+    margin-bottom: var(--s-6);
+  }
+  .hero-cta { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+  .hero-meta {
+    margin-top: var(--s-8);
+    display: flex; gap: var(--s-8); flex-wrap: wrap;
+    font: 400 13px/1.4 var(--f-body); color: var(--c-ink-mute);
+    padding-top: var(--s-6);
+    border-top: 1px solid var(--c-line);
+  }
+  .hero-meta strong { color: var(--c-ink); display: block; font: 600 24px/1 var(--f-body); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+
+  .hero-photo {
+    aspect-ratio: 4/5;
+    background: linear-gradient(135deg, #c9b896 0%, #6b5a44 80%);
+    border-radius: var(--r-2);
+    position: relative;
+    box-shadow: var(--sh-3);
+    overflow: hidden;
+  }
+  .hero-photo::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(15,28,41,0.4) 100%);
+  }
+  .hero-photo .pin {
+    position: absolute; bottom: var(--s-6); left: var(--s-6); right: var(--s-6);
+    color: #fff; z-index: 1;
+  }
+  .hero-photo .pin .eye { font: 500 10px/1 var(--f-body); letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.85; }
+  .hero-photo .pin h3 { color: #fff; font: 500 24px/1.1 var(--f-display); margin-top: 8px; letter-spacing: -0.01em; }
+  .hero-photo .pin .meta { font: 400 13px/1.4 var(--f-body); opacity: 0.85; margin-top: 4px; }
+
+  @media (max-width: 900px) {
+    .hero-inner { grid-template-columns: 1fr; }
+  }
+
+  /* ─── Trust strip ─── */
+  .trust {
+    background: var(--c-bg);
+    padding: var(--s-8) var(--gutter);
+    border-bottom: 1px solid var(--c-line);
+  }
+  .trust-inner {
+    max-width: var(--container); margin: 0 auto;
+    display: flex; gap: var(--s-12); align-items: center; flex-wrap: wrap;
+    font: 400 13px/1.4 var(--f-body); color: var(--c-ink-mute);
+  }
+  .trust .label { font: 600 11px/1 var(--f-body); letter-spacing: 0.18em; text-transform: uppercase; }
+  .trust .brands { display: flex; gap: var(--s-8); align-items: center; flex-wrap: wrap; flex: 1; }
+  .trust .brand-name { font: 500 16px/1 var(--f-display); color: var(--c-ink-soft); letter-spacing: 0.02em; opacity: 0.7; }
+
+  /* ─── Inventory preview ─── */
+  .inventory-section { background: var(--c-bg); }
+  .home-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-6); }
+  @media (max-width: 900px) { .home-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .home-grid { grid-template-columns: 1fr; } }
+
+  /* ─── Collections strip ─── */
+  .collections-section { background: var(--c-panel); border-top: 1px solid var(--c-line); border-bottom: 1px solid var(--c-line); }
+  .collection-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: var(--s-4); height: 540px; }
+  .col-card {
+    position: relative; overflow: hidden; border-radius: var(--r-2);
+    text-decoration: none; color: #fff;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: var(--s-6);
+    transition: transform var(--d-base) var(--ease);
+  }
+  .col-card:hover { transform: translateY(-2px); }
+  .col-card.tall { grid-row: span 2; }
+  .col-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(15,28,41,0.7) 100%);
+    z-index: 1;
+  }
+  .col-card > * { position: relative; z-index: 2; }
+  .col-card .eyebrow-c { font: 500 10px/1 var(--f-body); letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.85; }
+  .col-card h3 { color: #fff; font: 500 26px/1.1 var(--f-display); letter-spacing: -0.01em; margin-top: 8px; }
+  .col-card .count { font: 400 13px/1.4 var(--f-body); opacity: 0.85; margin-top: 6px; }
+  @media (max-width: 800px) {
+    .collection-grid { grid-template-columns: 1fr; height: auto; }
+    .col-card { aspect-ratio: 3/2; }
+    .col-card.tall { grid-row: auto; }
+  }
+
+  /* ─── How it works ─── */
+  .how { background: var(--c-bg); }
+  .how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-6); margin-top: var(--s-8); }
+  .step { padding: var(--s-6) 0; border-top: 1px solid var(--c-ink); }
+  .step .num { font: 500 13px/1 var(--f-body); letter-spacing: 0.16em; color: var(--c-ink-mute); }
+  .step h3 { font: 500 26px/1.15 var(--f-display); letter-spacing: -0.01em; margin: var(--s-3) 0 var(--s-2); color: var(--c-ink); }
+  .step p { font-size: 15px; color: var(--c-ink-soft); }
+  @media (max-width: 800px) { .how-grid { grid-template-columns: 1fr; } }
+
+  /* ─── Editorial pullquote ─── */
+  .quote-section { background: var(--uhs-navy); color: var(--c-bg); }
+  .quote-section .inner { max-width: 980px; }
+  .quote-section blockquote {
+    font: 400 italic clamp(28px, 3.6vw, 44px)/1.25 var(--f-display);
+    color: #fff; margin: 0;
+    letter-spacing: -0.01em; text-wrap: pretty;
+  }
+  .quote-section blockquote::before {
+    content: '“'; font: 500 120px/0.5 var(--f-display); color: var(--c-accent);
+    display: block; margin-bottom: var(--s-2);
+    font-style: normal;
+  }
+  .quote-section .attribution {
+    margin-top: var(--s-6); font: 500 12px/1.4 var(--f-body);
+    letter-spacing: 0.18em; text-transform: uppercase; color: rgba(246,239,230,0.7);
+  }
+  .quote-section .attribution strong { color: #fff; font-weight: 600; }
+
+  /* ─── Manufacturers wall ─── */
+  .mfr-section { background: var(--c-bg); }
+  .mfr-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--c-line); border-radius: var(--r-2); overflow: hidden; background: var(--c-surface); }
+  .mfr-tile { padding: var(--s-8) var(--s-6); border-right: 1px solid var(--c-line); border-bottom: 1px solid var(--c-line); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 160px; text-decoration: none; color: var(--c-ink); transition: background var(--d-base) var(--ease); }
+  .mfr-tile:hover { background: var(--c-panel); }
+  .mfr-tile:nth-child(4n) { border-right: none; }
+  .mfr-tile:nth-child(n+5) { border-bottom: none; }
+  .mfr-tile .name { font: 500 24px/1 var(--f-display); letter-spacing: -0.01em; }
+  .mfr-tile .lines { font: 400 12px/1.5 var(--f-body); color: var(--c-ink-mute); margin-top: 6px; }
+  @media (max-width: 800px) {
+    .mfr-grid { grid-template-columns: 1fr 1fr; }
+    .mfr-tile:nth-child(2n) { border-right: none; }
+    .mfr-tile:nth-child(n) { border-right: 1px solid var(--c-line); border-bottom: 1px solid var(--c-line); }
+    .mfr-tile:nth-child(2n) { border-right: none; }
+  }
+
+  /* ─── Trade + Land+Home strip ─── */
+  .offerings { background: var(--c-panel); }
+  .offerings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); }
+  .offering {
+    background: var(--c-surface); border: 1px solid var(--c-line);
+    border-radius: var(--r-2); padding: var(--s-10);
+    display: flex; flex-direction: column;
+  }
+  .offering .badge-h { font: 600 11px/1 var(--f-body); letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-accent); margin-bottom: var(--s-4); }
+  .offering h3 { font: 500 36px/1.05 var(--f-display); letter-spacing: -0.015em; margin-bottom: var(--s-3); }
+  .offering p { color: var(--c-ink-soft); font-size: 16px; max-width: 380px; margin-bottom: var(--s-6); }
+  .offering a.cta { font: 500 14px/1 var(--f-body); color: var(--c-ink); text-decoration: none; border-bottom: 1px solid var(--c-ink); padding-bottom: 4px; align-self: flex-start; }
+  .offering a.cta:hover { color: var(--c-accent); border-bottom-color: var(--c-accent); }
+  @media (max-width: 800px) { .offerings-grid { grid-template-columns: 1fr; } }
+
+  /* ─── Final CTA ─── */
+  .final-cta { background: var(--c-bg); padding: var(--s-20) var(--gutter); text-align: center; }
+  .final-cta h2 { font-size: clamp(36px, 4.5vw, 60px); max-width: 720px; margin: 0 auto var(--s-5); }
+  .final-cta p { font-size: 18px; color: var(--c-ink-soft); max-width: 540px; margin: 0 auto var(--s-8); }
+  .final-cta .cta-row { display: flex; gap: var(--s-3); justify-content: center; flex-wrap: wrap; }
+
+</style>
+</head>
+<body>
+
+<!-- ─── Top bar ─── -->
+<div class="uhs-topbar">
+  <div class="uhs-topbar-inner">
+    <span>Lexington, SC · Mon–Sat 9–6</span>
+    <span class="spacer"></span>
+    <a href="financing.html">Financing</a>
+    <a href="trade-in.html">Trade-In</a>
+    <a href="locations.html">Visit our lot</a>
+    <a href="tel:8035551234" class="phone">(803) 555-1234</a>
+  </div>
+</div>
+
+<!-- ─── Nav ─── -->
+<nav class="uhs-nav">
+  <div class="uhs-nav-inner">
+    <a href="home.html" class="uhs-brand">
+      <span class="name">Upstate <em>Homes</em></span>
+    </a>
+    <span class="spacer"></span>
+    <div class="uhs-nav-links">
+      <a href="inventory.html">Browse homes</a>
+      <a href="manufacturers.html">Manufacturers</a>
+      <a href="land-and-home.html">Land + Home</a>
+      <a href="financing.html">Financing</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="about.html">About</a>
+    </div>
+    <div class="uhs-nav-cta">
+      <a href="inventory.html" class="btn btn-primary btn-sm">Get a quote</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ─── Hero ─── -->
+<header class="hero">
+  <div class="hero-inner">
+    <div>
+      <span class="eyebrow">Family-owned · South Carolina · Est. 2024</span>
+      <h1>Built well.<br><em>Priced honestly.</em><br>Delivered to your land.</h1>
+      <p class="lede">242 homes ready for delivery across the Carolinas. Real prices, real photos, real floor plans — no "call for pricing" runarounds.</p>
+      <div class="hero-cta">
+        <a href="inventory.html" class="btn btn-primary">Browse 242 homes</a>
+        <a href="how-it-works.html" class="btn btn-secondary">How it works</a>
+      </div>
+      <div class="hero-meta">
+        <div><strong>9</strong>Manufacturers we carry</div>
+        <div><strong>$148k</strong>Starting prices, fully delivered</div>
+        <div><strong>27</strong>Counties served in SC + NC</div>
+      </div>
+    </div>
+    <div class="hero-photo ph-2">
+      <div class="pin">
+        <span class="eye">Featured · In stock</span>
+        <h3>The Aspect by Clayton Built</h3>
+        <span class="meta">3 bed · 2 bath · 1,813 sq ft · From $148,400</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ─── Trust strip ─── -->
+<div class="trust">
+  <div class="trust-inner">
+    <span class="label">Authorized dealer for</span>
+    <div class="brands">
+      <span class="brand-name">Clayton Built</span>
+      <span class="brand-name">Champion</span>
+      <span class="brand-name">Cavco</span>
+      <span class="brand-name">Live Oak</span>
+      <span class="brand-name">Franklin</span>
+      <span class="brand-name">Deer Valley</span>
+      <span class="brand-name">+ 3 more</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Featured inventory ─── -->
+<section class="section inventory-section">
+  <div class="inner">
+    <div class="section-head">
+      <div class="lhs">
+        <span class="eyebrow">Featured · Near Lexington, SC</span>
+        <h2>Homes ready for delivery now</h2>
+      </div>
+      <div class="rhs">
+        <a href="inventory.html" class="btn btn-secondary">View all 242 homes</a>
+      </div>
+    </div>
+    <div class="home-grid">
+      <a href="home-detail.html" class="home-card">
+        <div class="photo ph-2"><span class="badge">In Stock</span><button class="fav" aria-label="Save">♡</button><div class="placeholder"></div></div>
+        <div class="body">
+          <div class="eyebrow-card">Clayton Built · The Aspect</div>
+          <div class="name">1434 Southern Belle</div>
+          <div class="specs">3 beds · 2 baths · 1,813 sq ft</div>
+          <div class="price-row">
+            <div>
+              <div class="price">$148,400</div>
+              <div class="price-caveat">Starting · before delivery</div>
+            </div>
+            <span class="view">View →</span>
+          </div>
+        </div>
+      </a>
+      <a href="home-detail.html" class="home-card">
+        <div class="photo ph-3"><span class="badge new">Just Arrived</span><button class="fav" aria-label="Save">♡</button><div class="placeholder"></div></div>
+        <div class="body">
+          <div class="eyebrow-card">Champion · Athens 2864</div>
+          <div class="name">2106 Magnolia Ridge</div>
+          <div class="specs">4 beds · 2 baths · 2,128 sq ft</div>
+          <div class="price-row">
+            <div>
+              <div class="price">$184,900</div>
+              <div class="price-caveat">Starting · before delivery</div>
+            </div>
+            <span class="view">View →</span>
+          </div>
+        </div>
+      </a>
+      <a href="home-detail.html" class="home-card">
+        <div class="photo ph-4"><span class="badge">In Stock</span><button class="fav" aria-label="Save">♡</button><div class="placeholder"></div></div>
+        <div class="body">
+          <div class="eyebrow-card">Cavco · The Carolina</div>
+          <div class="name">3201 Pine Grove</div>
+          <div class="specs">3 beds · 2 baths · 1,560 sq ft</div>
+          <div class="price-row">
+            <div>
+              <div class="price">$132,800</div>
+              <div class="price-caveat">Starting · before delivery</div>
+            </div>
+            <span class="view">View →</span>
+          </div>
+        </div>
+      </a>
+      <a href="home-detail.html" class="home-card">
+        <div class="photo ph-1"><span class="badge">In Stock</span><button class="fav" aria-label="Save">♡</button><div class="placeholder"></div></div>
+        <div class="body">
+          <div class="eyebrow-card">Franklin · The Heritage</div>
+          <div class="name">817 Riverbend</div>
+          <div class="specs">2 beds · 2 baths · 1,140 sq ft</div>
+          <div class="price-row">
+            <div>
+              <div class="price">$112,500</div>
+              <div class="price-caveat">Starting · before delivery</div>
+            </div>
+            <span class="view">View →</span>
+          </div>
+        </div>
+      </a>
+      <a href="home-detail.html" class="home-card">
+        <div class="photo ph-5"><span class="badge">In Stock</span><button class="fav" aria-label="Save">♡</button><div class="placeholder"></div></div>
+        <div class="body">
+          <div class="eyebrow-card">Live Oak · The Magnolia</div>
+          <div class="name">1209 Old Forest Lane</div>
+          <div class="specs">4 beds · 3 baths · 2,432 sq ft</div>
+          <div class="price-row">
+            <div>
+              <div class="price">$216,200</div>
+              <div class="price-caveat">Starting · before delivery</div>
+            </div>
+            <span class="view">View →</span>
+          </div>
+        </div>
+      </a>
+      <a href="home-detail.html" class="home-card">
+        <div class="photo ph-6"><span class="badge new">Just Arrived</span><button class="fav" aria-label="Save">♡</button><div class="placeholder"></div></div>
+        <div class="body">
+          <div class="eyebrow-card">Clayton Built · The Edge</div>
+          <div class="name">503 Cypress Trail</div>
+          <div class="specs">3 beds · 2 baths · 1,680 sq ft</div>
+          <div class="price-row">
+            <div>
+              <div class="price">$155,750</div>
+              <div class="price-caveat">Starting · before delivery</div>
+            </div>
+            <span class="view">View →</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Collections ─── -->
+<section class="section collections-section">
+  <div class="inner">
+    <div class="section-head">
+      <div class="lhs">
+        <span class="eyebrow">Browse by intent</span>
+        <h2>Collections</h2>
+      </div>
+    </div>
+    <div class="collection-grid">
+      <a href="inventory.html?collection=under-150k" class="col-card tall ph-1">
+        <span class="eyebrow-c">Best value</span>
+        <h3>Under $150,000</h3>
+        <span class="count">86 homes · From $89,400</span>
+      </a>
+      <a href="inventory.html?collection=move-in-ready" class="col-card ph-3">
+        <span class="eyebrow-c">Move-in ready</span>
+        <h3>Delivery in 30 days</h3>
+        <span class="count">31 homes</span>
+      </a>
+      <a href="inventory.html?collection=family" class="col-card ph-7">
+        <span class="eyebrow-c">For growing families</span>
+        <h3>3-bedroom homes</h3>
+        <span class="count">94 homes</span>
+      </a>
+      <a href="inventory.html?collection=tiny" class="col-card ph-8">
+        <span class="eyebrow-c">Compact</span>
+        <h3>Tiny &amp; park model</h3>
+        <span class="count">14 homes</span>
+      </a>
+      <a href="inventory.html?collection=premium" class="col-card ph-9">
+        <span class="eyebrow-c">Premium</span>
+        <h3>Modular &amp; luxury</h3>
+        <span class="count">22 homes</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── How it works ─── -->
+<section class="section how">
+  <div class="inner">
+    <div class="section-head">
+      <div class="lhs">
+        <span class="eyebrow">For first-time buyers</span>
+        <h2>Buying a manufactured home, plainly explained.</h2>
+      </div>
+      <div class="rhs">
+        <a href="how-it-works.html" class="btn btn-ghost">See the full guide →</a>
+      </div>
+    </div>
+    <div class="how-grid">
+      <div class="step">
+        <span class="num">01 — BROWSE</span>
+        <h3>Find a home you like.</h3>
+        <p>Real prices, real photos. Filter by beds, budget, manufacturer. Save favorites without making an account.</p>
+      </div>
+      <div class="step">
+        <span class="num">02 — TOUR</span>
+        <h3>Walk through it in person, or virtually.</h3>
+        <p>Most homes have 3D tours and full photo galleries. If it's on our lot, come visit Saturdays 9–6.</p>
+      </div>
+      <div class="step">
+        <span class="num">03 — FINANCE</span>
+        <h3>We'll help you compare lenders.</h3>
+        <p>Chattel loans, land-and-home loans, and FHA. We don't take a cut — we just connect you with the right lender.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Quote ─── -->
+<section class="section quote-section">
+  <div class="inner">
+    <span class="eyebrow" style="color: rgba(246,239,230,0.6); display: block; margin-bottom: var(--s-4);">From a recent buyer · Lexington County</span>
+    <blockquote>We toured five dealers before we found Upstate. They were the only ones who would tell us what a home actually costs delivered, before we filled out a single form.</blockquote>
+    <div class="attribution"><strong>Marlena &amp; Devon Pope</strong> &nbsp; · &nbsp; Bought The Aspect, May 2025</div>
+  </div>
+</section>
+
+<!-- ─── Offerings (the differentiators) ─── -->
+<section class="section offerings">
+  <div class="inner">
+    <div class="section-head">
+      <div class="lhs">
+        <span class="eyebrow">Two ways most dealers won't help you</span>
+        <h2>The hard parts, handled.</h2>
+      </div>
+    </div>
+    <div class="offerings-grid">
+      <div class="offering">
+        <span class="badge-h">★ Land + Home Package</span>
+        <h3>Don't own land yet?</h3>
+        <p>We'll source the lot, prep the site, and finance it together with the home. One deal, one closing, one monthly payment.</p>
+        <a href="land-and-home.html" class="cta">How Land + Home works</a>
+      </div>
+      <div class="offering">
+        <span class="badge-h">★ Trade-In Program</span>
+        <h3>Already in a manufactured home?</h3>
+        <p>Trade up. We'll appraise your existing home, credit it toward your new one, and handle the title transfer. Most trade-ins close in 6 weeks.</p>
+        <a href="trade-in.html" class="cta">Get a trade-in valuation</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Manufacturers ─── -->
+<section class="section mfr-section">
+  <div class="inner">
+    <div class="section-head">
+      <div class="lhs">
+        <span class="eyebrow">Authorized dealer</span>
+        <h2>Nine manufacturers, one straightforward sales process.</h2>
+      </div>
+      <div class="rhs">
+        <a href="manufacturers.html" class="btn btn-ghost">All manufacturers →</a>
+      </div>
+    </div>
+    <div class="mfr-grid">
+      <a href="manufacturers.html" class="mfr-tile"><span class="name">Clayton Built</span><span class="lines">38 floor plans</span></a>
+      <a href="manufacturers.html" class="mfr-tile"><span class="name">Champion</span><span class="lines">29 floor plans</span></a>
+      <a href="manufacturers.html" class="mfr-tile"><span class="name">Cavco</span><span class="lines">31 floor plans</span></a>
+      <a href="manufacturers.html" class="mfr-tile"><span class="name">Live Oak</span><span class="lines">22 floor plans</span></a>
+      <a href="manufacturers.html" class="mfr-tile"><span class="name">Franklin</span><span class="lines">18 floor plans</span></a>
+      <a href="manufacturers.html" class="mfr-tile"><span class="name">Deer Valley</span><span class="lines">14 floor plans</span></a>
+      <a href="manufacturers.html" class="mfr-tile"><span class="name">Skyline</span><span class="lines">12 floor plans</span></a>
+      <a href="manufacturers.html" class="mfr-tile"><span class="name">TruMH</span><span class="lines">9 floor plans</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Final CTA ─── -->
+<section class="final-cta">
+  <span class="eyebrow">Ready when you are</span>
+  <h2 style="margin-top: var(--s-3);">Tell us your ZIP. We'll send three homes that fit.</h2>
+  <p>No phone tag, no pressure. We respond within 24 hours, with real prices and real availability.</p>
+  <div class="cta-row">
+    <a href="inventory.html" class="btn btn-primary">Get a quote</a>
+    <a href="locations.html" class="btn btn-secondary">Visit our lot</a>
+  </div>
+</section>
+
+<!-- ─── Footer ─── -->
+<footer class="uhs-footer">
+  <div class="uhs-footer-inner">
+    <div class="uhs-footer-grid">
+      <div class="brandblock">
+        <div class="name">Upstate <em>Homes</em></div>
+        <p>Family-owned manufactured-home dealer serving South Carolina &amp; western North Carolina since 2024.</p>
+        <p style="margin-top: var(--s-4); color: rgba(246,239,230,0.5); font-size: 12px;">2418 Augusta Hwy, Lexington, SC 29072<br>(803) 555-1234</p>
+      </div>
+      <div>
+        <h4>Browse</h4>
+        <ul>
+          <li><a href="inventory.html">All homes</a></li>
+          <li><a href="manufacturers.html">By manufacturer</a></li>
+          <li><a href="inventory.html?collection=under-150k">Under $150k</a></li>
+          <li><a href="inventory.html?collection=move-in-ready">Move-in ready</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Programs</h4>
+        <ul>
+          <li><a href="financing.html">Financing</a></li>
+          <li><a href="land-and-home.html">Land + Home</a></li>
+          <li><a href="trade-in.html">Trade-In</a></li>
+          <li><a href="delivery.html">Delivery</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <ul>
+          <li><a href="about.html">About</a></li>
+          <li><a href="locations.html">Visit our lot</a></li>
+          <li><a href="areas-served.html">Areas served</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Help</h4>
+        <ul>
+          <li><a href="how-it-works.html">How it works</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="blog.html">Blog</a></li>
+          <li><a href="careers.html">Careers</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="uhs-footer-bottom">
+      <span>© 2025 Upstate Homes, LLC. All rights reserved.</span>
+      <span class="spacer"></span>
+      <span>SC Dealer License #44218 · NC Dealer License #L-2841</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

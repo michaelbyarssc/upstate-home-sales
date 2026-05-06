@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Edit home — UHS Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/admin.css">
+</head><body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-brand"><div class="mark">U</div><div class="name">Upstate <em>Homes</em></div></div>
+    <a href="org-switcher.html" class="sb-org-switcher"><div class="avatar">UH</div><div class="org-info"><div class="org-name">Upstate Homes — Lexington</div><div class="org-role">OWNER</div></div><div class="caret">⇅</div></a>
+    <div class="sb-section">Workspace</div>
+    <nav class="sb-nav">
+      <a class="sb-link" href="dashboard.html"><span class="ico">⌂</span>Dashboard</a>
+      <a class="sb-link active" href="inventory-list.html"><span class="ico">▦</span>Inventory<span class="badge">242</span></a>
+      <a class="sb-link" href="leads-inbox.html"><span class="ico">✉</span>Leads<span class="badge">38</span></a>
+      <a class="sb-link" href="#"><span class="ico">⊞</span>Quotes</a>
+      <a class="sb-link" href="#"><span class="ico">↻</span>Trade-ins</a>
+    </nav>
+    <div class="sb-section">Settings</div>
+    <nav class="sb-nav">
+      <a class="sb-link" href="users.html"><span class="ico">👥</span>Users &amp; roles</a>
+      <a class="sb-link" href="settings.html"><span class="ico">⚙</span>Org settings</a>
+    </nav>
+    <div class="sb-foot"><div class="avatar" style="background:#5e7b6f;">MP</div><div class="who">Marlena Pope<span>Owner</span></div></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="crumb"><a href="dashboard.html">Workspace</a><span class="sep">/</span><a href="inventory-list.html">Inventory</a><span class="sep">/</span><span class="here">UH-1434-AS · Southern Belle</span></div>
+      <div class="spacer"></div>
+      <span class="bd bd-warn bd-dot" style="margin-right:8px;">Unsaved changes</span>
+      <button class="btn btn-ghost btn-sm">Discard</button>
+      <button class="btn btn-sec btn-sm">Save draft</button>
+      <button class="btn btn-pri btn-sm">Save &amp; publish</button>
+    </div>
+
+    <div class="page">
+      <div class="page-head">
+        <div>
+          <h1 style="display:flex;align-items:center;gap:10px;">Edit home <span class="bd bd-success bd-dot" style="font-size:11px;">Published</span></h1>
+          <div class="sub">UH-1434-AS · 1434 Southern Belle · Last edited 2 hours ago by Marlena Pope</div>
+        </div>
+        <div class="actions">
+          <a href="../site/03-home-detail.html" target="_blank" class="btn btn-sec">↗ View public page</a>
+          <button class="btn btn-danger">Archive</button>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <!-- LEFT: form -->
+        <div>
+          <div class="card">
+            <div class="card-head"><h3>Basics</h3><div class="sub">What this home is, at a glance</div></div>
+            <div class="card-body">
+              <div class="section-row">
+                <div class="field">
+                  <label class="label">Listing name <span class="req">*</span></label>
+                  <input class="input" value="1434 Southern Belle">
+                  <div class="help">Shown as the page headline on the public site. Keep it short and human.</div>
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label class="label">Manufacturer <span class="req">*</span></label>
+                    <select class="select"><option>Clayton Built</option><option>Champion</option><option>Cavco</option><option>Live Oak</option></select>
+                  </div>
+                  <div class="field">
+                    <label class="label">Model <span class="req">*</span></label>
+                    <select class="select"><option>The Aspect</option><option>The Edge</option><option>The Sweetbay</option></select>
+                  </div>
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label class="label">Stock # <span class="req">*</span></label>
+                    <input class="input" value="UH-1434-AS">
+                  </div>
+                  <div class="field">
+                    <label class="label">Status <span class="req">*</span></label>
+                    <select class="select"><option>Published</option><option>Draft</option><option>Hold</option><option>Sold</option></select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:18px;">
+            <div class="card-head"><h3>Specs</h3><div class="sub">Used for filters, badges and the "specs" sheet on the public page</div></div>
+            <div class="card-body">
+              <div class="section-row">
+                <div class="field-row three">
+                  <div class="field">
+                    <label class="label">Type</label>
+                    <select class="select"><option>Double-wide</option><option>Single-wide</option><option>Modular</option></select>
+                  </div>
+                  <div class="field">
+                    <label class="label">Beds</label>
+                    <select class="select"><option>3</option><option>2</option><option>4</option><option>5</option></select>
+                  </div>
+                  <div class="field">
+                    <label class="label">Baths</label>
+                    <select class="select"><option>2</option><option>1</option><option>2.5</option><option>3</option></select>
+                  </div>
+                </div>
+                <div class="field-row three">
+                  <div class="field">
+                    <label class="label">Sq ft</label>
+                    <div class="input-suffix"><input class="input" value="1813"><span class="sx">sqft</span></div>
+                  </div>
+                  <div class="field">
+                    <label class="label">Width</label>
+                    <div class="input-suffix"><input class="input" value="32"><span class="sx">ft</span></div>
+                  </div>
+                  <div class="field">
+                    <label class="label">Length</label>
+                    <div class="input-suffix"><input class="input" value="56"><span class="sx">ft</span></div>
+                  </div>
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label class="label">Year built</label>
+                    <input class="input" value="2024">
+                  </div>
+                  <div class="field">
+                    <label class="label">Roof / Construction</label>
+                    <select class="select"><option>Energy Smart Zone II</option><option>Standard</option><option>Energy Star</option></select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pricing — the heart of the markup model -->
+          <div class="card" style="margin-top:18px;border-color:#d8c9b5;">
+            <div class="card-head" style="background:#FAF4EB;">
+              <h3 style="display:flex;align-items:center;gap:8px;">Pricing <span class="bd bd-warn">Internal · not shown to public</span></h3>
+              <div class="sub">Set wholesale base, markup %, and any add-ons. The listed price is calculated.</div>
+            </div>
+            <div class="card-body">
+              <div class="section-row">
+                <div class="field-row">
+                  <div class="field">
+                    <label class="label">Manufacturer base price <span class="req">*</span></label>
+                    <div class="input-prefix"><span class="px">$</span><input class="input" id="base" value="129000"></div>
+                    <div class="help">What you pay the factory. Visible only to dealer staff.</div>
+                  </div>
+                  <div class="field">
+                    <label class="label">Markup %</label>
+                    <div class="input-suffix"><input class="input" id="markup" value="15"><span class="sx">%</span></div>
+                    <div class="help">Applied on top of base. <a href="settings.html" style="color:var(--adm-accent);">Default 15% — change in org settings</a></div>
+                  </div>
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label class="label">Add-ons / upgrades <span class="opt">(optional)</span></label>
+                    <div class="input-prefix"><span class="px">$</span><input class="input" id="addons" value="4500"></div>
+                    <div class="help">Skirting, deck, A/C upgrade, etc. Added after markup.</div>
+                  </div>
+                  <div class="field">
+                    <label class="label">Setup &amp; delivery <span class="opt">(optional)</span></label>
+                    <div class="input-prefix"><span class="px">$</span><input class="input" id="setup" value="6800"></div>
+                    <div class="help">Bundled into final price unless toggled below.</div>
+                  </div>
+                </div>
+                <div class="field-row" style="margin-top:6px;">
+                  <label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="lbl">Include setup &amp; delivery in listed price</span></label>
+                  <label class="toggle"><input type="checkbox"><span class="track"></span><span class="lbl">Show "starting from" instead of fixed price</span></label>
+                </div>
+
+                <!-- Live calc readout -->
+                <div class="calc-readout" style="margin-top:14px;">
+                  <div class="row"><span class="lbl">Manufacturer base</span><span id="o-base">$129,000</span></div>
+                  <div class="row"><span class="lbl">+ Markup (<span id="o-mu-pct">15</span>%)</span><span id="o-mu">$19,350</span></div>
+                  <div class="row"><span class="lbl">+ Add-ons</span><span id="o-add">$4,500</span></div>
+                  <div class="row"><span class="lbl">+ Setup &amp; delivery</span><span id="o-set">$6,800</span></div>
+                  <div class="row total"><span>Listed price (public)</span><span id="o-tot">$159,650</span></div>
+                </div>
+                <div class="help" style="margin-top:8px;">Public site shows <strong style="color:var(--adm-ink);">listed price only</strong>. Base price &amp; markup never appear in any customer-facing surface, quote, or PDF.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:18px;">
+            <div class="card-head"><h3>Photos</h3><div class="sub">First photo is the hero. Drag to reorder.</div></div>
+            <div class="card-body">
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                <div style="aspect-ratio:4/3;border-radius:6px;background:linear-gradient(140deg,#b8a384,#5e4f3a);position:relative;"><span class="bd bd-ink" style="position:absolute;top:8px;left:8px;background:rgba(255,255,255,0.9);">Hero</span></div>
+                <div style="aspect-ratio:4/3;border-radius:6px;background:linear-gradient(140deg,#a8b598,#4f5e44);"></div>
+                <div style="aspect-ratio:4/3;border-radius:6px;background:linear-gradient(140deg,#c8a890,#6e5240);"></div>
+                <div style="aspect-ratio:4/3;border-radius:6px;background:linear-gradient(140deg,#d4ae89,#7a5638);"></div>
+                <div style="aspect-ratio:4/3;border-radius:6px;background:linear-gradient(140deg,#9aa8a4,#4a5a55);"></div>
+                <div style="aspect-ratio:4/3;border-radius:6px;background:linear-gradient(140deg,#c4b89c,#6a5e44);"></div>
+                <div style="aspect-ratio:4/3;border-radius:6px;background:linear-gradient(140deg,#aab9c9,#4a5965);"></div>
+                <button style="aspect-ratio:4/3;border-radius:6px;border:1.5px dashed var(--adm-line);background:var(--adm-bg);color:var(--adm-ink-mute);font:500 12px/1.3 var(--f-body);cursor:pointer;display:grid;place-items:center;">+ Add<br>photos</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:18px;">
+            <div class="card-head"><h3>Description</h3><div class="sub">Used on the public detail page</div></div>
+            <div class="card-body">
+              <div class="section-row">
+                <div class="field">
+                  <label class="label">Headline</label>
+                  <input class="input" value="A 3-bed, 2-bath Clayton Built with the kitchen island you'll actually use">
+                </div>
+                <div class="field">
+                  <label class="label">Body</label>
+                  <textarea class="textarea" rows="5">Built on the popular Aspect floor plan, this home opens to a 14-ft kitchen with quartz tops, a deep apron-front sink, and the kind of pantry that swallows a Costco run whole. The primary suite sits on the back of the home for quiet, with a walk-in tile shower and double vanity.</textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: meta sidebar -->
+        <aside style="position:sticky;top:64px;display:flex;flex-direction:column;gap:14px;">
+          <div class="card">
+            <div class="card-head"><h3>Public preview</h3></div>
+            <div class="card-body" style="padding:12px;">
+              <div style="aspect-ratio:4/3;border-radius:6px;background:linear-gradient(140deg,#b8a384,#5e4f3a);margin-bottom:10px;"></div>
+              <div style="font:500 13px/1.3 var(--f-body);color:var(--adm-ink);">1434 Southern Belle</div>
+              <div style="font:400 11px/1.3 var(--f-body);color:var(--adm-ink-mute);margin:2px 0 6px;">3 bed · 2 bath · 1,813 sqft · Clayton Built</div>
+              <div style="font:600 16px/1 var(--f-body);color:var(--adm-ink);font-variant-numeric:tabular-nums;" id="prev-price">$159,650</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3>Visibility</h3></div>
+            <div class="card-body">
+              <label class="toggle" style="margin-bottom:10px;"><input type="checkbox" checked><span class="track"></span><span class="lbl">Show on public site</span></label>
+              <label class="toggle" style="margin-bottom:10px;"><input type="checkbox" checked><span class="track"></span><span class="lbl">Include in featured rotation</span></label>
+              <label class="toggle"><input type="checkbox"><span class="track"></span><span class="lbl">Hide from search engines</span></label>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3>Lot &amp; location</h3></div>
+            <div class="card-body">
+              <div class="field">
+                <label class="label">Lot location</label>
+                <select class="select"><option>Lexington Lot — Row B, Slot 14</option><option>Anderson Lot — Row A</option><option>Off-site (factory hold)</option></select>
+              </div>
+              <div class="field" style="margin-bottom:0;">
+                <label class="label">On lot since</label>
+                <input class="input" value="2024-08-22">
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3>Activity</h3></div>
+            <div class="card-body" style="padding:8px 14px;">
+              <div style="display:flex;flex-direction:column;gap:8px;font:400 12px/1.4 var(--f-body);color:var(--adm-ink-soft);">
+                <div><span style="color:var(--adm-ink-mute);">2h ago</span> · Marlena Pope edited pricing</div>
+                <div><span style="color:var(--adm-ink-mute);">Yesterday</span> · 4 new leads from this listing</div>
+                <div><span style="color:var(--adm-ink-mute);">Aug 22</span> · Marlena Pope created listing</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => '$' + Math.round(n).toLocaleString();
+function recalc() {
+  const base = +($('base').value || 0);
+  const mu = +($('markup').value || 0);
+  const add = +($('addons').value || 0);
+  const set = +($('setup').value || 0);
+  const muAmt = base * (mu / 100);
+  const total = base + muAmt + add + set;
+  $('o-base').textContent = fmt(base);
+  $('o-mu-pct').textContent = mu;
+  $('o-mu').textContent = fmt(muAmt);
+  $('o-add').textContent = fmt(add);
+  $('o-set').textContent = fmt(set);
+  $('o-tot').textContent = fmt(total);
+  $('prev-price').textContent = fmt(total);
+}
+['base','markup','addons','setup'].forEach(id => $(id).addEventListener('input', recalc));
+recalc();
+</script>
+</body></html>

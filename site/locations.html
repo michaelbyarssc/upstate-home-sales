@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Visit our lot — Upstate Homes</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/site.css">
+<style>
+.page-hero{background:var(--c-bg);padding:var(--s-12) var(--gutter) var(--s-8);border-bottom:1px solid var(--c-line)}.page-hero .inner{max-width:var(--container);margin:0 auto}
+.page-hero h1{font-size:clamp(40px,5vw,72px);margin:var(--s-3) 0 var(--s-3);letter-spacing:-0.02em;line-height:1.02}.page-hero h1 em{font-style:italic;font-weight:400}
+.page-hero p.lede{font-size:18px;color:var(--c-ink-soft);max-width:640px}
+
+.lot-main{padding:var(--s-12) var(--gutter)}
+.lot-main .inner{max-width:var(--container);margin:0 auto;display:grid;grid-template-columns:1.3fr 1fr;gap:var(--s-10)}
+.lot-photo{aspect-ratio:5/4;background:linear-gradient(160deg,#A89483 0%,#3D2C1F 60%,#1F1B26 100%);border-radius:var(--r-2);position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:var(--s-6);color:#fff}
+.lot-photo::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 30%,rgba(206,77,49,0.18),transparent 60%)}
+.lot-photo .cap{position:relative;font:italic 400 14px/1.4 var(--f-display);text-shadow:0 2px 8px rgba(0,0,0,0.5);max-width:280px}
+
+.lot-info h2{font:500 36px/1.1 var(--f-display);letter-spacing:-0.015em;margin-bottom:var(--s-3)}
+.info-block{padding:var(--s-4) 0;border-top:1px solid var(--c-line)}
+.info-block:first-of-type{border-top:none;padding-top:0}
+.info-block .label{font:500 11px/1 var(--f-body);letter-spacing:0.16em;text-transform:uppercase;color:var(--c-ink-mute);margin-bottom:6px}
+.info-block .val{font:500 18px/1.4 var(--f-body);color:var(--c-ink)}
+.info-block .val a{color:var(--c-ink);text-decoration:none;border-bottom:1px solid var(--c-accent)}
+.hours-grid{display:grid;grid-template-columns:auto 1fr;gap:6px var(--s-4);font:500 15px/1.4 var(--f-body)}
+.hours-grid dt{color:var(--c-ink-mute)}
+.hours-grid dd{color:var(--c-ink);font-variant-numeric:tabular-nums}
+.lot-cta{margin-top:var(--s-6);display:flex;gap:var(--s-2);flex-wrap:wrap}
+
+.dirs{padding:var(--s-12) var(--gutter);background:var(--c-surface);border-top:1px solid var(--c-line);border-bottom:1px solid var(--c-line)}
+.dirs .inner{max-width:var(--container);margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:var(--s-8)}
+.dirs h3{font:500 28px/1.15 var(--f-display);margin-bottom:var(--s-3);letter-spacing:-0.01em}
+.dirs ol{counter-reset:s;list-style:none;padding:0;margin:0}
+.dirs ol li{counter-increment:s;padding:var(--s-3) 0;border-bottom:1px solid var(--c-line);display:grid;grid-template-columns:36px 1fr;font:400 15px/1.5 var(--f-body);color:var(--c-ink-soft)}
+.dirs ol li::before{content:counter(s,decimal-leading-zero);font:500 14px/1.5 var(--f-body);color:var(--c-accent);font-variant-numeric:tabular-nums}
+.dirs ol li b{color:var(--c-ink)}
+
+.what-to-bring{padding:var(--s-12) var(--gutter)}
+.what-to-bring .inner{max-width:var(--container);margin:0 auto}
+.bring-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--s-4);margin-top:var(--s-6)}
+.bring{padding:var(--s-5);border:1px solid var(--c-line);border-radius:var(--r-2)}
+.bring h4{font:500 20px/1.2 var(--f-display);letter-spacing:-0.005em;margin-bottom:var(--s-2)}
+.bring p{font:400 14px/1.55 var(--f-body);color:var(--c-ink-soft);margin:0}
+
+@media(max-width:900px){.lot-main .inner,.dirs .inner,.bring-grid{grid-template-columns:1fr;gap:var(--s-6)}}
+</style></head><body>
+<div class="uhs-topbar"><div class="uhs-topbar-inner"><span>Lexington, SC · Mon–Sat 9–6</span><span class="spacer"></span><a href="financing.html">Financing</a><a href="trade-in.html">Trade-In</a><a href="locations.html" class="active">Visit our lot</a><a href="tel:8035551234" class="phone">(803) 555-1234</a></div></div>
+<nav class="uhs-nav"><div class="uhs-nav-inner"><a href="home.html" class="uhs-brand"><span class="name">Upstate <em>Homes</em></span></a><span class="spacer"></span><div class="uhs-nav-links"><a href="inventory.html">Browse homes</a><a href="manufacturers.html">Manufacturers</a><a href="land-and-home.html">Land + Home</a><a href="financing.html">Financing</a><a href="how-it-works.html">How it works</a><a href="about.html">About</a></div><div class="uhs-nav-cta"><a href="#" class="btn btn-primary btn-sm">Get a quote</a></div></div></nav>
+
+<header class="page-hero"><div class="inner"><span class="eyebrow">Visit us</span><h1>One lot.<br><em>Twenty-two homes</em> to walk.</h1><p class="lede">We're in Lexington, SC, twelve miles west of Columbia off Highway 378. Walk-ins welcome — no appointment needed.</p></div></header>
+
+<section class="lot-main"><div class="inner">
+<div class="lot-photo"><div class="cap"><strong>The Lexington lot · 2024</strong><br>Twenty-two display homes, four acres, all walkable.</div></div>
+<div class="lot-info">
+  <h2>The Lexington lot.</h2>
+  <div class="info-block"><div class="label">Address</div><div class="val">2284 Augusta Highway<br>Lexington, SC 29072</div></div>
+  <div class="info-block"><div class="label">Phone</div><div class="val"><a href="tel:8035551234">(803) 555-1234</a></div></div>
+  <div class="info-block"><div class="label">Hours</div><dl class="hours-grid"><dt>Mon — Fri</dt><dd>9:00 am — 6:00 pm</dd><dt>Saturday</dt><dd>9:00 am — 5:00 pm</dd><dt>Sunday</dt><dd>By appointment</dd></dl></div>
+  <div class="info-block"><div class="label">On site</div><div class="val">22 walkable display homes · Free coffee · Kids' corner · Restrooms · Wi-Fi</div></div>
+  <div class="lot-cta">
+    <a href="https://maps.google.com" class="btn btn-primary">Get directions →</a>
+    <a href="contact.html" class="btn btn-ghost">Schedule a visit</a>
+  </div>
+</div>
+</div></section>
+
+<section class="dirs"><div class="inner">
+<div>
+<h3>From Columbia.</h3>
+<ol>
+<li><span><b>Take I-26 W</b> from downtown Columbia toward Spartanburg.</span></li>
+<li><span><b>Exit 111A</b> for US-1 / SC-6 toward Lexington.</span></li>
+<li><span><b>Merge onto US-1 S / Augusta Hwy</b>; continue 2.4 miles.</span></li>
+<li><span><b>Lot is on your right</b>, just past Lake Murray Blvd. Big tan sign.</span></li>
+<li><span><b>20 minutes</b> from State House. 12 miles total.</span></li>
+</ol>
+</div>
+<div>
+<h3>From Greenville / Upstate.</h3>
+<ol>
+<li><span><b>Take I-26 E</b> from Greenville toward Columbia.</span></li>
+<li><span><b>Exit 91</b> for US-378 toward Saluda / Lexington.</span></li>
+<li><span><b>Continue on US-378 E</b> for ~14 miles into Lexington.</span></li>
+<li><span><b>Right onto Augusta Hwy</b> at the fourth light.</span></li>
+<li><span><b>1 hour 20 minutes</b> from downtown Greenville.</span></li>
+</ol>
+</div>
+</div></section>
+
+<section class="what-to-bring"><div class="inner">
+<div class="section-head"><div class="lhs"><span class="eyebrow">Make your visit count</span><h2>What to bring (if you have it).</h2></div></div>
+<div class="bring-grid">
+<div class="bring"><h4>Land specs</h4><p>Lot size, address, and any survey paperwork. We can pull zoning and covenants while you're here.</p></div>
+<div class="bring"><h4>Rough budget</h4><p>What you can put down and what monthly payment works. We'll show you what fits — including options you didn't know about.</p></div>
+<div class="bring"><h4>A measuring sense</h4><p>Phone with a tape measure app, or just a sense of how big your current living room feels. It helps you read the floor plans.</p></div>
+</div>
+</div></section>
+
+<footer class="uhs-footer"><div class="uhs-footer-inner"><div class="uhs-footer-grid"><div class="brandblock"><div class="name">Upstate <em>Homes</em></div><p>Family-owned manufactured-home dealer.</p></div><div><h4>Browse</h4><ul><li><a href="inventory.html">All homes</a></li></ul></div><div><h4>Programs</h4><ul><li><a href="financing.html">Financing</a></li><li><a href="land-and-home.html">Land + Home</a></li><li><a href="trade-in.html">Trade-In</a></li></ul></div><div><h4>Company</h4><ul><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li></ul></div><div><h4>Help</h4><ul><li><a href="faq.html">FAQ</a></li></ul></div></div><div class="uhs-footer-bottom"><span>© 2025 Upstate Homes, LLC.</span><span class="spacer"></span><span>SC #44218 · NC #L-2841</span></div></div></footer>
+</body></html>

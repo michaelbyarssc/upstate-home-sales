@@ -1,0 +1,84 @@
+# Instructions for Claude Code
+
+You're picking up a **high-fidelity HTML prototype** of a multi-tenant SaaS for South Carolina manufactured home dealers, called **Upstate Home Sales (UHS)**. Your job is to turn it into a working production app.
+
+---
+
+## Read these files in this order
+
+1. **`handoff.html`** — the technical spec. Read it cover to cover. It contains the full Supabase data model, RLS policies, generated SQL, API surface, auth flow, storage buckets, env vars, and a week-by-week build roadmap. **This is your primary source of truth.**
+2. **`README.md`** — orientation.
+3. **`brand/00-brand.html`** — brand identity (palette, type, voice). Match this in production.
+4. **`site/00-overview.html`** + **`admin/00-overview.html`** — visual overviews of every screen. Open in a browser; the artboards are interactive.
+5. **`research/01-teardown.html`** — competitive analysis + 5 differentiators UHS is built around. Useful context for product decisions.
+
+---
+
+## What to build (in order)
+
+The handoff doc has a full 7-week roadmap in **section 10 — "Cutover roadmap"**. Follow it. Each week is independently shippable to the dealer for real use.
+
+**Week 1 — Foundation**
+Spin up Supabase project. Apply schema migrations matching `handoff.html` section 02. Implement RLS policies (section 02 → "Row-level security"). Wire Supabase Auth + the `org_members` join table. Build `org-switcher.html` as a real screen.
+
+**Week 2 — Inventory CRUD**
+Admin: list page + edit page. **Critical**: implement the markup model exactly as section 03 specifies — `listed_price_cents` MUST be a Postgres generated column, not a client calculation. Public site reads from a `public_homes` view that excludes `base_price_cents` and `markup_pct`.
+
+**Weeks 3–7** — Public site, leads, two-way comms, quotes, polish. See handoff section 10.
+
+---
+
+## Non-negotiables
+
+These come straight from the prototype's defining decisions. Don't deviate without product sign-off:
+
+1. **Pricing visibility is enforced at the database, not the app.** Base price and markup % must never be exposed via the anon key. Use the `public_homes` view + grant select-on-view to anon. Never grant select on the `homes` table to anon.
+
+2. **Multi-tenancy via RLS, always.** Every business table has `org_id`. Every policy uses `auth.org_ids()`. There are no "trusted" code paths that bypass RLS — even server-side rendering goes through PostgREST with the user's JWT.
+
+3. **Quotes snapshot the price.** When a quote is sent, copy `listed_price_cents` into `quotes.listed_price_cents`. If the dealer raises the markup % later, outstanding quotes hold their original price.
+
+4. **Realtime on the leads inbox.** Don't poll. Use Supabase Realtime channels filtered by `org_id`.
+
+5. **The CSS in `design-system/` is the design source of truth.** Lift it into your production styling system (Tailwind theme extensions or CSS variables). Don't redesign — the prototype is opinionated and the brand guide is locked.
+
+---
+
+## Stack
+
+Recommended in `handoff.html` section 01:
+- **Frontend**: Next.js 14 (App Router) on Vercel, two apps — `apps/public` (marketing + inventory) and `apps/admin` (dealer dashboard).
+- **Backend**: Supabase — Postgres + Auth + Storage + Edge Functions + Realtime.
+- **Email**: SendGrid (transactional + inbound parse webhook).
+- **SMS**: Twilio.
+
+The repo structure is in **section 08**.
+
+---
+
+## Six product questions to resolve before you start
+
+At the very bottom of `handoff.html` (section 11) there are six open product questions. **Read them and ask the human before you write a line of code.** Each one changes the schema or the lead flow. They are:
+
+1. Pricing visibility default — confirmed?
+2. Lead claim model — round-robin, claim-first, or manual?
+3. SMS opt-in — explicit checkbox or implied by quote-form submit?
+4. Financing pre-qual storage — does PII land in our DB?
+5. Audit retention — SC regulatory requirements?
+6. Multi-org users — build the switcher in v1, or one-org-per-user?
+
+---
+
+## What this prototype is NOT
+
+- Not a component library. Don't try to use the prototype HTML as React components. Rebuild in your component library of choice.
+- Not pixel-final on responsive. Mobile breakpoints are sketched, not nailed. Match the desktop fidelity on mobile during the build.
+- Not seeded with real data. All photos are placeholder gradients, all customers are fictional.
+
+---
+
+## When you're done with v1
+
+Run a manual QA against the prototype's screens. Open `admin/inventory-edit.html` and `admin/leads-inbox.html` side-by-side with your built versions — every field, badge, and interaction in the prototype should exist in production. The "live calc" on the inventory edit page is a hard requirement — typing a markup % must update the listed price in real time, and the public preview card on the right must mirror it.
+
+Good luck. The hard problem is the multi-tenant pricing model — get that right and the rest is straightforward CRUD.

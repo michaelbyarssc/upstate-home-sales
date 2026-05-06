@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>UHS Admin — Overview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<style>
+  body { margin: 0; background: #1a2632; font-family: 'Inter', system-ui, sans-serif; }
+  .canvas-head { position: fixed; top: 18px; left: 24px; z-index: 100; color: #F6EFE6; pointer-events: none; }
+  .canvas-head h1 { font: 500 22px/1.1 'Cormorant Garamond', serif; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .canvas-head h1 em { font-style: italic; opacity: 0.7; }
+  .canvas-head p { font: 400 13px/1.4 'Inter', sans-serif; margin: 0; color: rgba(246,239,230,0.6); max-width: 520px; }
+  iframe { border: 0; width: 100%; height: 100%; background: #F4F1EB; }
+</style>
+</head><body>
+<div class="canvas-head">
+  <h1>UHS Admin <em>— overview</em></h1>
+  <p>Phase 5 deliverable. All dealer admin screens on one canvas. Click any artboard to focus; pan and zoom to compare.</p>
+</div>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel">
+  const { DesignCanvas, DCSection, DCArtboard } = window;
+  const Frame = ({ src }) => <iframe src={src} loading="lazy" />;
+
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <DesignCanvas storageKey="uhs-admin-overview-v1" background="#1a2632">
+      <DCSection id="auth" title="Auth & multi-tenant entry">
+        <DCArtboard id="login" label="Login" width={1440} height={900}><Frame src="login.html" /></DCArtboard>
+        <DCArtboard id="org-switcher" label="Org switcher" width={1440} height={900}><Frame src="org-switcher.html" /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="core" title="Daily workflow">
+        <DCArtboard id="dashboard" label="Dashboard" width={1440} height={1100}><Frame src="dashboard.html" /></DCArtboard>
+        <DCArtboard id="leads" label="Leads inbox" width={1440} height={900}><Frame src="leads-inbox.html" /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="inventory" title="Inventory — base price + markup %">
+        <DCArtboard id="inv-list" label="Inventory list" width={1440} height={1100}><Frame src="inventory-list.html" /></DCArtboard>
+        <DCArtboard id="inv-edit" label="Edit home (live calc)" width={1440} height={1500}><Frame src="inventory-edit.html" /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="settings" title="Tenant settings">
+        <DCArtboard id="users" label="Users & roles" width={1440} height={1200}><Frame src="users.html" /></DCArtboard>
+        <DCArtboard id="org-settings" label="Org settings" width={1440} height={1500}><Frame src="settings.html" /></DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+</script>
+</body></html>

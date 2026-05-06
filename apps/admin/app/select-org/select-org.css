@@ -1,0 +1,68 @@
+.switcher-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+}
+.switcher-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--r-2);
+  padding: 36px 32px;
+}
+.switcher-card .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+.switcher-card .brand .mark {
+  width: 32px; height: 32px; border-radius: 6px;
+  background: var(--adm-accent);
+  display: grid; place-items: center;
+  font: 600 14px/1 var(--f-body); color: #fff;
+}
+.switcher-card .brand .name { font: 500 18px/1 var(--f-body); color: var(--adm-ink); }
+.switcher-card .brand .name em { font-style: italic; font-weight: 400; color: var(--adm-ink-mute); }
+
+.switcher-card h2 { font: 500 22px/1.2 var(--f-body); margin: 0 0 6px; letter-spacing: -0.005em; }
+.switcher-card p.sub { font: 400 13px/1.4 var(--f-body); color: var(--adm-ink-mute); margin: 0 0 24px; }
+
+.org-list { display: flex; flex-direction: column; gap: 8px; }
+.org-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--adm-line);
+  border-radius: var(--r-2);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--d-fast) var(--ease), background var(--d-fast) var(--ease);
+}
+.org-row:hover { border-color: var(--adm-ink); background: var(--c-bg); }
+.org-row:disabled { opacity: 0.6; cursor: progress; }
+
+.org-avatar {
+  width: 40px; height: 40px; border-radius: var(--r-2);
+  display: grid; place-items: center;
+  color: #fff; font: 600 16px/1 var(--f-body);
+}
+.org-meta .org-name { font: 500 15px/1.2 var(--f-body); color: var(--adm-ink); }
+.org-meta .org-role {
+  font: 500 11px/1 var(--f-body);
+  color: var(--adm-ink-mute);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.org-go { font: 500 18px/1 var(--f-body); color: var(--adm-ink-mute); }
+
+.auth-error {
+  background: #fae8e6;
+  border: 1px solid #e0bdb7;
+  color: var(--uhs-error);
+  font: 500 13px/1.4 var(--f-body);
+  padding: 10px 12px;
+  border-radius: var(--r-1);
+  margin-top: 14px;
+}

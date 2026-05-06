@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Financing — Upstate Homes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/site.css">
+<style>
+  .page-hero { background: var(--c-bg); padding: var(--s-16) var(--gutter) var(--s-12); border-bottom: 1px solid var(--c-line); }
+  .page-hero .inner { max-width: var(--container); margin: 0 auto; }
+  .page-hero h1 { font-size: clamp(48px, 6vw, 84px); margin: var(--s-3) 0 var(--s-5); line-height: 1.02; letter-spacing: -0.02em; }
+  .page-hero h1 em { font-style: italic; font-weight: 400; color: var(--c-accent); }
+  .page-hero p.lede { font-size: 20px; max-width: 620px; color: var(--c-ink-soft); }
+
+  .loan-types { padding: var(--s-16) var(--gutter); }
+  .loan-types .inner { max-width: var(--container); margin: 0 auto; }
+  .loan-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--s-4); margin-top: var(--s-8); }
+  .loan-card { background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-2); padding: var(--s-8); display: flex; flex-direction: column; }
+  .loan-card .num { font: 500 11px/1 var(--f-body); letter-spacing: 0.16em; color: var(--c-ink-mute); margin-bottom: var(--s-3); }
+  .loan-card h3 { font: 500 30px/1.1 var(--f-display); letter-spacing: -0.01em; margin-bottom: var(--s-3); }
+  .loan-card .for { font: 500 12px/1.4 var(--f-body); color: var(--c-accent); margin-bottom: var(--s-4); text-transform: uppercase; letter-spacing: 0.1em; }
+  .loan-card p { font-size: 15px; color: var(--c-ink-soft); margin-bottom: var(--s-4); }
+  .loan-card .terms { padding: var(--s-4) 0; border-top: 1px solid var(--c-line); margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); font: 400 13px/1.4 var(--f-body); }
+  .loan-card .terms .l { color: var(--c-ink-mute); display: block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .loan-card .terms .v { color: var(--c-ink); font-weight: 500; }
+  @media (max-width: 900px) { .loan-grid { grid-template-columns: 1fr; } }
+
+  .calc-section { background: var(--uhs-navy); color: var(--c-bg); padding: var(--s-16) var(--gutter); }
+  .calc-section .inner { max-width: var(--container); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-12); align-items: center; }
+  .calc-section h2 { color: #fff; font-size: clamp(32px, 4vw, 48px); margin-bottom: var(--s-4); }
+  .calc-section p { color: rgba(246,239,230,0.75); font-size: 17px; max-width: 480px; }
+  .calc { background: rgba(255,255,255,0.04); border: 1px solid rgba(246,239,230,0.15); border-radius: var(--r-2); padding: var(--s-6); }
+  .calc .label { font: 500 11px/1 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(246,239,230,0.6); margin-bottom: 8px; display: block; }
+  .calc input[type="range"] { width: 100%; accent-color: var(--c-accent); }
+  .calc-row { margin-bottom: var(--s-5); }
+  .calc-row .v-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .calc-row .v { font: 500 24px/1 var(--f-display); color: #fff; font-variant-numeric: tabular-nums; }
+  .calc-result { padding-top: var(--s-5); border-top: 1px solid rgba(246,239,230,0.15); margin-top: var(--s-2); }
+  .calc-result .l { color: rgba(246,239,230,0.6); font: 500 11px/1 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; }
+  .calc-result .v { font: 500 56px/1 var(--f-display); color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -0.015em; margin: 8px 0; }
+  .calc-result .note { font: 400 12px/1.4 var(--f-body); color: rgba(246,239,230,0.5); }
+  @media (max-width: 800px) { .calc-section .inner { grid-template-columns: 1fr; } }
+
+  .lenders { padding: var(--s-16) var(--gutter); }
+  .lenders .inner { max-width: var(--container); margin: 0 auto; }
+  .lender-row { display: flex; align-items: center; gap: var(--s-6); padding: var(--s-5) 0; border-top: 1px solid var(--c-line); }
+  .lender-row:last-child { border-bottom: 1px solid var(--c-line); }
+  .lender-row .name { font: 500 22px/1.2 var(--f-display); width: 240px; letter-spacing: -0.01em; }
+  .lender-row .desc { flex: 1; color: var(--c-ink-soft); font-size: 15px; }
+  .lender-row .link { color: var(--c-accent); font: 500 14px/1 var(--f-body); text-decoration: none; }
+
+  .faq-section { background: var(--c-bg); padding: var(--s-16) var(--gutter); border-top: 1px solid var(--c-line); }
+  .faq-section .inner { max-width: 880px; margin: 0 auto; }
+  .faq-item { padding: var(--s-5) 0; border-bottom: 1px solid var(--c-line); }
+  .faq-item h4 { font: 500 22px/1.3 var(--f-display); letter-spacing: -0.005em; margin-bottom: var(--s-2); }
+  .faq-item p { font-size: 16px; color: var(--c-ink-soft); margin: 0; }
+</style>
+</head>
+<body>
+<div class="uhs-topbar"><div class="uhs-topbar-inner"><span>Lexington, SC · Mon–Sat 9–6</span><span class="spacer"></span><a href="financing.html">Financing</a><a href="trade-in.html">Trade-In</a><a href="locations.html">Visit our lot</a><a href="tel:8035551234" class="phone">(803) 555-1234</a></div></div>
+<nav class="uhs-nav"><div class="uhs-nav-inner"><a href="home.html" class="uhs-brand"><span class="name">Upstate <em>Homes</em></span></a><span class="spacer"></span><div class="uhs-nav-links"><a href="inventory.html">Browse homes</a><a href="manufacturers.html">Manufacturers</a><a href="land-and-home.html">Land + Home</a><a href="financing.html" class="active">Financing</a><a href="how-it-works.html">How it works</a><a href="about.html">About</a></div><div class="uhs-nav-cta"><a href="#" class="btn btn-primary btn-sm">Get a quote</a></div></div></nav>
+
+<header class="page-hero">
+  <div class="inner">
+    <span class="eyebrow">Financing</span>
+    <h1>Three loan types.<br><em>One straightforward conversation.</em></h1>
+    <p class="lede">We don't take a cut from lenders, so we can recommend whichever works best for your situation. Here's the plain-English breakdown.</p>
+  </div>
+</header>
+
+<section class="loan-types">
+  <div class="inner">
+    <div class="section-head"><div class="lhs"><span class="eyebrow">Compare loan types</span><h2>Which one fits you?</h2></div></div>
+    <div class="loan-grid">
+      <div class="loan-card">
+        <div class="num">01</div>
+        <div class="for">If you don't own land yet</div>
+        <h3>Land + Home</h3>
+        <p>One loan covers the home, the land, and the site work. Treated like a traditional mortgage — same paperwork, same closing process. Usually the best rate available.</p>
+        <div class="terms"><div><span class="l">Typical rate</span><span class="v">6.5–7.5%</span></div><div><span class="l">Term</span><span class="v">15–30 yrs</span></div><div><span class="l">Down</span><span class="v">3.5–10%</span></div><div><span class="l">Type</span><span class="v">Real estate</span></div></div>
+      </div>
+      <div class="loan-card">
+        <div class="num">02</div>
+        <div class="for">If you already own land</div>
+        <h3>Chattel loan</h3>
+        <p>Personal-property loan for the home only. Faster closing, less paperwork, but higher rates than real-estate loans. Most popular option for buyers placing the home on family land or a long-term lease.</p>
+        <div class="terms"><div><span class="l">Typical rate</span><span class="v">8.5–11%</span></div><div><span class="l">Term</span><span class="v">15–25 yrs</span></div><div><span class="l">Down</span><span class="v">5–15%</span></div><div><span class="l">Type</span><span class="v">Personal</span></div></div>
+      </div>
+      <div class="loan-card">
+        <div class="num">03</div>
+        <div class="for">If you qualify for FHA</div>
+        <h3>FHA Title I &amp; II</h3>
+        <p>Government-backed program for manufactured homes. Title II loans behave like a mortgage when bought with land; Title I is home-only. Strict construction standards, but better rates if you qualify.</p>
+        <div class="terms"><div><span class="l">Typical rate</span><span class="v">6.5–8%</span></div><div><span class="l">Term</span><span class="v">20–30 yrs</span></div><div><span class="l">Down</span><span class="v">3.5%</span></div><div><span class="l">Type</span><span class="v">Govt-backed</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="calc-section">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" style="color: rgba(246,239,230,0.6);">Estimate your monthly payment</span>
+      <h2>Find your number, before you call.</h2>
+      <p>This is our internal estimator — same one our salespeople use. It gets within ~5% of the real quote we'd send you. Adjust the sliders to match your situation.</p>
+    </div>
+    <div class="calc">
+      <div class="calc-row">
+        <div class="v-row"><span class="label" style="margin:0;">Home price</span><span class="v" id="vPrice">$148,400</span></div>
+        <input type="range" id="price" min="80000" max="300000" step="1000" value="148400">
+      </div>
+      <div class="calc-row">
+        <div class="v-row"><span class="label" style="margin:0;">Down payment</span><span class="v" id="vDown">$14,840 (10%)</span></div>
+        <input type="range" id="down" min="3" max="30" step="1" value="10">
+      </div>
+      <div class="calc-row">
+        <div class="v-row"><span class="label" style="margin:0;">Term</span><span class="v" id="vTerm">20 years</span></div>
+        <input type="range" id="term" min="10" max="30" step="5" value="20">
+      </div>
+      <div class="calc-row">
+        <div class="v-row"><span class="label" style="margin:0;">Interest rate</span><span class="v" id="vRate">7.25% APR</span></div>
+        <input type="range" id="rate" min="500" max="1200" step="25" value="725">
+      </div>
+      <div class="calc-result">
+        <div class="l">Estimated monthly payment</div>
+        <div class="v" id="vMonthly">$1,047</div>
+        <div class="note">Principal &amp; interest only. Taxes, insurance, lot rent (if any) added separately. Real quote from our partner lenders within 24 hours.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lenders">
+  <div class="inner">
+    <div class="section-head"><div class="lhs"><span class="eyebrow">Our partner lenders</span><h2>Five lenders we work with regularly.</h2></div></div>
+    <div>
+      <div class="lender-row"><span class="name">21st Mortgage</span><span class="desc">Largest manufactured-home lender in the country. Best for chattel loans on previous-owned and new homes.</span><a href="#" class="link">Apply →</a></div>
+      <div class="lender-row"><span class="name">Vanderbilt Mortgage</span><span class="desc">Specializes in Clayton-built homes. Great rates if you're buying a Clayton model.</span><a href="#" class="link">Apply →</a></div>
+      <div class="lender-row"><span class="name">Triad Financial</span><span class="desc">Strong on Land+Home packages. Long established, fast pre-approval.</span><a href="#" class="link">Apply →</a></div>
+      <div class="lender-row"><span class="name">Cascade Loans</span><span class="desc">FHA Title I and II specialists. Best fit if your credit is rebuilding (580+).</span><a href="#" class="link">Apply →</a></div>
+      <div class="lender-row"><span class="name">South State Bank</span><span class="desc">Local SC bank. Good Land+Home rates for Lexington and Richland County buyers.</span><a href="#" class="link">Apply →</a></div>
+    </div>
+  </div>
+</section>
+
+<section class="faq-section">
+  <div class="inner">
+    <div class="section-head"><div class="lhs"><span class="eyebrow">Common questions</span><h2>Financing, plainly explained.</h2></div></div>
+    <div>
+      <div class="faq-item"><h4>What credit score do I need?</h4><p>Realistically, 620 is the floor for a competitive rate. We work with lenders who'll go down to 580 — but expect rates 1.5–2 points higher. If you're rebuilding, ask about Cascade.</p></div>
+      <div class="faq-item"><h4>Can I finance a used manufactured home?</h4><p>Yes — but it's harder, and usually only homes from 1976 or newer. Some lenders cap age at 20 years.</p></div>
+      <div class="faq-item"><h4>Why are chattel rates so much higher than mortgages?</h4><p>Personal-property loans don't have the same federal backing as real estate, so lenders charge more for risk. The trade-off: faster, simpler closings.</p></div>
+      <div class="faq-item"><h4>How long does pre-approval take?</h4><p>Same day for most of our partner lenders. Full underwriting and closing usually 30–45 days for Land+Home, 14–21 days for chattel.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer class="uhs-footer"><div class="uhs-footer-inner"><div class="uhs-footer-grid"><div class="brandblock"><div class="name">Upstate <em>Homes</em></div><p>Family-owned manufactured-home dealer serving SC &amp; western NC since 2024.</p></div><div><h4>Browse</h4><ul><li><a href="inventory.html">All homes</a></li></ul></div><div><h4>Programs</h4><ul><li><a href="financing.html">Financing</a></li><li><a href="land-and-home.html">Land + Home</a></li><li><a href="trade-in.html">Trade-In</a></li></ul></div><div><h4>Company</h4><ul><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li></ul></div><div><h4>Help</h4><ul><li><a href="how-it-works.html">How it works</a></li><li><a href="faq.html">FAQ</a></li></ul></div></div><div class="uhs-footer-bottom"><span>© 2025 Upstate Homes, LLC.</span><span class="spacer"></span><span>SC #44218 · NC #L-2841</span></div></div></footer>
+
+<script>
+function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
+function compute() {
+  const P = +document.getElementById('price').value;
+  const dPct = +document.getElementById('down').value;
+  const T = +document.getElementById('term').value;
+  const r = +document.getElementById('rate').value / 10000; // basis * 1e-4
+  const D = P * dPct / 100;
+  const principal = P - D;
+  const m = r / 12;
+  const n = T * 12;
+  const monthly = principal * (m * Math.pow(1+m, n)) / (Math.pow(1+m, n) - 1);
+  document.getElementById('vPrice').textContent = fmt(P);
+  document.getElementById('vDown').textContent = fmt(D) + ' (' + dPct + '%)';
+  document.getElementById('vTerm').textContent = T + ' years';
+  document.getElementById('vRate').textContent = (r * 100).toFixed(2) + '% APR';
+  document.getElementById('vMonthly').textContent = fmt(monthly);
+}
+['price','down','term','rate'].forEach(id => document.getElementById(id).addEventListener('input', compute));
+compute();
+</script>
+</body>
+</html>

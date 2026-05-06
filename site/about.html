@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>About — Upstate Homes</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/site.css">
+<style>
+.about-hero{background:var(--c-bg);padding:var(--s-16) var(--gutter) var(--s-12);border-bottom:1px solid var(--c-line)}
+.about-hero .inner{max-width:var(--container);margin:0 auto;display:grid;grid-template-columns:1.1fr 1fr;gap:var(--s-10);align-items:end}
+.about-hero h1{font-size:clamp(48px,7vw,100px);line-height:0.98;letter-spacing:-0.025em;margin:var(--s-3) 0}
+.about-hero h1 em{font-style:italic;font-weight:400;color:var(--c-accent)}
+.about-hero p.lede{font-size:20px;line-height:1.5;color:var(--c-ink-soft);margin-top:var(--s-5);max-width:480px}
+.portrait{aspect-ratio:4/5;background:linear-gradient(135deg,#3D2C1F 0%,#1F1B26 60%,#000 100%);border-radius:var(--r-2);position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:var(--s-6);color:#fff}
+.portrait::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(206,77,49,0.15),transparent 60%)}
+.portrait .cap{position:relative;font:italic 400 16px/1.4 var(--f-display);max-width:320px;text-shadow:0 2px 8px rgba(0,0,0,0.6)}
+.portrait .cap b{display:block;font-style:normal;font-weight:600;font-family:var(--f-body);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;opacity:0.7}
+
+.story{padding:var(--s-16) var(--gutter);background:var(--c-surface)}
+.story .inner{max-width:780px;margin:0 auto}
+.story h2{font:500 48px/1.05 var(--f-display);letter-spacing:-0.02em;margin-bottom:var(--s-6)}
+.story h2 em{font-style:italic;font-weight:400}
+.story p{font:400 18px/1.65 var(--f-body);color:var(--c-ink-soft);margin-bottom:var(--s-4);max-width:680px}
+.story p:first-of-type::first-letter{font:500 72px/0.9 var(--f-display);float:left;margin:6px var(--s-3) 0 0;color:var(--c-accent)}
+
+.values{padding:var(--s-16) var(--gutter)}
+.values .inner{max-width:var(--container);margin:0 auto}
+.values-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--s-5);margin-top:var(--s-8)}
+.value{padding:var(--s-6);border-top:2px solid var(--c-accent)}
+.value h4{font:500 26px/1.2 var(--f-display);margin-bottom:var(--s-2);letter-spacing:-0.01em}
+.value p{font-size:15px;color:var(--c-ink-soft);margin:0;line-height:1.55}
+
+.stats{padding:var(--s-12) var(--gutter);background:var(--uhs-navy);color:#fff}
+.stats .inner{max-width:var(--container);margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s-6)}
+.stat{}
+.stat .num{font:500 64px/0.95 var(--f-display);color:var(--c-accent);letter-spacing:-0.025em;margin-bottom:var(--s-2);font-variant-numeric:tabular-nums}
+.stat .label{font:500 13px/1.4 var(--f-body);letter-spacing:0.05em;color:rgba(246,239,230,0.65)}
+
+.team{padding:var(--s-16) var(--gutter)}
+.team .inner{max-width:var(--container);margin:0 auto}
+.team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s-5);margin-top:var(--s-8)}
+.member{}
+.member .photo{aspect-ratio:1/1;border-radius:var(--r-2);background:linear-gradient(135deg,#A89483 0%,#3D2C1F 100%);margin-bottom:var(--s-3);display:flex;align-items:flex-end;justify-content:flex-end;padding:var(--s-3);color:rgba(255,255,255,0.4);font:500 11px/1 var(--f-body);letter-spacing:0.1em}
+.member h5{font:500 22px/1.15 var(--f-display);letter-spacing:-0.005em;margin-bottom:4px}
+.member .title{font:500 12px/1 var(--f-body);letter-spacing:0.08em;text-transform:uppercase;color:var(--c-accent);margin-bottom:6px}
+.member p.bio{font-size:13px;line-height:1.5;color:var(--c-ink-soft);margin:0}
+
+@media(max-width:900px){.about-hero .inner,.values-grid,.team-grid,.stats .inner{grid-template-columns:1fr 1fr;gap:var(--s-6)}}
+@media(max-width:600px){.about-hero .inner,.values-grid,.team-grid,.stats .inner{grid-template-columns:1fr}}
+</style></head><body>
+<div class="uhs-topbar"><div class="uhs-topbar-inner"><span>Lexington, SC · Mon–Sat 9–6</span><span class="spacer"></span><a href="financing.html">Financing</a><a href="trade-in.html">Trade-In</a><a href="locations.html">Visit our lot</a><a href="tel:8035551234" class="phone">(803) 555-1234</a></div></div>
+<nav class="uhs-nav"><div class="uhs-nav-inner"><a href="home.html" class="uhs-brand"><span class="name">Upstate <em>Homes</em></span></a><span class="spacer"></span><div class="uhs-nav-links"><a href="inventory.html">Browse homes</a><a href="manufacturers.html">Manufacturers</a><a href="land-and-home.html">Land + Home</a><a href="financing.html">Financing</a><a href="how-it-works.html">How it works</a><a href="about.html" class="active">About</a></div><div class="uhs-nav-cta"><a href="#" class="btn btn-primary btn-sm">Get a quote</a></div></div></nav>
+
+<header class="about-hero"><div class="inner">
+<div><span class="eyebrow">Family-owned · Since 1998</span><h1>Two generations.<br>One <em>handshake</em> standard.</h1><p class="lede">Started by Jim Whitlock with a single lot off Highway 378. Run today by his daughter Ellie. Same handshake, modernized everything else.</p></div>
+<div class="portrait"><div class="cap"><b>The Whitlocks · 2024</b>"My dad sold the first home on this lot to a family from Newberry. They still call when something needs fixing. That's the bar."</div></div>
+</div></header>
+
+<section class="story"><div class="inner">
+<h2>The <em>short version</em>.</h2>
+<p>Jim Whitlock spent twelve years selling for one of the regional manufactured-home chains before deciding he could do it better — and more honestly — on his own. He bought four acres in Lexington, parked three Clayton singlewides on it, and opened in spring of 1998 with one phone line and a hand-painted sign.</p>
+<p>For the first decade, the business grew the way Carolina businesses grow: word of mouth, repeat families, the occasional referral from a Realtor who'd run out of lots to show. Jim's rule was that nobody bought a home without first knowing what their land would cost, what their loan would actually look like, and what the all-in number was the day they signed.</p>
+<p>Ellie Whitlock joined full-time in 2014 after a stint in product management at a Charlotte software company. She brought spreadsheets, an inventory system, and a website that didn't look like 2003. Jim brought thirty years of factory relationships and the part where you actually look people in the eye.</p>
+<p>Today we sell 200+ homes a year across the Carolinas, work with nine manufacturers, and have closed more Land+Home loans than any other dealer south of Columbia for four years running. The handshake hasn't changed. Pretty much everything else has.</p>
+</div></section>
+
+<section class="stats"><div class="inner">
+<div class="stat"><div class="num">27</div><div class="label">Years in business</div></div>
+<div class="stat"><div class="num">3,400+</div><div class="label">Homes delivered</div></div>
+<div class="stat"><div class="num">9</div><div class="label">Manufacturer relationships</div></div>
+<div class="stat"><div class="num">4.8★</div><div class="label">Avg. Google rating · 612 reviews</div></div>
+</div></section>
+
+<section class="values"><div class="inner">
+<div class="section-head"><div class="lhs"><span class="eyebrow">What we won't budge on</span><h2>Three things, written down so you can hold us to them.</h2></div></div>
+<div class="values-grid">
+<div class="value"><h4>Real prices, posted.</h4><p>Every home on our site has the actual all-in number — home, delivery in zone, setup, skirting, basic steps. No "starting at" theater.</p></div>
+<div class="value"><h4>The right loan, not the highest commission.</h4><p>We have lending relationships, but we don't take rebates from lenders. Whichever program is best for you is what we recommend.</p></div>
+<div class="value"><h4>We answer the phone after.</h4><p>The day after you close, the year after, ten years after. Service is run in-house, not outsourced. Same number.</p></div>
+</div></div></section>
+
+<section class="team"><div class="inner">
+<div class="section-head"><div class="lhs"><span class="eyebrow">The people</span><h2>Who you'll work with.</h2></div></div>
+<div class="team-grid">
+<div class="member"><div class="photo">PORTRAIT 1:1</div><h5>Ellie Whitlock</h5><div class="title">Owner / Principal</div><p class="bio">Runs the business. Land+Home specialist. Joined in '14, took over in '22.</p></div>
+<div class="member"><div class="photo">PORTRAIT 1:1</div><h5>Jim Whitlock</h5><div class="title">Founder · Semi-retired</div><p class="bio">Founded UHS in '98. Still on the lot most Saturdays. Asks the best questions.</p></div>
+<div class="member"><div class="photo">PORTRAIT 1:1</div><h5>Marcus Reyes</h5><div class="title">General Manager</div><p class="bio">12 years in. Runs sales, factory orders, and most of the chaos. Knows every floor plan by heart.</p></div>
+<div class="member"><div class="photo">PORTRAIT 1:1</div><h5>Tasha Greene</h5><div class="title">Finance Manager</div><p class="bio">FHA &amp; VA expert. Has gotten people approved who got turned down at three other lenders.</p></div>
+<div class="member"><div class="photo">PORTRAIT 1:1</div><h5>Dale Pickett</h5><div class="title">Service Lead</div><p class="bio">Runs the install crew. 22 years setting homes. The one your warranty calls go to.</p></div>
+<div class="member"><div class="photo">PORTRAIT 1:1</div><h5>Connie Ruiz</h5><div class="title">Customer Coordinator</div><p class="bio">From contract to keys, she keeps your timeline on track. Bilingual EN/ES.</p></div>
+<div class="member"><div class="photo">PORTRAIT 1:1</div><h5>Brian Hsu</h5><div class="title">Senior Sales</div><p class="bio">Trade-in specialist. Will tell you the truth about what your old home is worth.</p></div>
+<div class="member"><div class="photo">PORTRAIT 1:1</div><h5>Wes McAllister</h5><div class="title">Site Prep Liaison</div><p class="bio">Coordinates foundations, septic, utilities. Speaks fluent county-permit office.</p></div>
+</div></div></section>
+
+<footer class="uhs-footer"><div class="uhs-footer-inner"><div class="uhs-footer-grid"><div class="brandblock"><div class="name">Upstate <em>Homes</em></div><p>Family-owned manufactured-home dealer.</p></div><div><h4>Browse</h4><ul><li><a href="inventory.html">All homes</a></li></ul></div><div><h4>Programs</h4><ul><li><a href="financing.html">Financing</a></li><li><a href="land-and-home.html">Land + Home</a></li><li><a href="trade-in.html">Trade-In</a></li></ul></div><div><h4>Company</h4><ul><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li></ul></div><div><h4>Help</h4><ul><li><a href="faq.html">FAQ</a></li></ul></div></div><div class="uhs-footer-bottom"><span>© 2025 Upstate Homes, LLC.</span><span class="spacer"></span><span>SC #44218 · NC #L-2841</span></div></div></footer>
+</body></html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Users &amp; roles — UHS Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/admin.css">
+</head><body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-brand"><div class="mark">U</div><div class="name">Upstate <em>Homes</em></div></div>
+    <a href="org-switcher.html" class="sb-org-switcher"><div class="avatar">UH</div><div class="org-info"><div class="org-name">Upstate Homes — Lexington</div><div class="org-role">OWNER</div></div><div class="caret">⇅</div></a>
+    <div class="sb-section">Workspace</div>
+    <nav class="sb-nav">
+      <a class="sb-link" href="dashboard.html"><span class="ico">⌂</span>Dashboard</a>
+      <a class="sb-link" href="inventory-list.html"><span class="ico">▦</span>Inventory<span class="badge">242</span></a>
+      <a class="sb-link" href="leads-inbox.html"><span class="ico">✉</span>Leads<span class="badge">38</span></a>
+      <a class="sb-link" href="#"><span class="ico">⊞</span>Quotes</a>
+      <a class="sb-link" href="#"><span class="ico">↻</span>Trade-ins</a>
+    </nav>
+    <div class="sb-section">Settings</div>
+    <nav class="sb-nav">
+      <a class="sb-link active" href="users.html"><span class="ico">👥</span>Users &amp; roles</a>
+      <a class="sb-link" href="settings.html"><span class="ico">⚙</span>Org settings</a>
+    </nav>
+    <div class="sb-foot"><div class="avatar" style="background:#5e7b6f;">MP</div><div class="who">Marlena Pope<span>Owner</span></div></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="crumb"><a href="dashboard.html">Workspace</a><span class="sep">/</span><span class="here">Users &amp; roles</span></div>
+      <div class="spacer"></div>
+      <div class="search">🔎<input placeholder="Search users…"><span class="kbd">⌘K</span></div>
+      <button class="icon-btn">🔔<span class="dot"></span></button>
+    </div>
+
+    <div class="page">
+      <div class="page-head">
+        <div><h1>Users &amp; roles</h1><div class="sub">Who can do what inside <strong>Upstate Homes — Lexington</strong>. Each user can belong to multiple orgs.</div></div>
+        <div class="actions">
+          <button class="btn btn-sec">⤓ Audit log</button>
+          <button class="btn btn-pri">+ Invite user</button>
+        </div>
+      </div>
+
+      <div class="tabs-row">
+        <button class="tab active">Members <span style="color:var(--adm-ink-mute);font-weight:400;">· 7</span></button>
+        <button class="tab">Pending invites <span style="color:var(--adm-ink-mute);font-weight:400;">· 2</span></button>
+        <button class="tab">Roles &amp; permissions</button>
+      </div>
+
+      <div class="tbl-with-filters">
+        <div class="tbl-filters">
+          <span class="label-inline">Filter</span>
+          <select class="select"><option>All roles</option><option>Owner</option><option>Manager</option><option>Sales</option><option>Service</option></select>
+          <select class="select"><option>All status</option><option>Active</option><option>Suspended</option></select>
+          <span class="spacer"></span>
+          <span class="results"><strong>7</strong> members</span>
+        </div>
+        <table class="tbl">
+          <thead><tr>
+            <th>User</th>
+            <th>Role</th>
+            <th>Lots</th>
+            <th>Last active</th>
+            <th>Joined</th>
+            <th>Status</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="users"></tbody>
+        </table>
+      </div>
+
+      <!-- Roles & permissions matrix -->
+      <div class="card" style="margin-top:28px;">
+        <div class="card-head">
+          <h3>Permissions matrix</h3>
+          <div class="sub">Default role permissions. Override on a per-user basis from any user row.</div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table class="tbl">
+            <thead><tr>
+              <th style="width:36%;">Capability</th>
+              <th style="text-align:center;">Owner</th>
+              <th style="text-align:center;">Manager</th>
+              <th style="text-align:center;">Sales</th>
+              <th style="text-align:center;">Service</th>
+              <th style="text-align:center;">Read-only</th>
+            </tr></thead>
+            <tbody id="perm"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const USERS = [
+  { name:"Marlena Pope",  email:"marlena@upstatehomes.com",  role:"Owner",   lots:"All lots",        last:"Now",      joined:"Jan 2024", status:"Active",  av:"MP", color:"#5e7b6f", you:true },
+  { name:"Travis Booker", email:"travis@upstatehomes.com",   role:"Manager", lots:"All lots",        last:"4m ago",   joined:"Feb 2024", status:"Active",  av:"TB", color:"#8a5a3c" },
+  { name:"Karen Eubanks", email:"karen@upstatehomes.com",    role:"Sales",   lots:"Lexington",       last:"Just now", joined:"Mar 2024", status:"Active",  av:"KE", color:"#7a4f4f" },
+  { name:"DeShawn Liles", email:"deshawn@upstatehomes.com",  role:"Sales",   lots:"Anderson",        last:"22m ago",  joined:"Apr 2024", status:"Active",  av:"DL", color:"#5a6b8a" },
+  { name:"Pete Vidrine",  email:"pete@upstatehomes.com",     role:"Service", lots:"All lots",        last:"2h ago",   joined:"May 2024", status:"Active",  av:"PV", color:"#8a7a5a" },
+  { name:"Rosalee Brunet",email:"rosalee@upstatehomes.com",  role:"Sales",   lots:"Lexington",       last:"Yesterday",joined:"Aug 2024", status:"Active",  av:"RB", color:"#5a8a6f" },
+  { name:"Glen Trahan",   email:"glen@upstatehomes.com",     role:"Read-only", lots:"All lots",      last:"3 days ago", joined:"Sep 2024", status:"Suspended", av:"GT", color:"#6f5a8a" },
+];
+const roleBadge = (r) => {
+  const map = { "Owner":"bd-warn", "Manager":"bd-info", "Sales":"bd-success", "Service":"bd-soft", "Read-only":"bd-soft" };
+  return `<span class="bd ${map[r] || 'bd-soft'}">${r}</span>`;
+};
+document.getElementById('users').innerHTML = USERS.map(u => `
+  <tr>
+    <td><div class="row"><div class="av" style="background:${u.color};">${u.av}</div><div><div class="name" style="font-weight:500;">${u.name}${u.you ? ' <span class="bd bd-soft" style="font-size:10px;padding:2px 6px;margin-left:4px;">You</span>' : ''}</div><div class="sub">${u.email}</div></div></div></td>
+    <td>${roleBadge(u.role)}</td>
+    <td>${u.lots}</td>
+    <td><span style="color:var(--adm-ink-mute);">${u.last}</span></td>
+    <td><span style="color:var(--adm-ink-mute);">${u.joined}</span></td>
+    <td>${u.status === 'Active' ? '<span class="bd bd-success bd-dot">Active</span>' : '<span class="bd bd-danger bd-dot">Suspended</span>'}</td>
+    <td><button style="background:transparent;border:none;color:var(--adm-ink-mute);cursor:pointer;font-size:16px;padding:4px 8px;">⋯</button></td>
+  </tr>
+`).join('');
+
+const PERMS = [
+  ["Inventory",          true, true, false, false, false],
+  ["— Edit base price &amp; markup %", true, true, false, false, false],
+  ["— Publish to public site", true, true, true, false, false],
+  ["— Archive/delete homes", true, true, false, false, false],
+  ["Leads",              true, true, true, false, true],
+  ["— Reassign leads",   true, true, false, false, false],
+  ["— Send quotes",      true, true, true, false, false],
+  ["Trade-ins",          true, true, true, true, true],
+  ["Service tickets",    true, true, false, true, true],
+  ["Users &amp; roles",  true, false, false, false, false],
+  ["Org settings",       true, false, false, false, false],
+  ["Billing &amp; subscription", true, false, false, false, false],
+  ["Audit log",          true, true, false, false, false],
+];
+const dot = on => on
+  ? '<span style="display:inline-block;width:14px;height:14px;border-radius:99px;background:var(--adm-success);position:relative;"><span style="position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:9px;line-height:14px;">✓</span></span>'
+  : '<span style="display:inline-block;width:14px;height:1.5px;background:var(--adm-line);vertical-align:middle;"></span>';
+document.getElementById('perm').innerHTML = PERMS.map(([cap, ow, mg, sa, sv, ro]) => `
+  <tr>
+    <td style="font-weight:${cap.startsWith('—') ? '400' : '500'};color:${cap.startsWith('—') ? 'var(--adm-ink-soft)' : 'var(--adm-ink)'};padding-left:${cap.startsWith('—') ? '32px' : '14px'};">${cap.replace(/^—\s*/, '')}</td>
+    <td style="text-align:center;">${dot(ow)}</td>
+    <td style="text-align:center;">${dot(mg)}</td>
+    <td style="text-align:center;">${dot(sa)}</td>
+    <td style="text-align:center;">${dot(sv)}</td>
+    <td style="text-align:center;">${dot(ro)}</td>
+  </tr>
+`).join('');
+</script>
+</body></html>

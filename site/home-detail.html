@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>1434 Southern Belle — The Aspect by Clayton Built · Upstate Homes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/site.css">
+<style>
+  .crumb { background: var(--c-bg); padding: var(--s-4) var(--gutter); border-bottom: 1px solid var(--c-line); font: 400 13px/1 var(--f-body); color: var(--c-ink-mute); }
+  .crumb .inner { max-width: var(--container); margin: 0 auto; }
+  .crumb a { color: var(--c-ink-mute); text-decoration: none; }
+  .crumb a:hover { color: var(--c-ink); }
+  .crumb .sep { margin: 0 8px; opacity: 0.5; }
+
+  /* Gallery */
+  .gallery { background: var(--c-bg); padding: var(--s-4) var(--gutter) var(--s-2); }
+  .gallery-inner { max-width: var(--container); margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; height: 540px; }
+  .gallery .photo-tile { border-radius: var(--r-2); overflow: hidden; position: relative; cursor: pointer; transition: opacity var(--d-fast) var(--ease); }
+  .gallery .photo-tile:hover { opacity: 0.92; }
+  .gallery .main { grid-row: span 2; }
+  .gallery .more { position: absolute; bottom: 12px; right: 12px; background: rgba(15,28,41,0.85); color: #fff; font: 500 12px/1 var(--f-body); padding: 8px 14px; border-radius: var(--r-pill); letter-spacing: 0.04em; }
+  @media (max-width: 800px) { .gallery-inner { grid-template-columns: 1fr; height: auto; } .gallery .main { grid-row: auto; aspect-ratio: 4/3; } .gallery .photo-tile:not(.main) { display: none; } }
+
+  /* Layout */
+  .detail-layout { max-width: var(--container); margin: 0 auto; padding: var(--s-10) var(--gutter); display: grid; grid-template-columns: 1fr 380px; gap: var(--s-12); }
+  @media (max-width: 1000px) { .detail-layout { grid-template-columns: 1fr; gap: var(--s-8); } }
+
+  /* Main column */
+  .detail-eyebrow-row { display: flex; gap: var(--s-3); align-items: center; margin-bottom: var(--s-3); flex-wrap: wrap; }
+  .detail-eyebrow-row .chip { background: var(--c-panel); }
+  .detail-eyebrow-row .chip.stock { background: var(--uhs-marsh); color: #fff; }
+  .detail h1 { font-size: clamp(40px, 4.5vw, 56px); margin-bottom: var(--s-3); }
+  .detail h1 em { font-style: italic; font-weight: 400; color: var(--c-accent); }
+  .detail .sub { font: 400 17px/1.5 var(--f-body); color: var(--c-ink-soft); margin-bottom: var(--s-6); }
+
+  .quick-specs { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-4); padding: var(--s-6) 0; border-top: 1px solid var(--c-line); border-bottom: 1px solid var(--c-line); margin-bottom: var(--s-8); }
+  .quick-specs .spec .v { font: 500 28px/1 var(--f-display); color: var(--c-ink); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .quick-specs .spec .l { font: 500 11px/1 var(--f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-ink-mute); margin-top: 8px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--c-line); margin-bottom: var(--s-6); }
+  .tab { padding: var(--s-3) var(--s-4); font: 500 14px/1 var(--f-body); color: var(--c-ink-mute); cursor: pointer; border: none; background: transparent; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: var(--c-ink); border-bottom-color: var(--c-accent); }
+  .tab:hover:not(.active) { color: var(--c-ink); }
+
+  /* Description */
+  .description { max-width: 640px; }
+  .description p { font: 400 17px/1.65 var(--f-body); color: var(--c-ink-soft); margin-bottom: var(--s-4); }
+  .description p strong { color: var(--c-ink); font-weight: 500; }
+
+  /* Features list */
+  .features { margin-top: var(--s-8); }
+  .features h3 { font: 500 26px/1.2 var(--f-display); margin-bottom: var(--s-5); letter-spacing: -0.01em; }
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3) var(--s-6); }
+  .feature-grid > div { padding: 12px 0; border-top: 1px solid var(--c-line-soft); font: 400 15px/1.4 var(--f-body); color: var(--c-ink-soft); display: flex; gap: 8px; align-items: baseline; }
+  .feature-grid > div::before { content: '+'; color: var(--c-accent); font-weight: 600; flex-shrink: 0; }
+
+  /* Floor plan */
+  .floorplan {
+    margin-top: var(--s-8); background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-2); padding: var(--s-6); aspect-ratio: 16/9;
+    background-image:
+      linear-gradient(to right, rgba(15,28,41,0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(15,28,41,0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+    position: relative;
+  }
+  .floorplan .label { position: absolute; bottom: var(--s-4); left: var(--s-4); font: 500 11px/1 var(--f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-ink-mute); }
+  .floorplan svg { width: 100%; height: 100%; }
+
+  /* Aside / sticky CTA */
+  .detail-aside { position: sticky; top: 96px; align-self: start; }
+  .quote-card { background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-2); padding: var(--s-6); box-shadow: var(--sh-2); }
+  .quote-card .price-block { padding-bottom: var(--s-5); border-bottom: 1px solid var(--c-line); margin-bottom: var(--s-5); }
+  .quote-card .price-block .label { font: 500 11px/1 var(--f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-ink-mute); margin-bottom: 8px; }
+  .quote-card .price-block .price { font: 500 44px/1 var(--f-display); color: var(--c-ink); letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
+  .quote-card .price-block .caveat { font: 400 13px/1.5 var(--f-body); color: var(--c-ink-mute); margin-top: 8px; max-width: 280px; }
+  .quote-card .price-block .est-monthly { font: 400 14px/1 var(--f-body); color: var(--c-ink-soft); margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed var(--c-line); }
+  .quote-card .price-block .est-monthly strong { color: var(--c-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .quote-card .cta-row { display: flex; flex-direction: column; gap: var(--s-3); }
+  .quote-card .cta-row .btn { width: 100%; }
+  .quote-card .meta { margin-top: var(--s-5); padding-top: var(--s-5); border-top: 1px solid var(--c-line); display: flex; flex-direction: column; gap: 10px; font: 400 13px/1.4 var(--f-body); color: var(--c-ink-mute); }
+  .quote-card .meta strong { color: var(--c-ink); font-weight: 500; }
+
+  /* Similar homes */
+  .similar { background: var(--c-panel); border-top: 1px solid var(--c-line); padding: var(--s-12) var(--gutter); }
+  .similar .inner { max-width: var(--container); margin: 0 auto; }
+  .similar h2 { margin-bottom: var(--s-6); font-size: 36px; }
+  .home-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-5); }
+  @media (max-width: 1000px) { .home-grid-3 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .home-grid-3 { grid-template-columns: 1fr; } }
+
+  /* ─── Quote Modal ─── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,28,41,0.55); display: none; align-items: center; justify-content: center; z-index: 100; padding: var(--s-4); }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--c-bg); border-radius: var(--r-3); max-width: 880px; width: 100%; max-height: 90vh; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; box-shadow: var(--sh-3); animation: modalIn 240ms var(--ease); }
+  @keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (max-width: 700px) { .modal { grid-template-columns: 1fr; } .modal-aside { display: none; } }
+  .modal-aside { background: var(--uhs-navy); color: var(--c-bg); padding: var(--s-8); display: flex; flex-direction: column; }
+  .modal-aside .photo { aspect-ratio: 4/3; border-radius: var(--r-2); overflow: hidden; margin-bottom: var(--s-4); }
+  .modal-aside h3 { color: #fff; font: 500 24px/1.2 var(--f-display); margin-bottom: 6px; letter-spacing: -0.01em; }
+  .modal-aside .specs { font: 400 14px/1.5 var(--f-body); color: rgba(246,239,230,0.7); margin-bottom: var(--s-4); }
+  .modal-aside .price { font: 500 32px/1 var(--f-display); color: #fff; }
+  .modal-aside .caveat { font: 400 12px/1.5 var(--f-body); color: rgba(246,239,230,0.6); margin-top: 8px; }
+  .modal-aside .promise { margin-top: auto; padding-top: var(--s-6); font: 400 13px/1.5 var(--f-body); color: rgba(246,239,230,0.7); border-top: 1px solid rgba(246,239,230,0.15); }
+  .modal-aside .promise strong { color: #fff; }
+
+  .modal-form { padding: var(--s-8); position: relative; overflow-y: auto; }
+  .modal-form .close { position: absolute; top: var(--s-4); right: var(--s-4); background: transparent; border: none; font-size: 22px; line-height: 1; color: var(--c-ink-mute); cursor: pointer; padding: 8px; }
+  .modal-form .close:hover { color: var(--c-ink); }
+  .modal-form .eyebrow { display: block; margin-bottom: var(--s-2); }
+  .modal-form h2 { font: 500 32px/1.1 var(--f-display); margin-bottom: var(--s-2); letter-spacing: -0.01em; }
+  .modal-form .sub { font: 400 14px/1.5 var(--f-body); color: var(--c-ink-mute); margin-bottom: var(--s-6); }
+  .modal-form .field { margin-bottom: var(--s-4); }
+  .modal-form .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+  .modal-form .submit-row { margin-top: var(--s-2); }
+  .modal-form .submit-row .btn { width: 100%; }
+  .modal-form .legal { font: 400 11px/1.5 var(--f-body); color: var(--c-ink-mute); margin-top: var(--s-3); }
+
+  .radio-group { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .radio-group label { padding: 10px 12px; border: 1px solid var(--c-line); border-radius: var(--r-1); font: 500 13px/1.2 var(--f-body); color: var(--c-ink); cursor: pointer; text-align: center; transition: all var(--d-fast) var(--ease); }
+  .radio-group label:hover { border-color: var(--c-ink); }
+  .radio-group input { display: none; }
+  .radio-group input:checked + label,
+  .radio-group label.checked { background: var(--c-ink); color: var(--c-bg); border-color: var(--c-ink); }
+</style>
+</head>
+<body>
+
+<!-- Top bar + nav -->
+<div class="uhs-topbar">
+  <div class="uhs-topbar-inner">
+    <span>Lexington, SC · Mon–Sat 9–6</span>
+    <span class="spacer"></span>
+    <a href="financing.html">Financing</a>
+    <a href="trade-in.html">Trade-In</a>
+    <a href="locations.html">Visit our lot</a>
+    <a href="tel:8035551234" class="phone">(803) 555-1234</a>
+  </div>
+</div>
+<nav class="uhs-nav">
+  <div class="uhs-nav-inner">
+    <a href="home.html" class="uhs-brand"><span class="name">Upstate <em>Homes</em></span></a>
+    <span class="spacer"></span>
+    <div class="uhs-nav-links">
+      <a href="inventory.html" class="active">Browse homes</a>
+      <a href="manufacturers.html">Manufacturers</a>
+      <a href="land-and-home.html">Land + Home</a>
+      <a href="financing.html">Financing</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="about.html">About</a>
+    </div>
+    <div class="uhs-nav-cta"><a href="#" class="btn btn-primary btn-sm" onclick="openModal();return false;">Get a quote</a></div>
+  </div>
+</nav>
+
+<!-- Crumb -->
+<div class="crumb">
+  <div class="inner"><a href="home.html">Home</a><span class="sep">/</span><a href="inventory.html">Inventory</a><span class="sep">/</span><a href="manufacturers.html">Clayton Built</a><span class="sep">/</span><span style="color:var(--c-ink)">The Aspect</span></div>
+</div>
+
+<!-- Gallery -->
+<section class="gallery">
+  <div class="gallery-inner">
+    <div class="photo-tile main ph-2"></div>
+    <div class="photo-tile ph-3"></div>
+    <div class="photo-tile ph-7"></div>
+    <div class="photo-tile ph-5"></div>
+    <div class="photo-tile ph-4">
+      <span class="more">View all 24 photos →</span>
+    </div>
+  </div>
+</section>
+
+<!-- Detail layout -->
+<div class="detail-layout">
+  <div class="detail">
+    <div class="detail-eyebrow-row">
+      <span class="chip stock">In Stock · Lot 14</span>
+      <span class="chip">Clayton Built · The Aspect</span>
+      <span class="chip">3D Tour available</span>
+    </div>
+    <h1>1434 Southern Belle</h1>
+    <p class="sub">A 3-bedroom, 2-bath double-wide built on Clayton's Aspect chassis. Energy-Star certified, with a covered front porch and a full kitchen-island layout. Sitting on our lot in Lexington since March — ready for delivery within 4–6 weeks.</p>
+
+    <div class="quick-specs">
+      <div class="spec"><div class="v">3</div><div class="l">Bedrooms</div></div>
+      <div class="spec"><div class="v">2</div><div class="l">Bathrooms</div></div>
+      <div class="spec"><div class="v">1,813</div><div class="l">Sq Ft</div></div>
+      <div class="spec"><div class="v">28×66</div><div class="l">Dimensions</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active">Overview</button>
+      <button class="tab">Floor plan</button>
+      <button class="tab">Specifications</button>
+      <button class="tab">3D tour</button>
+      <button class="tab">Delivery info</button>
+    </div>
+
+    <div class="description">
+      <p><strong>This is one of our most popular floor plans for first-time buyers</strong> — and it's a good one. The Aspect strikes a careful balance: enough space for a small family without the price tag of a 2,000+ sq ft home.</p>
+      <p>What makes this particular unit special is the upgrade package — the previous customer ordered it with the premium kitchen package (quartz counters, soft-close cabinets, stainless appliances) but their financing fell through, so we're passing the upgrade through at no extra cost. That's roughly $4,200 of upgrades included.</p>
+      <p>The home is currently set up on our display lot. You're welcome to walk through Tuesday–Saturday, 9–6. We can have it delivered to most of the upstate within four to six weeks of contract — site permitting.</p>
+    </div>
+
+    <div class="features">
+      <h3>Included features</h3>
+      <div class="feature-grid">
+        <div>Energy-Star certified</div>
+        <div>Premium kitchen package <em style="color:var(--c-accent);font-style:normal">(upgrade included)</em></div>
+        <div>Quartz countertops</div>
+        <div>Soft-close cabinets &amp; drawers</div>
+        <div>Stainless appliance package</div>
+        <div>Covered front porch</div>
+        <div>Master walk-in closet</div>
+        <div>Garden tub + separate shower</div>
+        <div>R-22 ceiling insulation</div>
+        <div>Vinyl plank flooring throughout</div>
+        <div>9-foot ceilings</div>
+        <div>5-year structural warranty</div>
+      </div>
+    </div>
+
+    <!-- Floor plan placeholder — schematic SVG to look intentional -->
+    <div class="floorplan">
+      <span class="label">Floor plan · 28′ × 66′ · 1,813 sq ft</span>
+      <svg viewBox="0 0 660 280" preserveAspectRatio="xMidYMid meet" style="display:block;">
+        <g fill="none" stroke="#3a4248" stroke-width="2">
+          <!-- outer -->
+          <rect x="20" y="20" width="620" height="240" />
+          <!-- master suite -->
+          <rect x="20" y="20" width="200" height="160" />
+          <line x1="120" y1="20" x2="120" y2="100" />
+          <rect x="20" y="100" width="100" height="80" stroke-dasharray="4 3" />
+          <!-- great room -->
+          <rect x="220" y="20" width="240" height="180" />
+          <!-- kitchen -->
+          <rect x="460" y="20" width="180" height="120" />
+          <!-- bedrooms -->
+          <rect x="220" y="200" width="120" height="60" />
+          <rect x="340" y="200" width="120" height="60" />
+          <rect x="460" y="140" width="180" height="120" />
+          <!-- porch -->
+          <rect x="20" y="180" width="200" height="80" stroke-dasharray="6 4" stroke="#b9532a" />
+        </g>
+        <g font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#3a4248" text-transform="uppercase" letter-spacing="0.12em">
+          <text x="60" y="60" letter-spacing="1.5">MASTER SUITE</text>
+          <text x="32" y="135">WALK-IN</text>
+          <text x="290" y="115" letter-spacing="1.5">GREAT ROOM</text>
+          <text x="510" y="80" letter-spacing="1.5">KITCHEN</text>
+          <text x="510" y="200" letter-spacing="1.5">DINING</text>
+          <text x="245" y="235" letter-spacing="1">BED 2</text>
+          <text x="365" y="235" letter-spacing="1">BED 3</text>
+          <text x="60" y="225" letter-spacing="1.5" fill="#b9532a">FRONT PORCH</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Sticky aside -->
+  <aside class="detail-aside">
+    <div class="quote-card">
+      <div class="price-block">
+        <div class="label">Starting price</div>
+        <div class="price">$148,400</div>
+        <div class="caveat">Includes home + standard delivery within 75 mi. Site prep, foundation, and utilities priced separately.</div>
+        <div class="est-monthly">Est. monthly payment: <strong>$1,047</strong> <span style="opacity:0.7">· 20yr · 7.25% APR · 10% down</span></div>
+      </div>
+      <div class="cta-row">
+        <button class="btn btn-primary" onclick="openModal()">Get an itemized quote</button>
+        <a href="locations.html" class="btn btn-secondary">Schedule a tour</a>
+        <button class="btn btn-ghost" id="favBtn">♡ &nbsp;Save to favorites</button>
+      </div>
+      <div class="meta">
+        <div><strong>Stock #</strong> &nbsp; UH-1434-AS</div>
+        <div><strong>Available for</strong> &nbsp; Cash · Chattel · Land+Home</div>
+        <div><strong>Delivery est.</strong> &nbsp; 4–6 weeks from contract</div>
+        <div><strong>On display</strong> &nbsp; Lexington lot, Lot 14</div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- Similar homes -->
+<section class="similar">
+  <div class="inner">
+    <span class="eyebrow">You might also consider</span>
+    <h2>Similar homes</h2>
+    <div class="home-grid-3">
+      <a href="home-detail.html" class="home-card">
+        <div class="photo ph-3"><span class="badge new">Just Arrived</span><button class="fav">♡</button><div class="placeholder"></div></div>
+        <div class="body"><div class="eyebrow-card">Champion · Athens 2864</div><div class="name">2106 Magnolia Ridge</div><div class="specs">4 beds · 2 baths · 2,128 sq ft</div><div class="price-row"><div><div class="price">$184,900</div><div class="price-caveat">Starting</div></div><span class="view">View →</span></div></div>
+      </a>
+      <a href="home-detail.html" class="home-card">
+        <div class="photo ph-4"><span class="badge">In Stock</span><button class="fav">♡</button><div class="placeholder"></div></div>
+        <div class="body"><div class="eyebrow-card">Cavco · The Carolina</div><div class="name">3201 Pine Grove</div><div class="specs">3 beds · 2 baths · 1,560 sq ft</div><div class="price-row"><div><div class="price">$132,800</div><div class="price-caveat">Starting</div></div><span class="view">View →</span></div></div>
+      </a>
+      <a href="home-detail.html" class="home-card">
+        <div class="photo ph-6"><span class="badge new">Just Arrived</span><button class="fav">♡</button><div class="placeholder"></div></div>
+        <div class="body"><div class="eyebrow-card">Clayton Built · The Edge</div><div class="name">503 Cypress Trail</div><div class="specs">3 beds · 2 baths · 1,680 sq ft</div><div class="price-row"><div><div class="price">$155,750</div><div class="price-caveat">Starting</div></div><span class="view">View →</span></div></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="uhs-footer">
+  <div class="uhs-footer-inner">
+    <div class="uhs-footer-grid">
+      <div class="brandblock"><div class="name">Upstate <em>Homes</em></div><p>Family-owned manufactured-home dealer serving SC &amp; western NC since 2024.</p></div>
+      <div><h4>Browse</h4><ul><li><a href="inventory.html">All homes</a></li></ul></div>
+      <div><h4>Programs</h4><ul><li><a href="financing.html">Financing</a></li><li><a href="land-and-home.html">Land + Home</a></li><li><a href="trade-in.html">Trade-In</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+      <div><h4>Help</h4><ul><li><a href="how-it-works.html">How it works</a></li><li><a href="faq.html">FAQ</a></li></ul></div>
+    </div>
+    <div class="uhs-footer-bottom"><span>© 2025 Upstate Homes, LLC.</span><span class="spacer"></span><span>SC #44218 · NC #L-2841</span></div>
+  </div>
+</footer>
+
+<!-- ─── Quote Modal ─── -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-aside">
+      <div class="photo ph-2" style="background: linear-gradient(160deg, #b8a384 0%, #5e4f3a 100%);"></div>
+      <span class="eyebrow" style="color: rgba(246,239,230,0.6);">You're requesting a quote for</span>
+      <h3 style="margin-top:6px;">1434 Southern Belle</h3>
+      <div class="specs">3 beds · 2 baths · 1,813 sq ft · The Aspect by Clayton Built</div>
+      <div class="price">$148,400</div>
+      <div class="caveat">Starting price. Final quote will itemize delivery, site prep, and any options.</div>
+      <div class="promise">
+        <strong>Our quote promise:</strong><br>
+        We respond within 24 business hours with a full itemized PDF quote — no phone tag, no pressure follow-ups.
+      </div>
+    </div>
+
+    <div class="modal-form">
+      <button class="close" onclick="closeModal()" aria-label="Close">×</button>
+      <span class="eyebrow">5 fields · 30 seconds</span>
+      <h2>Get an itemized quote</h2>
+      <p class="sub">We'll email you a real PDF within 24 hours: home + delivery + site prep, line-itemed.</p>
+
+      <div class="field-row">
+        <div class="field"><label class="label">First name</label><input class="input" placeholder="Marlena"></div>
+        <div class="field"><label class="label">Last name</label><input class="input" placeholder="Pope"></div>
+      </div>
+      <div class="field"><label class="label">Email</label><input class="input" type="email" placeholder="marlena@example.com"></div>
+      <div class="field-row">
+        <div class="field"><label class="label">Phone (optional)</label><input class="input" type="tel" placeholder="(803) 555-1234"></div>
+        <div class="field"><label class="label">Delivery ZIP</label><input class="input" placeholder="29072"></div>
+      </div>
+
+      <div class="field">
+        <label class="label">Do you own the land?</label>
+        <div class="radio-group">
+          <label class="checked">Yes, I have land</label>
+          <label>Not yet — interested in Land+Home</label>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">When are you looking to buy?</label>
+        <div class="radio-group">
+          <label class="checked">Within 3 months</label>
+          <label>3–12 months</label>
+        </div>
+      </div>
+
+      <div class="submit-row"><button class="btn btn-primary">Send my quote</button></div>
+      <p class="legal">By submitting, you agree to our privacy policy. We don't sell or share your info — just the salesperson assigned to your quote uses it. No spam.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function openModal(){ document.getElementById('modal').classList.add('open'); }
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Tab styling only — no actual switching needed for static demo
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+}));
+// Radio group toggle
+document.querySelectorAll('.radio-group').forEach(g => g.addEventListener('click', e => {
+  if (e.target.tagName === 'LABEL') { g.querySelectorAll('label').forEach(l => l.classList.remove('checked')); e.target.classList.add('checked'); }
+}));
+// Favorite toggle
+const favBtn = document.getElementById('favBtn');
+favBtn.addEventListener('click', () => {
+  favBtn.classList.toggle('saved');
+  if (favBtn.classList.contains('saved')) { favBtn.innerHTML = '♥ &nbsp;Saved to favorites'; favBtn.style.color = 'var(--c-accent)'; }
+  else { favBtn.innerHTML = '♡ &nbsp;Save to favorites'; favBtn.style.color = ''; }
+});
+</script>
+</body>
+</html>

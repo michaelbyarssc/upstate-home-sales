@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phase 3 — Design System & IA · Upstate Homes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { padding: 0; }
+  .doc-nav {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--c-bg); border-bottom: 1px solid var(--c-line);
+    padding: var(--s-4) var(--gutter); display: flex; gap: var(--s-6); align-items: center;
+    font: 500 13px/1 var(--f-body);
+  }
+  .doc-nav strong { color: var(--c-ink); margin-right: auto; font-weight: 600; }
+  .doc-nav a { color: var(--c-ink-mute); text-decoration: none; }
+  .doc-nav a:hover { color: var(--c-ink); }
+  .wrap { max-width: var(--container); margin: 0 auto; padding: var(--s-12) var(--gutter); }
+  section { padding: var(--s-16) 0; border-bottom: 1px solid var(--c-line); }
+  section:last-child { border: none; }
+  .sec-head { display: flex; align-items: baseline; gap: var(--s-4); margin-bottom: var(--s-8); }
+  .sec-head .num { font: 500 13px/1 var(--f-body); color: var(--c-ink-mute); letter-spacing: 0.16em; }
+  .grid { display: grid; gap: var(--s-4); }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-5 { grid-template-columns: repeat(5, 1fr); }
+  @media (max-width: 800px) {
+    .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr 1fr; }
+  }
+  /* Color swatches */
+  .sw { border-radius: var(--r-2); overflow: hidden; border: 1px solid var(--c-line); background: #fff; }
+  .sw-color { height: 80px; display: block; }
+  .sw-meta { padding: 12px 14px; }
+  .sw-name { font: 600 13px/1 var(--f-body); color: var(--c-ink); margin-bottom: 4px; }
+  .sw-hex { font: 500 12px/1 var(--f-mono); color: var(--c-ink-mute); }
+  .sw-role { font: 400 12px/1.4 var(--f-body); color: var(--c-ink-mute); margin-top: 6px; }
+  /* Type spec */
+  .type-row { display: grid; grid-template-columns: 220px 1fr; gap: var(--s-6); padding: var(--s-5) 0; border-bottom: 1px solid var(--c-line); align-items: baseline; }
+  .type-row:last-child { border-bottom: none; }
+  .type-meta { font: 500 12px/1.5 var(--f-mono); color: var(--c-ink-mute); }
+  .type-meta strong { display: block; color: var(--c-ink); font-weight: 600; margin-bottom: 4px; font-family: var(--f-body); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+  /* Spacing scale */
+  .space-row { display: grid; grid-template-columns: 80px 100px 1fr; gap: var(--s-4); align-items: center; padding: var(--s-2) 0; }
+  .space-row .name { font: 600 13px/1 var(--f-mono); color: var(--c-ink); }
+  .space-row .val  { font: 500 12px/1 var(--f-mono); color: var(--c-ink-mute); }
+  .space-bar { height: 12px; background: var(--c-accent); }
+  /* Component preview tile */
+  .tile { background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-2); padding: var(--s-8); display: flex; align-items: center; justify-content: center; min-height: 140px; }
+  .tile.dark { background: var(--c-ink); color: var(--c-bg); border-color: var(--c-ink); }
+  .tile-meta { font: 500 11px/1 var(--f-body); color: var(--c-ink-mute); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: var(--s-3); display: block; white-space: nowrap; }
+  /* Sitemap tree */
+  .sitemap { font: 400 14px/1.7 var(--f-mono); color: var(--c-ink-soft); white-space: pre; background: var(--c-surface); padding: var(--s-6); border: 1px solid var(--c-line); border-radius: var(--r-2); overflow-x: auto; }
+  .sitemap b { color: var(--c-ink); font-weight: 600; }
+  .sitemap em { color: var(--c-accent); font-style: normal; }
+  /* IA flow */
+  .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--s-3); align-items: stretch; }
+  .flow-step { background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-2); padding: var(--s-5); position: relative; }
+  .flow-step .num { font: 500 11px/1 var(--f-body); color: var(--c-ink-mute); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: var(--s-3); }
+  .flow-step h4 { margin-bottom: var(--s-2); }
+  .flow-step p { font-size: 13px; margin: 0; color: var(--c-ink-mute); }
+  .flow-step + .flow-step::before {
+    content: ''; position: absolute; left: -10px; top: 50%; width: 8px; height: 1px; background: var(--c-line);
+  }
+  @media (max-width: 900px) { .flow { grid-template-columns: 1fr 1fr; } .flow-step + .flow-step::before { display: none; } }
+  /* Voice samples */
+  .voice { display: grid; grid-template-columns: 200px 1fr; gap: var(--s-6); padding: var(--s-5) 0; border-bottom: 1px solid var(--c-line); }
+  .voice:last-child { border: none; }
+  .voice-label { font: 600 13px/1.3 var(--f-body); color: var(--c-ink); }
+  .voice-good, .voice-bad { padding: var(--s-3) var(--s-4); border-radius: var(--r-2); margin-bottom: var(--s-2); }
+  .voice-good { background: rgba(122,138,91,0.12); border-left: 3px solid var(--uhs-marsh); }
+  .voice-bad  { background: rgba(179,38,30,0.06); border-left: 3px solid var(--uhs-error); color: var(--c-ink-mute); }
+  .voice-good::before { content: '✓ '; color: var(--uhs-marsh); font-weight: 700; }
+  .voice-bad::before  { content: '✗ '; color: var(--uhs-error); font-weight: 700; }
+  /* Pages list */
+  .pages { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--s-12); }
+  .pages dl { margin: 0; }
+  .pages dt { font: 600 14px/1.4 var(--f-body); color: var(--c-ink); margin-top: var(--s-5); display: flex; align-items: center; gap: var(--s-2); }
+  .pages dt .tag { font-size: 10px; padding: 2px 7px; background: var(--c-accent-soft); color: var(--c-accent-hover); border-radius: var(--r-pill); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
+  .pages dt .tag.priority { background: var(--c-ink); color: var(--c-bg); }
+  .pages dd { margin: 4px 0 0; font: 400 13px/1.5 var(--f-body); color: var(--c-ink-mute); }
+  /* Hero */
+  .hero { background: var(--c-bg); padding: var(--s-16) var(--gutter) var(--s-12); border-bottom: 1px solid var(--c-line); }
+  .hero-inner { max-width: var(--container); margin: 0 auto; }
+  .hero h1 { font-size: clamp(40px, 5.5vw, 72px); margin: var(--s-4) 0 var(--s-5); }
+  .hero p.lede { font-size: 19px; max-width: 560px; color: var(--c-ink-soft); }
+  /* Form mock */
+  .form-mock { background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-2); padding: var(--s-6); max-width: 480px; }
+  .form-mock .field + .field { margin-top: var(--s-4); }
+  /* Detail page anatomy */
+  .anatomy { background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-2); padding: var(--s-6); }
+  .anatomy-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--s-4); }
+  .anatomy-grid > div { background: var(--c-panel); border: 1px dashed var(--c-line); border-radius: var(--r-2); padding: var(--s-4); font: 500 13px/1.4 var(--f-body); color: var(--c-ink-mute); min-height: 60px; display: flex; align-items: center; justify-content: center; text-align: center; }
+  .anatomy-grid > div.tall { min-height: 200px; }
+  .anatomy-grid > div.full { grid-column: 1/-1; }
+</style>
+</head>
+<body>
+
+<nav class="doc-nav">
+  <strong>Phase 3 · Design System &amp; IA</strong>
+  <a href="#color">Color</a>
+  <a href="#type">Type</a>
+  <a href="#space">Space</a>
+  <a href="#components">Components</a>
+  <a href="#voice">Voice</a>
+  <a href="#sitemap">Sitemap</a>
+  <a href="#ia">User flows</a>
+  <a href="#pages">Pages</a>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow">Phase 03 · Foundations</span>
+    <h1>The system that<br><em style="font-weight:400">every page is built from.</em></h1>
+    <p class="lede">Tokens, type, components, voice, sitemap, IA flows, and a complete page inventory. Direction 01 (Editorial) locked. Phase 4 designs sit on top of this — no surprises.</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ─── Color ─────────────────────────────────────────────────── -->
+<section id="color">
+  <div class="sec-head"><span class="num">01</span><h2>Color</h2></div>
+  <p style="max-width:var(--container-text); color: var(--c-ink-soft);">Five brand colors. <strong>Charleston Navy</strong> carries ink and primary surfaces. <strong>Lowcountry Cream</strong> is the page. <strong>Brick</strong> is the only accent — used sparingly on CTAs and key links. <strong>Pluff Mud</strong> is body copy. <strong>Marsh Grass</strong> handles success states. Anything outside this palette is a mistake.</p>
+
+  <h3 style="margin: var(--s-8) 0 var(--s-4)">Brand palette</h3>
+  <div class="grid grid-5">
+    <div class="sw"><span class="sw-color" style="background:#1a2a3a"></span><div class="sw-meta"><div class="sw-name">Charleston Navy</div><div class="sw-hex">#1A2A3A</div><div class="sw-role">Ink, primary surfaces, headers</div></div></div>
+    <div class="sw"><span class="sw-color" style="background:#f6efe6"></span><div class="sw-meta"><div class="sw-name">Lowcountry Cream</div><div class="sw-hex">#F6EFE6</div><div class="sw-role">Page background</div></div></div>
+    <div class="sw"><span class="sw-color" style="background:#b9532a"></span><div class="sw-meta"><div class="sw-name">Brick</div><div class="sw-hex">#B9532A</div><div class="sw-role">CTAs, accents, key links</div></div></div>
+    <div class="sw"><span class="sw-color" style="background:#3a4248"></span><div class="sw-meta"><div class="sw-name">Pluff Mud</div><div class="sw-hex">#3A4248</div><div class="sw-role">Body text</div></div></div>
+    <div class="sw"><span class="sw-color" style="background:#7a8a5b"></span><div class="sw-meta"><div class="sw-name">Marsh Grass</div><div class="sw-hex">#7A8A5B</div><div class="sw-role">Success, "in stock", utility</div></div></div>
+  </div>
+
+  <h3 style="margin: var(--s-8) 0 var(--s-4)">Extended scale</h3>
+  <div class="grid grid-5">
+    <div class="sw"><span class="sw-color" style="background:#0f1c29"></span><div class="sw-meta"><div class="sw-name">Navy Deep</div><div class="sw-hex">#0F1C29</div><div class="sw-role">Hover, footer</div></div></div>
+    <div class="sw"><span class="sw-color" style="background:#ece2d2"></span><div class="sw-meta"><div class="sw-name">Cream Deep</div><div class="sw-hex">#ECE2D2</div><div class="sw-role">Card / panel</div></div></div>
+    <div class="sw"><span class="sw-color" style="background:#9a4220"></span><div class="sw-meta"><div class="sw-name">Brick Deep</div><div class="sw-hex">#9A4220</div><div class="sw-role">CTA hover</div></div></div>
+    <div class="sw"><span class="sw-color" style="background:#f6e9e1"></span><div class="sw-meta"><div class="sw-name">Brick Soft</div><div class="sw-hex">#F6E9E1</div><div class="sw-role">Tints, callouts</div></div></div>
+    <div class="sw"><span class="sw-color" style="background:#e0d9cc"></span><div class="sw-meta"><div class="sw-name">Line</div><div class="sw-hex">#E0D9CC</div><div class="sw-role">Dividers, borders</div></div></div>
+  </div>
+</section>
+
+<!-- ─── Type ──────────────────────────────────────────────────── -->
+<section id="type">
+  <div class="sec-head"><span class="num">02</span><h2>Type</h2></div>
+  <p style="max-width:var(--container-text); color: var(--c-ink-soft);"><strong>Cormorant Garamond</strong> for display (italic 300/400/500 weights are the personality). <strong>Inter</strong> for everything else — UI, body, captions. Numbers tabular by default for the spec tables and price strips.</p>
+
+  <div style="margin-top: var(--s-8)">
+    <div class="type-row">
+      <div class="type-meta"><strong>Display XL</strong>Cormorant · 500<br>clamp(48–88px) / 1.05<br>-0.015em</div>
+      <div style="font-family:var(--f-display); font-weight:500; font-size:var(--t-display-xl); line-height:var(--lh-tight); letter-spacing:var(--ls-display); color:var(--c-ink)">Built well.<br><em style="font-weight:400">Priced honestly.</em></div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><strong>Display L</strong>Cormorant · 500<br>clamp(36–56px) / 1.1</div>
+      <div style="font-family:var(--f-display); font-weight:500; font-size:var(--t-display-l); line-height:var(--lh-display); letter-spacing:var(--ls-display); color:var(--c-ink)">The home you've been quietly imagining.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><strong>H1 / H2</strong>Cormorant · 500<br>clamp(24–44px)</div>
+      <div style="font-family:var(--f-display); font-weight:500; font-size:var(--t-h1); line-height:var(--lh-display); color:var(--c-ink)">242 homes ready for delivery</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><strong>H3</strong>Inter · 600 · 20px</div>
+      <div style="font-family:var(--f-body); font-weight:600; font-size:20px; color:var(--c-ink)">Filter by what matters</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><strong>Body L</strong>Inter · 400 · 18px / 1.55</div>
+      <div style="font-family:var(--f-body); font-size:18px; line-height:1.55; color:var(--c-ink-soft); max-width:560px">Lede paragraphs, key explainer copy. Used sparingly — most body copy is the regular 16px size.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><strong>Body</strong>Inter · 400 · 16px / 1.55</div>
+      <div style="font-family:var(--f-body); font-size:16px; line-height:1.55; color:var(--c-ink-soft); max-width:560px">The default for product copy, descriptions, FAQ entries, blog posts. Comfortable for sustained reading.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><strong>Caption / Small</strong>Inter · 400 · 14px</div>
+      <div style="font-family:var(--f-body); font-size:14px; line-height:1.5; color:var(--c-ink-mute)">Photo captions, helper text, secondary information that can compress.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><strong>Eyebrow</strong>Inter · 600 · 11px<br>0.18em tracked, uppercase</div>
+      <div class="eyebrow">South Carolina · Est. 2024</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Space ─────────────────────────────────────────────────── -->
+<section id="space">
+  <div class="sec-head"><span class="num">03</span><h2>Space</h2></div>
+  <p style="max-width:var(--container-text); color: var(--c-ink-soft);">8pt grid. Six commonly-used steps; the rest are escape hatches. Use the named token, not the raw px value, in component code.</p>
+  <div style="margin-top: var(--s-6); max-width: 600px;">
+    <div class="space-row"><span class="name">--s-2</span><span class="val">8px</span><div class="space-bar" style="width:8px"></div></div>
+    <div class="space-row"><span class="name">--s-3</span><span class="val">12px</span><div class="space-bar" style="width:12px"></div></div>
+    <div class="space-row"><span class="name">--s-4</span><span class="val">16px</span><div class="space-bar" style="width:16px"></div></div>
+    <div class="space-row"><span class="name">--s-6</span><span class="val">24px</span><div class="space-bar" style="width:24px"></div></div>
+    <div class="space-row"><span class="name">--s-8</span><span class="val">32px</span><div class="space-bar" style="width:32px"></div></div>
+    <div class="space-row"><span class="name">--s-12</span><span class="val">48px</span><div class="space-bar" style="width:48px"></div></div>
+    <div class="space-row"><span class="name">--s-16</span><span class="val">64px</span><div class="space-bar" style="width:64px"></div></div>
+    <div class="space-row"><span class="name">--s-24</span><span class="val">96px</span><div class="space-bar" style="width:96px"></div></div>
+  </div>
+  <h3 style="margin: var(--s-8) 0 var(--s-4)">Layout containers</h3>
+  <table style="font:400 14px/1.5 var(--f-body); border-collapse: collapse;">
+    <tr><td style="padding:8px 16px 8px 0; color:var(--c-ink-mute)">--container</td><td style="padding:8px 24px 8px 0; font-family:var(--f-mono); font-size:13px;">1280px</td><td style="color:var(--c-ink-mute)">Inventory grids, full layouts</td></tr>
+    <tr><td style="padding:8px 16px 8px 0; color:var(--c-ink-mute)">--container-narrow</td><td style="padding:8px 24px 8px 0; font-family:var(--f-mono); font-size:13px;">880px</td><td style="color:var(--c-ink-mute)">Editorial pages (about, financing, blog)</td></tr>
+    <tr><td style="padding:8px 16px 8px 0; color:var(--c-ink-mute)">--container-text</td><td style="padding:8px 24px 8px 0; font-family:var(--f-mono); font-size:13px;">680px</td><td style="color:var(--c-ink-mute)">Long-form prose only (FAQ answers, blog body)</td></tr>
+    <tr><td style="padding:8px 16px 8px 0; color:var(--c-ink-mute)">--gutter</td><td style="padding:8px 24px 8px 0; font-family:var(--f-mono); font-size:13px;">clamp(20–48px)</td><td style="color:var(--c-ink-mute)">Page outer padding</td></tr>
+  </table>
+</section>
+
+<!-- ─── Components ────────────────────────────────────────────── -->
+<section id="components">
+  <div class="sec-head"><span class="num">04</span><h2>Components</h2></div>
+  <p style="max-width:var(--container-text); color: var(--c-ink-soft);">Atomic primitives. Phase 4 will compose these into pages.</p>
+
+  <h3 style="margin: var(--s-8) 0 var(--s-4)">Buttons</h3>
+  <div class="grid grid-3">
+    <div class="tile">
+      <div>
+        <span class="tile-meta">Primary</span>
+        <button class="btn btn-primary">Get a price quote</button>
+      </div>
+    </div>
+    <div class="tile">
+      <div>
+        <span class="tile-meta">Secondary</span>
+        <button class="btn btn-secondary">View all 242 homes</button>
+      </div>
+    </div>
+    <div class="tile">
+      <div>
+        <span class="tile-meta">Ghost</span>
+        <button class="btn btn-ghost">Save to favorites →</button>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin: var(--s-8) 0 var(--s-4)">Form controls</h3>
+  <div class="grid grid-2">
+    <div class="form-mock">
+      <span class="tile-meta" style="margin-bottom:var(--s-4); display:block;">Lead capture · price quote</span>
+      <div class="field"><label class="label">Full name</label><input class="input" placeholder="Jane Doe"></div>
+      <div class="field"><label class="label">ZIP code</label><input class="input" placeholder="29072"></div>
+      <div class="field"><label class="label">Timeframe</label>
+        <select class="select"><option>Within 3 months</option><option>3–6 months</option><option>Just looking</option></select>
+      </div>
+      <div class="field" style="margin-top:var(--s-5)"><button class="btn btn-primary" style="width:100%">Send me a quote</button></div>
+    </div>
+    <div class="tile" style="flex-direction:column; gap:var(--s-3); align-items:flex-start; justify-content:flex-start; padding:var(--s-6)">
+      <span class="tile-meta">Filter chips</span>
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        <span class="chip chip-active">3 Beds</span>
+        <span class="chip chip-active">2+ Baths</span>
+        <span class="chip">Has 3D Tour</span>
+        <span class="chip">Manufactured</span>
+        <span class="chip">Modular</span>
+        <span class="chip">Park Model</span>
+      </div>
+      <div style="margin-top:auto; padding-top:var(--s-4); font:500 13px/1 var(--f-body); color: var(--c-ink-mute);">2 active · 87 homes match</div>
+    </div>
+  </div>
+
+  <h3 style="margin: var(--s-8) 0 var(--s-4)">Home card (anatomy)</h3>
+  <div class="grid grid-3">
+    <div class="card" style="overflow:visible">
+      <div style="aspect-ratio: 4/3; background: linear-gradient(135deg, #c9b896 0%, #8a7a5e 100%); position:relative;">
+        <span style="position:absolute; top:12px; left:12px; background: var(--uhs-marsh); color: #fff; font:600 10px/1 var(--f-body); padding: 5px 9px; border-radius: var(--r-pill); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;">In Stock</span>
+        <button style="position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.92); border:none; cursor:pointer; font-size:16px;">♡</button>
+      </div>
+      <div style="padding: var(--s-5)">
+        <div class="eyebrow" style="margin-bottom:6px;">Clayton Built · The Aspect</div>
+        <h3 style="margin-bottom:var(--s-2)">1434 Southern Belle</h3>
+        <div style="font: 400 14px/1.5 var(--f-body); color: var(--c-ink-mute);">3 beds · 2 baths · 1,813 sq ft</div>
+        <div style="margin-top: var(--s-4); display: flex; align-items: baseline; justify-content: space-between;">
+          <div>
+            <div style="font:600 22px/1 var(--f-body); color: var(--c-ink); font-variant-numeric: tabular-nums;">$148,400</div>
+            <div style="font: 400 11px/1.4 var(--f-body); color: var(--c-ink-mute); margin-top:2px;">Starting · before delivery + site prep</div>
+          </div>
+          <a href="#" style="font:500 13px/1 var(--f-body); color: var(--c-accent); text-decoration:none;">View →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="anatomy" style="font:400 13px/1.55 var(--f-body); color: var(--c-ink-mute);">
+      <span class="tile-meta" style="margin-bottom:var(--s-3); display:block;">Card anatomy</span>
+      <ol style="padding-left: var(--s-5); margin: 0;">
+        <li>Photo (4:3) — exterior preferred, real-lot photography</li>
+        <li>"In Stock" badge — Marsh Grass, top-left</li>
+        <li>Favorite toggle — top-right, persists localStorage</li>
+        <li>Manufacturer + series eyebrow</li>
+        <li>Model name (H3, Inter 600/20)</li>
+        <li>Beds · Baths · Sq Ft (no icons, em-spaced)</li>
+        <li>Starting price + caveat (the differentiator)</li>
+        <li>Single "View →" affordance — whole card is clickable</li>
+      </ol>
+    </div>
+
+    <div class="anatomy" style="font:400 13px/1.55 var(--f-body); color: var(--c-ink-mute);">
+      <span class="tile-meta" style="margin-bottom:var(--s-3); display:block;">Detail page anatomy</span>
+      <div class="anatomy-grid" style="margin-top:var(--s-2)">
+        <div class="full">Breadcrumb · Home / Inventory / [Manufacturer] / [Model]</div>
+        <div class="tall">Hero gallery (lightbox)</div>
+        <div>Sticky price + CTA</div>
+        <div>Specs · Tabs: Overview / Floor plan / Specs / 3D tour / Gallery</div>
+        <div>Save / Share</div>
+        <div class="full">Long description + features</div>
+        <div class="full">Similar homes (3 cards)</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin: var(--s-8) 0 var(--s-4)">Surfaces</h3>
+  <div class="grid grid-3">
+    <div class="tile" style="background:var(--c-bg)">
+      <div style="text-align:center"><span class="tile-meta">Page bg</span><div style="font:500 14px/1 var(--f-mono); color: var(--c-ink);">Lowcountry Cream</div></div>
+    </div>
+    <div class="tile" style="background:var(--c-surface)">
+      <div style="text-align:center"><span class="tile-meta">Card</span><div style="font:500 14px/1 var(--f-mono); color: var(--c-ink);">Pure white</div></div>
+    </div>
+    <div class="tile dark">
+      <div style="text-align:center"><span class="tile-meta" style="color:rgba(246,239,230,0.6)">Footer / accent panels</span><div style="font:500 14px/1 var(--f-mono); color: #fff;">Charleston Navy</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Voice ─────────────────────────────────────────────────── -->
+<section id="voice">
+  <div class="sec-head"><span class="num">05</span><h2>Voice &amp; tone</h2></div>
+  <p style="max-width:var(--container-text); color: var(--c-ink-soft);">Confident. Specific. Plain. We respect the buyer's intelligence and time. We never use industry jargon without explaining it. We never use exclamation points. We never use "amazing," "stunning," or "dream."</p>
+
+  <div style="margin-top: var(--s-6)">
+    <div class="voice">
+      <div class="voice-label">Hero headline</div>
+      <div>
+        <div class="voice-good">Built well. Priced honestly. Delivered to your land.</div>
+        <div class="voice-bad">Find Your Dream Home Today!</div>
+      </div>
+    </div>
+    <div class="voice">
+      <div class="voice-label">Inventory CTA</div>
+      <div>
+        <div class="voice-good">Browse 242 homes ready now</div>
+        <div class="voice-bad">Discover Our Amazing Selection</div>
+      </div>
+    </div>
+    <div class="voice">
+      <div class="voice-label">Price disclosure</div>
+      <div>
+        <div class="voice-good">Starting at $148,400. Final price varies by site, finishes, delivery, and financing.</div>
+        <div class="voice-bad">Call for Pricing</div>
+      </div>
+    </div>
+    <div class="voice">
+      <div class="voice-label">Trust block</div>
+      <div>
+        <div class="voice-good">Family-owned, serving SC and NC. Authorized dealer for Clayton, Champion, Cavco, and 6 more.</div>
+        <div class="voice-bad">The #1 Trusted Name in Manufactured Homes!</div>
+      </div>
+    </div>
+    <div class="voice">
+      <div class="voice-label">Form helper</div>
+      <div>
+        <div class="voice-good">We'll send your quote within 24 hours. No spam, no pressure calls.</div>
+        <div class="voice-bad">Submit your information to receive personalized offers from our team!</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Sitemap ───────────────────────────────────────────────── -->
+<section id="sitemap">
+  <div class="sec-head"><span class="num">06</span><h2>Sitemap</h2></div>
+  <p style="max-width:var(--container-text); color: var(--c-ink-soft);">Two distinct surfaces: <strong>Public Site</strong> (everyone) and <strong>Dealer Admin</strong> (UHS staff). Designed multi-tenant from day one (every record carries <code style="font:500 12px/1 var(--f-mono); color:var(--c-accent)">org_id</code>) but UI is single-tenant for v1.</p>
+
+  <h3 style="margin: var(--s-8) 0 var(--s-4)">Public Site</h3>
+  <div class="sitemap"><b>/</b>                                  <em>· Homepage</em>
+├── <b>/homes</b>                          <em>· Inventory grid (filterable)</em>
+│   ├── /homes/[id]                  <em>· Home detail</em>
+│   └── /homes/saved                 <em>· My favorites (localStorage)</em>
+├── <b>/manufacturers</b>                  <em>· Brands we carry</em>
+│   └── /manufacturers/[slug]
+├── <b>/collections</b>                    <em>· Curated browse pages</em>
+│   ├── /collections/under-150k
+│   ├── /collections/move-in-ready
+│   ├── /collections/3-bedroom-family
+│   ├── /collections/tiny-park-model
+│   └── /collections/premium
+├── <b>/financing</b>                       <em>· Lenders, loan types, calculator</em>
+├── <b>/land-and-home</b>                   <em>· Land+Home offering ★</em>
+├── <b>/trade-in</b>                        <em>· Trade-in offering ★</em>
+├── <b>/delivery</b>                        <em>· How delivery works</em>
+├── <b>/areas-served</b>                    <em>· SC + NC counties</em>
+│   └── /areas-served/[county]       <em>· Local SEO pages</em>
+├── <b>/how-it-works</b>                    <em>· 6-step buyer guide</em>
+├── <b>/about</b>                            <em>· Family history, team</em>
+├── <b>/locations</b>                        <em>· UHS lot(s)</em>
+├── <b>/faq</b>                              <em>· 12 essential answers</em>
+├── <b>/blog</b>                             <em>· Editorial / SEO</em>
+│   └── /blog/[slug]
+├── <b>/contact</b>
+└── <b>/careers</b>
+</div>
+
+  <h3 style="margin: var(--s-8) 0 var(--s-4)">Dealer Admin (multi-tenant ready)</h3>
+  <div class="sitemap"><b>/admin/login</b>
+└── <b>/admin</b>                           <em>· Dashboard (leads + inventory snapshot)</em>
+    ├── <b>/admin/inventory</b>             <em>· Home list, search, bulk actions</em>
+    │   ├── /admin/inventory/new
+    │   └── /admin/inventory/[id]    <em>· Edit · base price + UHS markup %</em>
+    ├── <b>/admin/manufacturers</b>         <em>· Brand catalog import</em>
+    ├── <b>/admin/leads</b>                 <em>· Inbox · status · assignment</em>
+    │   └── /admin/leads/[id]
+    ├── <b>/admin/collections</b>           <em>· Manage curated pages</em>
+    ├── <b>/admin/blog</b>
+    ├── <b>/admin/team</b>                  <em>· Users + roles (owner/manager/sales/viewer)</em>
+    ├── <b>/admin/settings</b>              <em>· Branding, hours, locations</em>
+    └── <b>/admin/orgs</b>                  <em>★ White-label org switcher (hidden in v1)</em>
+</div>
+</section>
+
+<!-- ─── IA flows ──────────────────────────────────────────────── -->
+<section id="ia">
+  <div class="sec-head"><span class="num">07</span><h2>User flows</h2></div>
+
+  <h3 style="margin: var(--s-6) 0 var(--s-4)">Primary buyer flow — browse → quote</h3>
+  <div class="flow">
+    <div class="flow-step"><div class="num">01 Land</div><h4>Home</h4><p>Geo-defaults to user's ZIP. Hero, 6 featured homes near you, 3 collections, trust strip.</p></div>
+    <div class="flow-step"><div class="num">02 Browse</div><h4>Inventory</h4><p>Filter chips, real prices visible. Sort by price / sqft / newest. Save to favorites.</p></div>
+    <div class="flow-step"><div class="num">03 Compare</div><h4>Detail</h4><p>Gallery, floor plan, 3D tour, full specs, similar homes. Sticky price + CTA.</p></div>
+    <div class="flow-step"><div class="num">04 Capture</div><h4>Quote modal</h4><p>Name, ZIP, phone, timeframe, do-you-own-land. 3 fields min, 5 max.</p></div>
+    <div class="flow-step"><div class="num">05 Confirm</div><h4>Thank-you</h4><p>"We'll respond within 24 hours." Cross-sell: similar homes + financing prefill.</p></div>
+  </div>
+
+  <h3 style="margin: var(--s-12) 0 var(--s-4)">Secondary flow — first-timer education</h3>
+  <div class="flow">
+    <div class="flow-step"><div class="num">01</div><h4>Home</h4><p>"How buying a manufactured home works" link in hero secondary CTA.</p></div>
+    <div class="flow-step"><div class="num">02</div><h4>How It Works</h4><p>6-step explainer: Browse → Tour → Finance → Site prep → Delivery → Move in.</p></div>
+    <div class="flow-step"><div class="num">03</div><h4>FAQ</h4><p>12 answers: foundations, lifespan, insurance, land requirements, delivery cost.</p></div>
+    <div class="flow-step"><div class="num">04</div><h4>Land+Home</h4><p>If they don't own land yet — UHS-package option.</p></div>
+    <div class="flow-step"><div class="num">05</div><h4>Inventory</h4><p>Now they're ready to actually shop.</p></div>
+  </div>
+
+  <h3 style="margin: var(--s-12) 0 var(--s-4)">Dealer flow — lead → close</h3>
+  <div class="flow">
+    <div class="flow-step"><div class="num">01</div><h4>New lead in</h4><p>Inbox notifies. Lead carries home reference + buyer's qual answers.</p></div>
+    <div class="flow-step"><div class="num">02</div><h4>Triage</h4><p>Assign to salesperson. Status: New → Contacted → Touring → Quoted → Closed.</p></div>
+    <div class="flow-step"><div class="num">03</div><h4>Quote</h4><p>Inventory record's base price + markup % computes display price. Email PDF quote.</p></div>
+    <div class="flow-step"><div class="num">04</div><h4>Close</h4><p>Mark home as Sold; remove from public inventory automatically.</p></div>
+    <div class="flow-step"><div class="num">05</div><h4>Restock</h4><p>Receive new inventory from manufacturer; bulk-edit pricing for the new batch.</p></div>
+  </div>
+</section>
+
+<!-- ─── Pages ─────────────────────────────────────────────────── -->
+<section id="pages">
+  <div class="sec-head"><span class="num">08</span><h2>Page inventory</h2></div>
+  <p style="max-width:var(--container-text); color: var(--c-ink-soft);">Every page Phase 4 will design, with priority and one-line purpose. <strong>Tier 1</strong> = ships in v1 hero demo; <strong>Tier 2</strong> = ships in v1 full; <strong>Tier 3</strong> = post-launch.</p>
+
+  <div class="pages" style="margin-top: var(--s-6)">
+    <div>
+      <dl>
+        <dt>Home <span class="tag priority">Tier 1</span></dt>
+        <dd>Geo-personalized hero, featured homes, collections, "How it works" entry, trust strip, manufacturer wall, testimonial, footer.</dd>
+
+        <dt>Inventory grid <span class="tag priority">Tier 1</span></dt>
+        <dd>Filter chips + sticky bar, sort, paginated home cards with real prices, saved-homes affordance, mobile sheet pattern.</dd>
+
+        <dt>Home detail <span class="tag priority">Tier 1</span></dt>
+        <dd>Gallery, floor plan, 3D tour embed, deep specs, sticky price + CTA, similar homes.</dd>
+
+        <dt>Quote modal <span class="tag priority">Tier 1</span></dt>
+        <dd>5-field max lead capture. Triggered from any "Get a price quote" CTA.</dd>
+
+        <dt>Financing <span class="tag">Tier 2</span></dt>
+        <dd>Loan types (chattel vs land+home), lender partners, monthly-payment calculator.</dd>
+
+        <dt>Land + Home <span class="tag">Tier 2</span></dt>
+        <dd>Explains the UHS package: land sourcing + home + site prep. Lead form.</dd>
+
+        <dt>Trade-in <span class="tag">Tier 2</span></dt>
+        <dd>Trade-in valuation form. Differentiates from category.</dd>
+
+        <dt>How it works <span class="tag">Tier 2</span></dt>
+        <dd>6-step explainer with illustrations. First-timer trust-builder.</dd>
+      </dl>
+    </div>
+    <div>
+      <dl>
+        <dt>Manufacturers index <span class="tag">Tier 2</span></dt>
+        <dd>Logo wall + per-brand pages with brand story and floor-plan filtered view.</dd>
+
+        <dt>Collections <span class="tag">Tier 2</span></dt>
+        <dd>Curated browse: Under $150k, Move-in Ready, 3-Bedroom Family, Tiny/Park Model, Premium.</dd>
+
+        <dt>Areas served + county pages <span class="tag">Tier 2</span></dt>
+        <dd>SEO doorway pages for SC + NC counties. Same template, county-specific copy.</dd>
+
+        <dt>Delivery <span class="tag">Tier 2</span></dt>
+        <dd>What delivery includes, site requirements, typical timeline, photos of delivery in progress.</dd>
+
+        <dt>FAQ <span class="tag">Tier 2</span></dt>
+        <dd>12 answers covering foundations, lifespan, insurance, financing, land, warranty, delivery.</dd>
+
+        <dt>About <span class="tag">Tier 2</span></dt>
+        <dd>Family origin story, team page, values. Photo-led.</dd>
+
+        <dt>Locations <span class="tag">Tier 2</span></dt>
+        <dd>UHS lot(s) — map, hours, address, directions, "what to expect when you visit."</dd>
+
+        <dt>Contact <span class="tag">Tier 2</span></dt>
+        <dd>Phone, form, address, hours. Sticky elsewhere; dedicated page lists everything.</dd>
+
+        <dt>Blog index + posts <span class="tag">Tier 3</span></dt>
+        <dd>Editorial / SEO content. Empty at launch; grow into.</dd>
+
+        <dt>Careers <span class="tag">Tier 3</span></dt>
+        <dd>Open roles + culture. Empty at launch unless hiring.</dd>
+      </dl>
+    </div>
+  </div>
+
+  <h3 style="margin: var(--s-12) 0 var(--s-4)">Admin pages</h3>
+  <div class="pages">
+    <div>
+      <dl>
+        <dt>Login <span class="tag priority">Tier 1</span></dt>
+        <dd>Email + password. Supabase Auth.</dd>
+        <dt>Dashboard <span class="tag priority">Tier 1</span></dt>
+        <dd>Today's leads, inventory snapshot (in stock / sold this month / on order), quick links.</dd>
+        <dt>Inventory list <span class="tag priority">Tier 1</span></dt>
+        <dd>All homes. Filter, search, bulk: feature / publish / mark sold.</dd>
+        <dt>Home edit <span class="tag priority">Tier 1</span></dt>
+        <dd>Specs, photos, manufacturer base price, UHS markup %, computed display price.</dd>
+        <dt>Leads inbox <span class="tag priority">Tier 1</span></dt>
+        <dd>Status pipeline, assignment, notes, follow-up tasks.</dd>
+      </dl>
+    </div>
+    <div>
+      <dl>
+        <dt>Lead detail <span class="tag priority">Tier 1</span></dt>
+        <dd>Single lead view with conversation log, status changes, attached home(s).</dd>
+        <dt>Manufacturers <span class="tag">Tier 2</span></dt>
+        <dd>Brand list + bulk floor-plan import from supplier feed.</dd>
+        <dt>Team / users <span class="tag">Tier 2</span></dt>
+        <dd>Invite, role assignment (owner / manager / sales / viewer).</dd>
+        <dt>Settings <span class="tag">Tier 2</span></dt>
+        <dd>Org branding, hours, locations, integrations.</dd>
+        <dt>Org switcher <span class="tag">Tier 3</span></dt>
+        <dd>White-label support — visible only when user has access to multiple orgs.</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer style="background: var(--c-ink); color: var(--c-bg); padding: var(--s-12) var(--gutter);">
+  <div style="max-width:var(--container); margin: 0 auto;">
+    <span class="eyebrow" style="color: rgba(246,239,230,0.6)">Phase 03 deliverable</span>
+    <h2 style="color:#fff; margin: var(--s-2) 0 var(--s-4)">System locked. Ready to build pages.</h2>
+    <p style="font-size:16px; max-width:560px; color: rgba(246,239,230,0.75); margin-bottom: var(--s-6);">Phase 4 begins next: Home → Inventory → Detail → Quote modal first (Tier 1, the demo-able core), then everything else.</p>
+  </div>
+</footer>
+
+</body>
+</html>

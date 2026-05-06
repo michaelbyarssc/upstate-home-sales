@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Contact — Upstate Homes</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/site.css">
+<style>
+.contact-page{padding:var(--s-12) var(--gutter) var(--s-16);min-height:calc(100vh - 200px)}
+.contact-page .inner{max-width:var(--container);margin:0 auto;display:grid;grid-template-columns:1fr 1.1fr;gap:var(--s-12)}
+
+.contact-left h1{font-size:clamp(48px,6vw,84px);line-height:0.98;letter-spacing:-0.025em;margin:var(--s-3) 0 var(--s-5)}
+.contact-left h1 em{font-style:italic;font-weight:400;color:var(--c-accent)}
+.contact-left p.lede{font-size:18px;line-height:1.55;color:var(--c-ink-soft);max-width:440px;margin-bottom:var(--s-8)}
+
+.channels{display:flex;flex-direction:column;gap:var(--s-4);margin-bottom:var(--s-8)}
+.channel{padding:var(--s-4) 0;border-top:1px solid var(--c-line);display:grid;grid-template-columns:140px 1fr;gap:var(--s-4);align-items:baseline}
+.channel:last-child{border-bottom:1px solid var(--c-line)}
+.channel .label{font:500 11px/1 var(--f-body);letter-spacing:0.16em;text-transform:uppercase;color:var(--c-ink-mute)}
+.channel .val{font:500 18px/1.4 var(--f-body)}
+.channel .val a{color:var(--c-ink);text-decoration:none;border-bottom:1px solid var(--c-accent)}
+.channel .val small{display:block;font:400 13px/1.4 var(--f-body);color:var(--c-ink-mute);margin-top:4px}
+
+.response{padding:var(--s-4);background:rgba(206,77,49,0.06);border-left:2px solid var(--c-accent);font:italic 400 15px/1.5 var(--f-display);color:var(--c-ink-soft);max-width:440px}
+.response b{font-style:normal;font-family:var(--f-body);font-weight:600;color:var(--c-ink);font-size:14px;letter-spacing:0.04em;display:block;margin-bottom:4px}
+
+.form-card{background:var(--c-surface);border:1px solid var(--c-line);border-radius:var(--r-2);padding:var(--s-8);box-shadow:var(--sh-2);align-self:start}
+.form-card h3{font:500 28px/1.15 var(--f-display);letter-spacing:-0.01em;margin-bottom:var(--s-2)}
+.form-card p.helper{font-size:14px;color:var(--c-ink-mute);margin-bottom:var(--s-5)}
+
+.field-group{margin-bottom:var(--s-3)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3)}
+
+.purpose-radios{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:var(--s-5)}
+.purpose-radios label{padding:var(--s-3);border:1px solid var(--c-line);border-radius:var(--r-2);background:var(--c-bg);cursor:pointer;display:flex;align-items:center;gap:var(--s-2);font:500 14px/1.2 var(--f-body);transition:all var(--d-fast) var(--ease)}
+.purpose-radios label:hover{border-color:var(--c-ink)}
+.purpose-radios input{accent-color:var(--c-accent)}
+.purpose-radios input:checked+span{color:var(--c-accent)}
+.purpose-radios label:has(input:checked){border-color:var(--c-accent);background:rgba(206,77,49,0.04)}
+
+textarea.input{min-height:120px;resize:vertical;font-family:var(--f-body)}
+
+@media(max-width:900px){.contact-page .inner{grid-template-columns:1fr;gap:var(--s-8)}}
+</style></head><body>
+<div class="uhs-topbar"><div class="uhs-topbar-inner"><span>Lexington, SC · Mon–Sat 9–6</span><span class="spacer"></span><a href="financing.html">Financing</a><a href="trade-in.html">Trade-In</a><a href="locations.html">Visit our lot</a><a href="tel:8035551234" class="phone">(803) 555-1234</a></div></div>
+<nav class="uhs-nav"><div class="uhs-nav-inner"><a href="home.html" class="uhs-brand"><span class="name">Upstate <em>Homes</em></span></a><span class="spacer"></span><div class="uhs-nav-links"><a href="inventory.html">Browse homes</a><a href="manufacturers.html">Manufacturers</a><a href="land-and-home.html">Land + Home</a><a href="financing.html">Financing</a><a href="how-it-works.html">How it works</a><a href="about.html">About</a></div><div class="uhs-nav-cta"><a href="#" class="btn btn-primary btn-sm">Get a quote</a></div></div></nav>
+
+<section class="contact-page"><div class="inner">
+
+<div class="contact-left">
+<span class="eyebrow">Get in touch</span>
+<h1>Pick the channel<br>that <em>fits</em> you.</h1>
+<p class="lede">We answer everything within one business day. Most calls get picked up on the first ring during business hours.</p>
+
+<div class="channels">
+<div class="channel"><div class="label">Phone</div><div class="val"><a href="tel:8035551234">(803) 555-1234</a><small>Mon–Fri 9–6 · Sat 9–5 ET</small></div></div>
+<div class="channel"><div class="label">Email</div><div class="val"><a href="mailto:hello@upstatehomes.com">hello@upstatehomes.com</a><small>Replies within 1 business day</small></div></div>
+<div class="channel"><div class="label">Text</div><div class="val"><a href="sms:8035551234">(803) 555-1234</a><small>Faster than email, less formal than calling</small></div></div>
+<div class="channel"><div class="label">In person</div><div class="val"><a href="locations.html">2284 Augusta Hwy, Lexington, SC</a><small>Walk-ins welcome · 22 homes on-site</small></div></div>
+</div>
+
+<div class="response"><b>Our promise</b>If you call during business hours, you'll talk to a human, not a phone tree. If you email, you'll hear back from a person whose name is on the team page — not a marketing automation queue.</div>
+</div>
+
+<form class="form-card" onsubmit="event.preventDefault();alert('Thanks — we\\'ll be in touch within 1 business day.');">
+<h3>Or send a note.</h3>
+<p class="helper">Two minutes. We'll route it to the right person.</p>
+
+<div class="field-group">
+<label class="label" style="margin-bottom:var(--s-2);display:block;">What's this about?</label>
+<div class="purpose-radios">
+<label><input type="radio" name="purpose" value="quote" checked><span>Get a quote</span></label>
+<label><input type="radio" name="purpose" value="visit"><span>Schedule a visit</span></label>
+<label><input type="radio" name="purpose" value="financing"><span>Financing question</span></label>
+<label><input type="radio" name="purpose" value="other"><span>Something else</span></label>
+</div>
+</div>
+
+<div class="field-row">
+<div class="field-group"><label class="label">First name</label><input class="input" placeholder="Sarah" required></div>
+<div class="field-group"><label class="label">Last name</label><input class="input" placeholder="Whitlock" required></div>
+</div>
+
+<div class="field-row">
+<div class="field-group"><label class="label">Email</label><input class="input" type="email" placeholder="you@example.com" required></div>
+<div class="field-group"><label class="label">Phone</label><input class="input" type="tel" placeholder="(803) 555-0000"></div>
+</div>
+
+<div class="field-group"><label class="label">ZIP code</label><input class="input" placeholder="29072" style="max-width:160px"></div>
+
+<div class="field-group"><label class="label">What can we help with?</label><textarea class="input" placeholder="A few sentences about what you're looking for. Specific home, budget range, timeline — whatever's on your mind."></textarea></div>
+
+<button type="submit" class="btn btn-primary" style="width:100%;margin-top:var(--s-3);">Send →</button>
+<p class="helper" style="margin-top:var(--s-3);text-align:center;">By sending, you agree we can call or text you about your inquiry. We don't sell your info, ever.</p>
+</form>
+
+</div></section>
+
+<footer class="uhs-footer"><div class="uhs-footer-inner"><div class="uhs-footer-grid"><div class="brandblock"><div class="name">Upstate <em>Homes</em></div><p>Family-owned manufactured-home dealer.</p></div><div><h4>Browse</h4><ul><li><a href="inventory.html">All homes</a></li></ul></div><div><h4>Programs</h4><ul><li><a href="financing.html">Financing</a></li><li><a href="land-and-home.html">Land + Home</a></li><li><a href="trade-in.html">Trade-In</a></li></ul></div><div><h4>Company</h4><ul><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li></ul></div><div><h4>Help</h4><ul><li><a href="faq.html">FAQ</a></li></ul></div></div><div class="uhs-footer-bottom"><span>© 2025 Upstate Homes, LLC.</span><span class="spacer"></span><span>SC #44218 · NC #L-2841</span></div></div></footer>
+</body></html>

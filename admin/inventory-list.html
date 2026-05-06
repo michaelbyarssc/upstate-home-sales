@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Inventory — UHS Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/admin.css">
+</head><body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-brand"><div class="mark">U</div><div class="name">Upstate <em>Homes</em></div></div>
+    <a href="org-switcher.html" class="sb-org-switcher"><div class="avatar">UH</div><div class="org-info"><div class="org-name">Upstate Homes — Lexington</div><div class="org-role">OWNER</div></div><div class="caret">⇅</div></a>
+    <div class="sb-section">Workspace</div>
+    <nav class="sb-nav">
+      <a class="sb-link" href="dashboard.html"><span class="ico">⌂</span>Dashboard</a>
+      <a class="sb-link active" href="inventory-list.html"><span class="ico">▦</span>Inventory<span class="badge">242</span></a>
+      <a class="sb-link" href="leads-inbox.html"><span class="ico">✉</span>Leads<span class="badge">38</span></a>
+      <a class="sb-link" href="#"><span class="ico">⊞</span>Quotes</a>
+      <a class="sb-link" href="#"><span class="ico">↻</span>Trade-ins</a>
+    </nav>
+    <div class="sb-section">Settings</div>
+    <nav class="sb-nav">
+      <a class="sb-link" href="users.html"><span class="ico">👥</span>Users &amp; roles</a>
+      <a class="sb-link" href="settings.html"><span class="ico">⚙</span>Org settings</a>
+    </nav>
+    <div class="sb-foot"><div class="avatar" style="background:#5e7b6f;">MP</div><div class="who">Marlena Pope<span>Owner</span></div></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="crumb"><a href="dashboard.html">Workspace</a><span class="sep">/</span><span class="here">Inventory</span></div>
+      <div class="spacer"></div>
+      <div class="search">🔎<input placeholder="Search by stock #, model, name…"><span class="kbd">⌘K</span></div>
+      <button class="icon-btn">🔔<span class="dot"></span></button>
+    </div>
+
+    <div class="page">
+      <div class="page-head">
+        <div><h1>Inventory</h1><div class="sub">242 active · 18 archived · 12 pending factory delivery</div></div>
+        <div class="actions">
+          <button class="btn btn-sec">⤓ Export CSV</button>
+          <button class="btn btn-sec">⇪ Bulk import</button>
+          <a href="inventory-edit.html" class="btn btn-pri">+ Add home</a>
+        </div>
+      </div>
+
+      <div class="tabs-row">
+        <button class="tab active">Active <span style="color:var(--adm-ink-mute);font-weight:400;">· 242</span></button>
+        <button class="tab">Pending <span style="color:var(--adm-ink-mute);font-weight:400;">· 12</span></button>
+        <button class="tab">Sold <span style="color:var(--adm-ink-mute);font-weight:400;">· 87</span></button>
+        <button class="tab">Archived <span style="color:var(--adm-ink-mute);font-weight:400;">· 18</span></button>
+      </div>
+
+      <div class="tbl-with-filters">
+        <div class="tbl-filters">
+          <span class="label-inline">Filter</span>
+          <select class="select"><option>All manufacturers</option><option>Clayton Built</option><option>Champion</option><option>Cavco</option></select>
+          <select class="select"><option>All types</option><option>Single-wide</option><option>Double-wide</option><option>Modular</option></select>
+          <select class="select"><option>Any price</option><option>Under $100k</option><option>$100k–$200k</option><option>$200k+</option></select>
+          <select class="select"><option>Any status</option><option>Published</option><option>Draft</option><option>Hold</option></select>
+          <span class="spacer"></span>
+          <span class="results"><strong>87</strong> homes match · <a href="#" style="color:var(--adm-accent);text-decoration:none;">Clear filters</a></span>
+        </div>
+        <table class="tbl">
+          <thead><tr>
+            <th style="width:36px;"><input type="checkbox"></th>
+            <th>Home</th>
+            <th>Stock #</th>
+            <th>Beds/Bath</th>
+            <th class="num">Sq ft</th>
+            <th class="num">Base price</th>
+            <th class="num">Markup</th>
+            <th class="num">Listed price</th>
+            <th>Status</th>
+            <th>Lot age</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="inv-body"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 4px;font:500 12px/1 var(--f-body);color:var(--adm-ink-mute);">
+        <span>Showing <strong style="color:var(--adm-ink);">1–18</strong> of <strong style="color:var(--adm-ink);">242</strong></span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn btn-sec btn-sm">‹</button>
+          <button class="btn btn-pri btn-sm">1</button>
+          <button class="btn btn-sec btn-sm">2</button>
+          <button class="btn btn-sec btn-sm">3</button>
+          <span style="margin:0 6px;">…</span>
+          <button class="btn btn-sec btn-sm">14</button>
+          <button class="btn btn-sec btn-sm">›</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const ROWS = [
+  { mfr:"Clayton Built · The Aspect",     name:"1434 Southern Belle",   stock:"UH-1434-AS", beds:3, baths:2, sqft:1813, base:129000, mu:15, status:"Published",  age:42, t:"t-2" },
+  { mfr:"Champion · Athens 2864",          name:"2106 Magnolia Ridge",   stock:"UH-2106-AT", beds:4, baths:2, sqft:2128, base:160000, mu:15, status:"Published",  age:11, t:"t-3", flag:"new" },
+  { mfr:"Cavco · The Carolina",            name:"3201 Pine Grove",       stock:"UH-3201-CR", beds:3, baths:2, sqft:1560, base:115480, mu:15, status:"Published",  age:67, t:"t-4" },
+  { mfr:"Franklin · The Heritage",         name:"817 Riverbend",         stock:"UH-0817-HR", beds:2, baths:2, sqft:1140, base:97800,  mu:15, status:"Published",  age:8,  t:"t-1" },
+  { mfr:"Live Oak · The Magnolia",         name:"1209 Old Forest Lane",  stock:"UH-1209-MG", beds:4, baths:3, sqft:2432, base:188000, mu:15, status:"Published",  age:23, t:"t-5" },
+  { mfr:"Clayton Built · The Edge",        name:"503 Cypress Trail",     stock:"UH-0503-ED", beds:3, baths:2, sqft:1680, base:135500, mu:15, status:"Published",  age:4,  t:"t-6", flag:"new" },
+  { mfr:"Deer Valley · Briarwood",         name:"2918 Sandhill Road",    stock:"UH-2918-BR", beds:3, baths:2, sqft:1798, base:146500, mu:15, status:"Hold",       age:55, t:"t-7" },
+  { mfr:"Champion · Crestwood 5616",       name:"104 Lake Murray Way",   stock:"UH-0104-CW", beds:3, baths:2, sqft:1456, base:121650, mu:15, status:"Published",  age:31, t:"t-8" },
+  { mfr:"Cavco · Anniversary",             name:"611 Persimmon Court",   stock:"UH-0611-AN", beds:2, baths:2, sqft:1296, base:110000, mu:15, status:"Draft",      age:0,  t:"t-1" },
+  { mfr:"Skyline · The Coastal",           name:"1804 Charleston Pike",  stock:"UH-1804-CL", beds:3, baths:2, sqft:1632, base:125900, mu:15, status:"Published",  age:128, t:"t-2", flag:"stale" },
+  { mfr:"Clayton Built · The Sweetbay",    name:"2307 Greenville Run",   stock:"UH-2307-SB", beds:4, baths:2, sqft:2080, base:155900, mu:15, status:"Published",  age:9,  t:"t-3", flag:"new" },
+  { mfr:"TruMH · Thrill",                  name:"418 Foxfire Drive",     stock:"UH-0418-TH", beds:2, baths:1, sqft:980,  base:77700,  mu:15, status:"Published",  age:101, t:"t-4", flag:"stale" },
+  { mfr:"Live Oak · The Cooper",           name:"1611 Saluda Heights",   stock:"UH-1611-CP", beds:3, baths:2, sqft:1740, base:142000, mu:15, status:"Published",  age:38, t:"t-5" },
+  { mfr:"Champion · The Madison",          name:"709 Whitehall Trace",   stock:"UH-0709-MD", beds:3, baths:2, sqft:1854, base:149200, mu:15, status:"Published",  age:14, t:"t-6" },
+  { mfr:"Franklin · The Carolinian",       name:"2042 Pickens Pass",     stock:"UH-2042-CN", beds:4, baths:2, sqft:2210, base:172500, mu:15, status:"Published",  age:21, t:"t-7" },
+  { mfr:"Cavco · Park Series",             name:"85 Edisto Walk",        stock:"UH-0085-PK", beds:1, baths:1, sqft:540,  base:65100,  mu:15, status:"Published",  age:75, t:"t-8" },
+  { mfr:"Clayton Built · The Ingram",      name:"3318 Anderson Mill",    stock:"UH-3318-IN", beds:3, baths:2, sqft:1612, base:132400, mu:15, status:"Published",  age:46, t:"t-1" },
+  { mfr:"Deer Valley · Glenwood",          name:"1129 Aiken Country",    stock:"UH-1129-GW", beds:3, baths:2, sqft:1944, base:164300, mu:15, status:"Published",  age:5,  t:"t-2", flag:"new" },
+];
+const fmt = n => '$' + n.toLocaleString();
+const statusBadge = s => {
+  if (s === 'Published') return '<span class="bd bd-success bd-dot">Published</span>';
+  if (s === 'Draft')     return '<span class="bd bd-soft bd-dot">Draft</span>';
+  if (s === 'Hold')      return '<span class="bd bd-warn bd-dot">Hold</span>';
+  return '<span class="bd bd-soft">'+s+'</span>';
+};
+const ageCell = (age, flag) => {
+  let cls = 'bd-soft', label = age + ' days';
+  if (flag === 'new') { cls = 'bd-info'; label = 'New · ' + age + 'd'; }
+  if (flag === 'stale' || age > 90) { cls = 'bd-warn'; label = age + ' days'; }
+  return `<span class="bd ${cls}">${label}</span>`;
+};
+document.getElementById('inv-body').innerHTML = ROWS.map(r => {
+  const listed = Math.round(r.base * (1 + r.mu/100));
+  return `<tr>
+    <td><input type="checkbox"></td>
+    <td><div class="row"><div class="thumb ${r.t}"></div><div><div class="name"><a href="inventory-edit.html">${r.name}</a></div><div class="sub">${r.mfr}</div></div></div></td>
+    <td><span style="font:500 12px/1 var(--f-body); color:var(--adm-ink-mute); font-variant-numeric:tabular-nums;">${r.stock}</span></td>
+    <td>${r.beds}/${r.baths}</td>
+    <td class="num">${r.sqft.toLocaleString()}</td>
+    <td class="num">${fmt(r.base)}</td>
+    <td class="num"><span style="color:var(--adm-ink-mute);">+${r.mu}%</span></td>
+    <td class="num ink">${fmt(listed)}</td>
+    <td>${statusBadge(r.status)}</td>
+    <td>${ageCell(r.age, r.flag)}</td>
+    <td><a href="inventory-edit.html" style="color:var(--adm-ink-mute);text-decoration:none;font-size:16px;padding:4px 8px;">⋯</a></td>
+  </tr>`;
+}).join('');
+</script>
+</body></html>

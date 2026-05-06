@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>UHS — Developer handoff</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="design-system/tokens.css">
+<style>
+  body { background: #FAF7F1; color: #0F1C29; font: 400 15px/1.6 'Inter', system-ui, sans-serif; margin: 0; -webkit-font-smoothing: antialiased; }
+  .layout { display: grid; grid-template-columns: 280px 1fr; max-width: 1340px; margin: 0 auto; align-items: start; min-height: 100vh; }
+  .toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 36px 22px 36px 36px; border-right: 1px solid #E5DFD3; }
+  .toc h2 { font: 500 22px/1.1 'Cormorant Garamond', serif; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .toc h2 em { font-style: italic; opacity: 0.65; font-weight: 400; }
+  .toc .sub { font: 400 12px/1.4 'Inter', sans-serif; color: #6B6863; margin-bottom: 22px; }
+  .toc > ol { list-style: none; padding: 0; margin: 0; counter-reset: section; }
+  .toc > ol > li { counter-increment: section; margin-bottom: 2px; }
+  .toc ol li a { display: block; padding: 6px 12px; border-radius: 5px; font: 500 13px/1.3 'Inter', sans-serif; color: #3A4248; text-decoration: none; position: relative; padding-left: 38px; }
+  .toc > ol > li > a::before { content: counter(section, decimal-leading-zero); position: absolute; left: 12px; font: 500 11px/1 'JetBrains Mono', monospace; color: #B9532A; top: 9px; letter-spacing: 0.04em; }
+  .toc ol li a:hover { background: #F4F1EB; color: #0F1C29; }
+  .toc ol li ul { list-style: none; padding: 0; margin: 2px 0 6px 38px; counter-reset: none; }
+  .toc ol li ul li { counter-increment: none; }
+  .toc ol li ul li a { padding: 4px 10px 4px 12px; font-size: 12px; color: #6B6863; }
+
+  main { padding: 60px 60px 120px; max-width: 920px; }
+  .doc-head { padding-bottom: 32px; margin-bottom: 40px; border-bottom: 1px solid #E5DFD3; }
+  .doc-head .meta { font: 500 11px/1 'JetBrains Mono', monospace; color: #B9532A; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 12px; }
+  .doc-head h1 { font: 400 56px/1.05 'Cormorant Garamond', serif; margin: 0 0 16px; letter-spacing: -0.02em; }
+  .doc-head h1 em { font-style: italic; color: #6B6863; }
+  .doc-head .lede { font: 400 18px/1.55 'Inter', sans-serif; color: #3A4248; max-width: 680px; }
+
+  section { margin-bottom: 80px; scroll-margin-top: 30px; }
+  section h2 { font: 500 32px/1.15 'Cormorant Garamond', serif; margin: 0 0 8px; letter-spacing: -0.01em; }
+  section .num { font: 500 11px/1 'JetBrains Mono', monospace; color: #B9532A; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 8px; display: block; }
+  section h2 em { font-style: italic; color: #6B6863; font-weight: 400; }
+  section h3 { font: 600 16px/1.3 'Inter', sans-serif; letter-spacing: -0.005em; margin: 32px 0 10px; color: #0F1C29; }
+  section h4 { font: 600 13px/1.2 'Inter', sans-serif; margin: 22px 0 8px; color: #3A4248; letter-spacing: 0.04em; text-transform: uppercase; }
+  section p { margin: 0 0 14px; max-width: 720px; }
+  section a { color: #B9532A; }
+  section ul, section ol { padding-left: 22px; max-width: 720px; }
+  section li { margin-bottom: 6px; }
+
+  pre, code { font-family: 'JetBrains Mono', Menlo, monospace; }
+  code { background: rgba(15,28,41,0.06); padding: 1px 6px; border-radius: 3px; font-size: 0.88em; color: #0F1C29; }
+  pre { background: #0F1C29; color: #F6EFE6; padding: 18px 20px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.55; margin: 14px 0 18px; }
+  pre code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
+  .tok-c { color: #6B6863; font-style: italic; }
+  .tok-k { color: #D4A574; }
+  .tok-s { color: #A8B596; }
+  .tok-t { color: #C8A07F; }
+  .tok-n { color: #C29A3F; }
+  .tok-p { color: #B9532A; }
+
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 22px; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; background: #F4F1EB; border-bottom: 1px solid #E5DFD3; font: 500 11px/1 'Inter', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: #6B6863; }
+  td { padding: 10px 12px; border-bottom: 1px solid #EFEAE0; vertical-align: top; }
+  td code { font-size: 12px; }
+
+  .callout { padding: 16px 18px; border-radius: 6px; background: #FAF4EB; border: 1px solid #d8c9b5; margin: 18px 0; font-size: 14px; }
+  .callout strong { color: #B9532A; }
+  .callout.warn { background: #faf0ee; border-color: #e0c0bc; }
+  .callout.warn strong { color: #A53A2C; }
+
+  .schema-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 18px 0; }
+  .schema-card { background: #fff; border: 1px solid #E5DFD3; border-radius: 8px; padding: 14px 16px; }
+  .schema-card .name { font: 600 13px/1.1 'JetBrains Mono', monospace; color: #0F1C29; margin-bottom: 4px; letter-spacing: 0.02em; }
+  .schema-card .desc { font: 400 12px/1.4 'Inter', sans-serif; color: #6B6863; margin-bottom: 10px; }
+  .schema-card .col { display: flex; justify-content: space-between; padding: 4px 0; font: 400 12px/1.3 'JetBrains Mono', monospace; border-top: 1px solid #EFEAE0; }
+  .schema-card .col:first-of-type { border-top: none; padding-top: 0; }
+  .schema-card .col .nm { color: #0F1C29; }
+  .schema-card .col .ty { color: #6B6863; }
+  .schema-card .col .pk { background: #B9532A; color: #fff; font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-left: 4px; vertical-align: middle; letter-spacing: 0.04em; }
+  .schema-card .col .fk { background: #2B5A7A; color: #fff; font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-left: 4px; vertical-align: middle; letter-spacing: 0.04em; }
+
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 14px 0; font-size: 14px; }
+  .kv dt { font: 600 13px/1.4 'JetBrains Mono', monospace; color: #6B6863; }
+  .kv dd { margin: 0; color: #0F1C29; }
+
+  .api-row { display: grid; grid-template-columns: 80px 320px 1fr; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #EFEAE0; font-size: 13px; align-items: baseline; }
+  .api-row .verb { font: 600 11px/1 'JetBrains Mono', monospace; padding: 4px 7px; border-radius: 3px; color: #fff; text-align: center; letter-spacing: 0.04em; }
+  .v-get { background: #2B5A7A; }
+  .v-post { background: #4A6B3F; }
+  .v-patch { background: #C29A3F; }
+  .v-delete { background: #A53A2C; }
+  .api-row .path { font: 500 13px/1.3 'JetBrains Mono', monospace; color: #0F1C29; }
+  .api-row .desc { color: #3A4248; }
+
+  .step { display: grid; grid-template-columns: 32px 1fr; gap: 14px; padding: 14px 0; border-bottom: 1px solid #EFEAE0; }
+  .step .n { font: 500 14px/1 'JetBrains Mono', monospace; color: #B9532A; }
+  .step .body p:first-child { margin-top: 0; font-weight: 500; color: #0F1C29; }
+
+  hr { border: none; border-top: 1px solid #E5DFD3; margin: 40px 0; }
+  .end { font: 400 13px/1.5 'Inter', sans-serif; color: #6B6863; padding: 24px; background: #F4F1EB; border-radius: 8px; margin-top: 40px; }
+  .end strong { color: #0F1C29; }
+</style>
+</head><body>
+<div class="layout">
+
+<aside class="toc">
+  <h2>Developer <em>handoff</em></h2>
+  <p class="sub">For the engineer wiring the prototype to Supabase + a real product.</p>
+  <ol>
+    <li><a href="#overview">Overview &amp; stack</a></li>
+    <li><a href="#data-model">Data model</a>
+      <ul>
+        <li><a href="#tenancy">Tenancy &amp; auth</a></li>
+        <li><a href="#core-tables">Core tables</a></li>
+        <li><a href="#rls">Row-level security</a></li>
+      </ul>
+    </li>
+    <li><a href="#pricing">The markup model</a></li>
+    <li><a href="#api">API surface</a></li>
+    <li><a href="#auth-flow">Auth &amp; org switching</a></li>
+    <li><a href="#leads">Leads pipeline</a></li>
+    <li><a href="#storage">Storage &amp; media</a></li>
+    <li><a href="#frontend">Frontend layout</a></li>
+    <li><a href="#env">Environment &amp; deploy</a></li>
+    <li><a href="#roadmap">Cutover roadmap</a></li>
+    <li><a href="#open">Open questions</a></li>
+  </ol>
+</aside>
+
+<main>
+  <div class="doc-head">
+    <div class="meta">UHS · Phase 6 · v1.0 · Handoff document</div>
+    <h1>Wiring the prototype <em>to a real product</em></h1>
+    <p class="lede">Everything the dev needs to take the static HTML in <code>site/</code> and <code>admin/</code> and turn it into a multi-tenant SaaS on Supabase. This document is opinionated where it matters (RLS, the markup model, pricing visibility) and loose where the team should decide (framework specifics, CI).</p>
+  </div>
+
+  <section id="overview">
+    <span class="num">01 · Overview</span>
+    <h2>Recommended stack</h2>
+    <p>The design assumes a thin frontend over Supabase. No bespoke API server is required for v1 — Supabase RLS + edge functions cover the surface.</p>
+    <dl class="kv">
+      <dt>Frontend</dt><dd>Next.js 14 (App Router) on Vercel — server components for the public site (SEO), client components for admin. Tailwind for production styling; the prototype CSS in <code>design-system/</code> is the source of truth for tokens.</dd>
+      <dt>Backend</dt><dd>Supabase — Postgres, Auth, Storage, Edge Functions, Realtime.</dd>
+      <dt>Email</dt><dd>SendGrid (transactional). Webhooks back into Supabase for lead-thread sync.</dd>
+      <dt>SMS</dt><dd>Twilio. Same pattern — webhook → <code>lead_messages</code> insert.</dd>
+      <dt>Search</dt><dd>Postgres FTS for v1. Move to Typesense if inventory exceeds ~10k rows or filters get complex.</dd>
+      <dt>Analytics</dt><dd>PostHog (product) + GA4 (marketing site). Per-tenant dashboards via PostHog cohorts on <code>org_id</code>.</dd>
+    </dl>
+
+    <h3>Why this stack and not Rails / Django</h3>
+    <p>Three reasons specific to UHS:</p>
+    <ol>
+      <li><strong>Multi-tenant from day one.</strong> Supabase RLS enforces tenant isolation in the database — not the app — which is harder to bypass and easier to audit. This matters more than usual because the white-label roadmap means we'll have lookalike orgs sharing infrastructure.</li>
+      <li><strong>Public site is content-heavy.</strong> Next.js + Vercel ISR gets us fast SEO-friendly listing pages without a CMS layer. The dealer admin is Supabase-driven; the public site reads from the same tables via the public anon key + read-only RLS policies.</li>
+      <li><strong>Lead inbox needs realtime.</strong> Supabase Realtime is free out of the box. New leads appear in the inbox without polling. SMS replies via Twilio inserts → realtime broadcast → toast in the dealer's browser.</li>
+    </ol>
+
+    <div class="callout"><strong>Note for the dev:</strong> the prototype is HTML-only. There's no React component library to lift wholesale. Treat the prototype as a high-fidelity spec — copy markup and CSS class names, but rebuild the JSX in your component library of choice. The CSS in <code>design-system/admin.css</code> and <code>design-system/tokens.css</code> is portable as-is.</div>
+  </section>
+
+  <section id="data-model">
+    <span class="num">02 · Data model</span>
+    <h2>Schema, <em>tenancy first</em></h2>
+    <p>Every business table carries an <code>org_id</code> column. RLS policies make it impossible for tenant A to see tenant B's data, even with a stolen JWT. There are no exceptions to this rule for v1.</p>
+
+    <h3 id="tenancy">Tenancy &amp; auth tables</h3>
+    <div class="schema-grid">
+      <div class="schema-card">
+        <div class="name">orgs</div>
+        <div class="desc">One row per dealer. Multi-org users (head office staff, future white-label) join via <code>org_members</code>.</div>
+        <div class="col"><span class="nm">id</span><span class="ty">uuid <span class="pk">PK</span></span></div>
+        <div class="col"><span class="nm">slug</span><span class="ty">text unique</span></div>
+        <div class="col"><span class="nm">name</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">brand_color</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">logo_url</span><span class="ty">text null</span></div>
+        <div class="col"><span class="nm">default_markup_pct</span><span class="ty">numeric(5,2)</span></div>
+        <div class="col"><span class="nm">created_at</span><span class="ty">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="name">org_members</div>
+        <div class="desc">Many-to-many between <code>auth.users</code> and <code>orgs</code>. The <code>role</code> column drives the permissions matrix on the Users page.</div>
+        <div class="col"><span class="nm">user_id</span><span class="ty">uuid <span class="fk">FK auth.users</span></span></div>
+        <div class="col"><span class="nm">org_id</span><span class="ty">uuid <span class="fk">FK orgs</span></span></div>
+        <div class="col"><span class="nm">role</span><span class="ty">role_enum</span></div>
+        <div class="col"><span class="nm">scoped_lots</span><span class="ty">uuid[] null</span></div>
+        <div class="col"><span class="nm">status</span><span class="ty">'active'|'suspended'</span></div>
+        <div class="col"><span class="nm">last_active_at</span><span class="ty">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="name">lots</div>
+        <div class="desc">Physical sales lots. An org may have one or many.</div>
+        <div class="col"><span class="nm">id</span><span class="ty">uuid <span class="pk">PK</span></span></div>
+        <div class="col"><span class="nm">org_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">name</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">address</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">manager_id</span><span class="ty">uuid <span class="fk">FK auth.users</span></span></div>
+      </div>
+      <div class="schema-card">
+        <div class="name">role_enum</div>
+        <div class="desc">Postgres enum. Drives permissions matrix.</div>
+        <div class="col"><span class="nm">'owner'</span><span class="ty">full access incl. billing</span></div>
+        <div class="col"><span class="nm">'manager'</span><span class="ty">full ops, no billing/users</span></div>
+        <div class="col"><span class="nm">'sales'</span><span class="ty">leads + quotes + read inventory</span></div>
+        <div class="col"><span class="nm">'service'</span><span class="ty">service tickets + trade-ins</span></div>
+        <div class="col"><span class="nm">'readonly'</span><span class="ty">read leads &amp; inventory only</span></div>
+      </div>
+    </div>
+
+    <h3 id="core-tables">Core business tables</h3>
+    <div class="schema-grid">
+      <div class="schema-card">
+        <div class="name">homes</div>
+        <div class="desc">An inventory item. The single most important table.</div>
+        <div class="col"><span class="nm">id</span><span class="ty">uuid <span class="pk">PK</span></span></div>
+        <div class="col"><span class="nm">org_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">lot_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">stock_no</span><span class="ty">text unique-per-org</span></div>
+        <div class="col"><span class="nm">name</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">manufacturer_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">model</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">type</span><span class="ty">'single'|'double'|'modular'</span></div>
+        <div class="col"><span class="nm">beds, baths, sqft</span><span class="ty">int / numeric</span></div>
+        <div class="col"><span class="nm">base_price_cents</span><span class="ty">int 🔒 internal</span></div>
+        <div class="col"><span class="nm">markup_pct</span><span class="ty">numeric(5,2) 🔒</span></div>
+        <div class="col"><span class="nm">addons_cents</span><span class="ty">int</span></div>
+        <div class="col"><span class="nm">setup_cents</span><span class="ty">int</span></div>
+        <div class="col"><span class="nm">listed_price_cents</span><span class="ty">int generated</span></div>
+        <div class="col"><span class="nm">status</span><span class="ty">'draft'|'published'|'hold'|'sold'</span></div>
+        <div class="col"><span class="nm">on_lot_since</span><span class="ty">date</span></div>
+        <div class="col"><span class="nm">created_at, updated_at</span><span class="ty">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="name">home_photos</div>
+        <div class="desc">Ordered list. First row is the hero. <code>storage_path</code> points at Supabase Storage.</div>
+        <div class="col"><span class="nm">id</span><span class="ty">uuid <span class="pk">PK</span></span></div>
+        <div class="col"><span class="nm">home_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">storage_path</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">sort_order</span><span class="ty">int</span></div>
+        <div class="col"><span class="nm">alt_text</span><span class="ty">text</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="name">manufacturers</div>
+        <div class="desc">Global table — Clayton, Champion, Cavco, etc. Not tenant-scoped (everyone shares the canonical list).</div>
+        <div class="col"><span class="nm">id</span><span class="ty">uuid <span class="pk">PK</span></span></div>
+        <div class="col"><span class="nm">name</span><span class="ty">text unique</span></div>
+        <div class="col"><span class="nm">slug</span><span class="ty">text unique</span></div>
+        <div class="col"><span class="nm">logo_url</span><span class="ty">text</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="name">leads</div>
+        <div class="desc">A potential buyer. One row per inquiry "thread". <code>home_id</code> nullable for general inquiries.</div>
+        <div class="col"><span class="nm">id</span><span class="ty">uuid <span class="pk">PK</span></span></div>
+        <div class="col"><span class="nm">org_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">home_id</span><span class="ty">uuid null <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">contact_name, email, phone</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">source</span><span class="ty">'quote_form'|'phone'|'walkin'|'tradein'</span></div>
+        <div class="col"><span class="nm">stage</span><span class="ty">'new'|'in_progress'|'quoted'|'won'|'lost'</span></div>
+        <div class="col"><span class="nm">assignee_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">is_hot</span><span class="ty">bool</span></div>
+        <div class="col"><span class="nm">next_action</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">qualifier_payload</span><span class="ty">jsonb</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="name">lead_messages</div>
+        <div class="desc">Timeline of communications + internal notes + system events.</div>
+        <div class="col"><span class="nm">id</span><span class="ty">uuid <span class="pk">PK</span></span></div>
+        <div class="col"><span class="nm">lead_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">kind</span><span class="ty">'inbound'|'outbound'|'note'|'system'</span></div>
+        <div class="col"><span class="nm">channel</span><span class="ty">'email'|'sms'|'call'|null</span></div>
+        <div class="col"><span class="nm">author_id</span><span class="ty">uuid null <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">body</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">attachments</span><span class="ty">jsonb</span></div>
+        <div class="col"><span class="nm">sent_at</span><span class="ty">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="name">quotes</div>
+        <div class="desc">A snapshot of a price + financing scenario, sent to a lead.</div>
+        <div class="col"><span class="nm">id</span><span class="ty">uuid <span class="pk">PK</span></span></div>
+        <div class="col"><span class="nm">lead_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">home_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">listed_price_cents</span><span class="ty">int (snapshot)</span></div>
+        <div class="col"><span class="nm">addons_jsonb</span><span class="ty">jsonb</span></div>
+        <div class="col"><span class="nm">financing_jsonb</span><span class="ty">jsonb</span></div>
+        <div class="col"><span class="nm">pdf_storage_path</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">expires_at</span><span class="ty">timestamptz</span></div>
+      </div>
+      <div class="schema-card">
+        <div class="name">trade_ins</div>
+        <div class="desc">Submitted by a customer through the trade-in form. Linked to a lead once a salesperson picks it up.</div>
+        <div class="col"><span class="nm">id</span><span class="ty">uuid <span class="pk">PK</span></span></div>
+        <div class="col"><span class="nm">org_id</span><span class="ty">uuid <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">lead_id</span><span class="ty">uuid null <span class="fk">FK</span></span></div>
+        <div class="col"><span class="nm">year, make, model</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">size_w, size_l</span><span class="ty">int</span></div>
+        <div class="col"><span class="nm">condition_notes</span><span class="ty">text</span></div>
+        <div class="col"><span class="nm">photos_paths</span><span class="ty">text[]</span></div>
+        <div class="col"><span class="nm">offer_cents</span><span class="ty">int null</span></div>
+      </div>
+    </div>
+
+    <h3 id="rls">Row-level security — the non-negotiables</h3>
+    <p>Every tenant-scoped table gets the same policy template. Helper:</p>
+
+<pre><code><span class="tok-c">-- Cached at session level so RLS doesn't re-query on every row</span>
+<span class="tok-k">create function</span> auth.<span class="tok-t">org_ids</span>() <span class="tok-k">returns</span> uuid[]
+<span class="tok-k">language</span> sql <span class="tok-k">stable security definer</span> <span class="tok-k">as</span> $$
+  <span class="tok-k">select</span> array_agg(org_id) <span class="tok-k">from</span> org_members
+  <span class="tok-k">where</span> user_id = auth.<span class="tok-t">uid</span>() <span class="tok-k">and</span> status = <span class="tok-s">'active'</span>;
+$$;
+
+<span class="tok-c">-- Applied to homes, leads, lead_messages, quotes, trade_ins, lots, etc.</span>
+<span class="tok-k">create policy</span> <span class="tok-s">"tenant_isolation_select"</span> <span class="tok-k">on</span> homes
+  <span class="tok-k">for select using</span> (org_id = <span class="tok-k">any</span>(auth.<span class="tok-t">org_ids</span>()));
+
+<span class="tok-k">create policy</span> <span class="tok-s">"tenant_isolation_modify"</span> <span class="tok-k">on</span> homes
+  <span class="tok-k">for all using</span> (org_id = <span class="tok-k">any</span>(auth.<span class="tok-t">org_ids</span>()))
+  <span class="tok-k">with check</span> (org_id = <span class="tok-k">any</span>(auth.<span class="tok-t">org_ids</span>()));</code></pre>
+
+    <p>Two extras layered on top:</p>
+    <ul>
+      <li><strong>Role gating</strong> — separate policy that checks <code>role</code> for write operations on sensitive tables (e.g. only <code>owner</code>/<code>manager</code> can write to <code>homes.base_price_cents</code> and <code>markup_pct</code>).</li>
+      <li><strong>Lot scoping</strong> — when <code>org_members.scoped_lots</code> is non-null, the user only sees homes/leads where <code>lot_id = ANY(scoped_lots)</code>. Lexington-only sales staff don't see the Anderson pipeline.</li>
+    </ul>
+
+    <div class="callout warn"><strong>Critical:</strong> the public site reads <code>homes</code> using the Supabase anon key. There must be a separate read-only policy that exposes <em>only</em> <code>status = 'published'</code> rows and <em>excludes</em> <code>base_price_cents</code> and <code>markup_pct</code>. Use a Postgres <code>view</code> (<code>public_homes</code>) and grant the anon role select access only to the view — never to the underlying table.</div>
+  </section>
+
+  <section id="pricing">
+    <span class="num">03 · The markup model</span>
+    <h2>Why pricing has its own section</h2>
+    <p>The prototype's defining feature: dealers think in <em>base price + markup percentage</em>, not in retail prices. The customer only ever sees the listed price. Three things must be enforced in code, not just in policy:</p>
+
+    <ol>
+      <li><strong>Generated column.</strong> <code>listed_price_cents</code> is computed by the database, not the client. This prevents drift if someone updates the markup % but forgets to recompute.
+        <pre><code>listed_price_cents <span class="tok-k">int generated always as</span> (
+  (base_price_cents * (<span class="tok-n">100</span> + markup_pct))::<span class="tok-t">int</span> / <span class="tok-n">100</span>
+  + addons_cents
+  + <span class="tok-k">case when</span> include_setup_in_price <span class="tok-k">then</span> setup_cents <span class="tok-k">else</span> <span class="tok-n">0</span> <span class="tok-k">end</span>
+) <span class="tok-k">stored</span></code></pre>
+      </li>
+      <li><strong>Public view excludes internal fields.</strong> Use a view, not a column-level policy — column policies are a footgun:
+        <pre><code><span class="tok-k">create view</span> public_homes <span class="tok-k">as</span>
+  <span class="tok-k">select</span> id, org_id, lot_id, stock_no, name, manufacturer_id,
+         model, type, beds, baths, sqft, listed_price_cents,
+         status, on_lot_since, created_at
+  <span class="tok-k">from</span> homes <span class="tok-k">where</span> status = <span class="tok-s">'published'</span>;
+<span class="tok-k">grant select on</span> public_homes <span class="tok-k">to</span> anon;</code></pre>
+      </li>
+      <li><strong>Quotes snapshot the price.</strong> When a quote is created, copy <code>listed_price_cents</code> into <code>quotes.listed_price_cents</code>. If the dealer later raises the markup %, outstanding quotes hold the original price until they expire.</li>
+    </ol>
+
+    <div class="callout"><strong>White-label note:</strong> the <code>default_markup_pct</code> on <code>orgs</code> means each tenant carries their own pricing rule. When this becomes a product sold to other dealers, the markup % is a per-org config — not a hardcoded constant.</div>
+  </section>
+
+  <section id="api">
+    <span class="num">04 · API surface</span>
+    <h2>Endpoints, by feature</h2>
+    <p>Most of these are direct PostgREST calls against Supabase via the JS SDK — they're listed here as logical endpoints the frontend will hit. The handful in <strong>edge functions</strong> are flagged.</p>
+
+    <h4>Inventory</h4>
+    <div class="api-row"><span class="verb v-get">GET</span><span class="path">/rest/v1/homes</span><span class="desc">List for current org. Filters via PostgREST query params.</span></div>
+    <div class="api-row"><span class="verb v-post">POST</span><span class="path">/rest/v1/homes</span><span class="desc">Create. RLS enforces org_id.</span></div>
+    <div class="api-row"><span class="verb v-patch">PATCH</span><span class="path">/rest/v1/homes?id=eq.{id}</span><span class="desc">Update. Role policy gates pricing fields.</span></div>
+    <div class="api-row"><span class="verb v-delete">DELETE</span><span class="path">/rest/v1/homes?id=eq.{id}</span><span class="desc">Soft delete (sets status='archived').</span></div>
+    <div class="api-row"><span class="verb v-get">GET</span><span class="path">/rest/v1/public_homes</span><span class="desc">Public site. Anon key. View-backed, internal pricing stripped.</span></div>
+
+    <h4>Leads</h4>
+    <div class="api-row"><span class="verb v-get">GET</span><span class="path">/rest/v1/leads?stage=eq.new</span><span class="desc">Inbox view. Realtime subscribed.</span></div>
+    <div class="api-row"><span class="verb v-post">POST</span><span class="path">/functions/v1/lead-intake</span><span class="desc"><strong>Edge fn.</strong> Public quote form posts here. Captures, normalizes, fires SendGrid notification, returns 200 fast.</span></div>
+    <div class="api-row"><span class="verb v-post">POST</span><span class="path">/rest/v1/lead_messages</span><span class="desc">Outbound message. Edge fn trigger sends via SendGrid/Twilio.</span></div>
+    <div class="api-row"><span class="verb v-post">POST</span><span class="path">/functions/v1/inbound-email</span><span class="desc"><strong>Edge fn.</strong> SendGrid inbound parse webhook → matches by Reply-To token → inserts lead_message.</span></div>
+    <div class="api-row"><span class="verb v-post">POST</span><span class="path">/functions/v1/inbound-sms</span><span class="desc"><strong>Edge fn.</strong> Twilio webhook. Same pattern.</span></div>
+
+    <h4>Quotes</h4>
+    <div class="api-row"><span class="verb v-post">POST</span><span class="path">/functions/v1/quote-build</span><span class="desc"><strong>Edge fn.</strong> Builds PDF (Puppeteer or react-pdf), uploads to Storage, inserts quote row.</span></div>
+    <div class="api-row"><span class="verb v-get">GET</span><span class="path">/q/{token}</span><span class="desc">Public quote page (Vercel route, no auth, signed URL).</span></div>
+
+    <h4>Auth &amp; tenants</h4>
+    <div class="api-row"><span class="verb v-post">POST</span><span class="path">/auth/v1/token</span><span class="desc">Standard Supabase login.</span></div>
+    <div class="api-row"><span class="verb v-get">GET</span><span class="path">/rest/v1/org_members?user_id=eq.{me}</span><span class="desc">Powers the org switcher.</span></div>
+    <div class="api-row"><span class="verb v-post">POST</span><span class="path">/functions/v1/invite-user</span><span class="desc"><strong>Edge fn.</strong> Sends magic-link invite, creates pending org_members row.</span></div>
+  </section>
+
+  <section id="auth-flow">
+    <span class="num">05 · Auth &amp; org switching</span>
+    <h2>How a session resolves to a tenant</h2>
+    <ol>
+      <li>User logs in → Supabase issues JWT (claims: <code>sub</code> = user_id).</li>
+      <li>Frontend calls <code>org_members</code> for that user. If 1 result → auto-select. If &gt;1 → show <code>org-switcher.html</code>.</li>
+      <li>Selected <code>org_id</code> is stored in: (a) localStorage for client-side gating, (b) a <code>x-active-org</code> header sent on every PostgREST request, (c) Postgres session variable via <code>set_config('request.active_org', org_id)</code> for use in policies that need <em>which</em> of the user's orgs is currently active.</li>
+      <li>Switching orgs is just step 3 again. No re-login.</li>
+    </ol>
+
+    <div class="callout"><strong>Why both <code>auth.org_ids()</code> AND an active-org header?</strong> The function returns <em>all</em> orgs the user belongs to (used by RLS for legitimate-access checks). The header narrows queries to the currently-viewed org so you don't accidentally show Lexington homes when the user is in the Anderson tab. Defense in depth.</div>
+  </section>
+
+  <section id="leads">
+    <span class="num">06 · Leads pipeline</span>
+    <h2>End-to-end flow</h2>
+    <div class="step"><span class="n">01</span><div class="body">
+      <p>Customer fills the quote form on a home detail page.</p>
+      <p>Public site (anon key) POSTs to <code>/functions/v1/lead-intake</code>. The fn validates, inserts <code>leads</code> + initial <code>lead_messages</code> row, fires a SendGrid notification to the org's lead inbox address, and returns &lt;200ms.</p>
+    </div></div>
+    <div class="step"><span class="n">02</span><div class="body">
+      <p>Realtime subscription pushes the new lead into the dealer's open inbox tab.</p>
+      <p>Subscribe pattern: <code>supabase.channel('leads:'+orgId).on('postgres_changes', {event:'INSERT', schema:'public', table:'leads', filter:'org_id=eq.'+orgId}, …)</code>.</p>
+    </div></div>
+    <div class="step"><span class="n">03</span><div class="body">
+      <p>Salesperson replies via email or SMS from the lead detail page.</p>
+      <p>Insert into <code>lead_messages</code> with <code>kind='outbound'</code>. A trigger calls the appropriate edge function to actually send via SendGrid/Twilio. Reply-To uses a per-thread token so inbound replies route back to the right lead.</p>
+    </div></div>
+    <div class="step"><span class="n">04</span><div class="body">
+      <p>Customer replies. Inbound email/SMS hits webhook → edge fn → <code>lead_messages</code> insert with <code>kind='inbound'</code> → realtime broadcast → toast in dealer's tab.</p>
+    </div></div>
+    <div class="step"><span class="n">05</span><div class="body">
+      <p>Salesperson sends a quote.</p>
+      <p>Builds quote via <code>/functions/v1/quote-build</code>, which snapshots <code>listed_price_cents</code> into <code>quotes</code>, generates a PDF, stores it in Storage, returns a signed public URL. The lead's stage advances to <code>'quoted'</code>.</p>
+    </div></div>
+    <div class="step"><span class="n">06</span><div class="body">
+      <p>Closed-won → <code>homes.status</code> flips to <code>'sold'</code>, lead moves to closed.</p>
+    </div></div>
+  </section>
+
+  <section id="storage">
+    <span class="num">07 · Storage &amp; media</span>
+    <h2>Buckets &amp; access</h2>
+    <table>
+      <thead><tr><th>Bucket</th><th>Public?</th><th>Naming</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>home-photos</code></td><td>Public read</td><td><code>{org_id}/{home_id}/{uuid}.jpg</code></td><td>Served on the public site. Use Supabase image transformations for thumbnails.</td></tr>
+        <tr><td><code>quote-pdfs</code></td><td>Signed URL only</td><td><code>{org_id}/{quote_id}.pdf</code></td><td>1-week signed URL embedded in customer email.</td></tr>
+        <tr><td><code>tradein-photos</code></td><td>Authenticated read</td><td><code>{org_id}/{tradein_id}/{uuid}.jpg</code></td><td>Internal only.</td></tr>
+        <tr><td><code>org-branding</code></td><td>Public read</td><td><code>{org_id}/logo.svg</code></td><td>Logos, favicons. Needed on public site.</td></tr>
+      </tbody>
+    </table>
+    <p>Photo uploads on the inventory edit form go directly client→Storage using a signed upload URL from an edge function (so the client never holds the service-role key). The fn inserts the <code>home_photos</code> row after upload completes.</p>
+  </section>
+
+  <section id="frontend">
+    <span class="num">08 · Frontend layout</span>
+    <h2>Repo structure</h2>
+<pre><code>uhs/
+├─ apps/
+│  ├─ public/                 <span class="tok-c"># Next.js — marketing &amp; inventory</span>
+│  │  ├─ app/(marketing)/     <span class="tok-c"># home, financing, about…</span>
+│  │  ├─ app/inventory/       <span class="tok-c"># list + [stock]</span>
+│  │  └─ app/q/[token]/       <span class="tok-c"># public quote page</span>
+│  └─ admin/                  <span class="tok-c"># Next.js — dealer dashboard</span>
+│     ├─ app/(auth)/login/
+│     ├─ app/(app)/
+│     │  ├─ dashboard/
+│     │  ├─ inventory/
+│     │  ├─ leads/
+│     │  ├─ users/
+│     │  └─ settings/
+│     └─ middleware.ts        <span class="tok-c"># enforces auth + active-org header</span>
+├─ packages/
+│  ├─ ui/                     <span class="tok-c"># shared component library</span>
+│  ├─ db/                     <span class="tok-c"># supabase types, query helpers</span>
+│  └─ design-tokens/          <span class="tok-c"># tokens.css ported to TS/Tailwind</span>
+└─ supabase/
+   ├─ migrations/
+   ├─ functions/
+   │  ├─ lead-intake/
+   │  ├─ inbound-email/
+   │  ├─ inbound-sms/
+   │  ├─ quote-build/
+   │  └─ invite-user/
+   └─ seed.sql</code></pre>
+
+    <p>Lift the prototype's CSS into <code>packages/design-tokens</code> as either Tailwind theme extensions or CSS variables. Don't try to use <code>admin.css</code> directly in production — refactor into componentized styles. The class names in the prototype are intentionally semantic so this is mechanical, not creative.</p>
+  </section>
+
+  <section id="env">
+    <span class="num">09 · Environment &amp; deploy</span>
+    <h2>Variables</h2>
+    <pre><code><span class="tok-c"># Supabase</span>
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=    <span class="tok-c"># server-only, never shipped to client</span>
+SUPABASE_JWT_SECRET=
+
+<span class="tok-c"># Email</span>
+SENDGRID_API_KEY=
+SENDGRID_INBOUND_DOMAIN=replies.upstatehomes.com
+
+<span class="tok-c"># SMS</span>
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_FROM_NUMBER=
+
+<span class="tok-c"># PDF generation</span>
+QUOTE_PDF_TEMPLATE_VERSION=v1
+
+<span class="tok-c"># Analytics</span>
+NEXT_PUBLIC_POSTHOG_KEY=
+NEXT_PUBLIC_GA_ID=</code></pre>
+
+    <h3>Deploy</h3>
+    <ul>
+      <li><strong>Vercel</strong> — both <code>apps/public</code> and <code>apps/admin</code>. Separate projects, separate domains (<code>upstatehomes.com</code> + <code>app.upstatehomes.com</code>). Preview deploys on PR.</li>
+      <li><strong>Supabase</strong> — one project for staging, one for production. Migrations via <code>supabase db push</code> in CI. Edge functions via <code>supabase functions deploy</code>.</li>
+      <li><strong>DNS / email</strong> — SPF, DKIM, and DMARC for <code>replies.upstatehomes.com</code> via SendGrid. Inbound parse webhook configured in SendGrid dashboard.</li>
+    </ul>
+  </section>
+
+  <section id="roadmap">
+    <span class="num">10 · Cutover roadmap</span>
+    <h2>Suggested build order</h2>
+    <p>Don't build everything at once. This sequence gets a working dealer flow live in ~6 weeks, then layers features. Each milestone is shippable to Marlena for real use.</p>
+    <table>
+      <thead><tr><th>Wk</th><th>Milestone</th><th>What ships</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Foundation</td><td>Supabase project, schema migrations, RLS policies, auth, org switcher</td></tr>
+        <tr><td>2</td><td>Inventory CRUD</td><td>Admin: list + edit + photos. Markup model live. Public site list page reads from <code>public_homes</code>.</td></tr>
+        <tr><td>3</td><td>Public site (read)</td><td>Home, inventory, home detail, financing static pages, contact form.</td></tr>
+        <tr><td>4</td><td>Leads</td><td>Quote form intake, lead inbox, realtime, email reply (outbound only).</td></tr>
+        <tr><td>5</td><td>Two-way comms</td><td>Inbound email parse, SMS via Twilio, internal notes, system events.</td></tr>
+        <tr><td>6</td><td>Quotes &amp; trade-ins</td><td>Quote PDF generation, public quote page, trade-in form &amp; admin pickup.</td></tr>
+        <tr><td>7+</td><td>Polish</td><td>Users &amp; roles UI, audit log, financing pre-qual flow, analytics dashboards.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>What to defer past v1</h3>
+    <ul>
+      <li><strong>White-label.</strong> The schema supports it (per-org branding, default markup %, custom domain field) but don't build the multi-domain routing or per-tenant theming until the second dealer signs.</li>
+      <li><strong>Financing pre-qual integration.</strong> Vanderbilt &amp; 21st Mortgage have APIs, but partner integration is ~3 weeks each. Start with a static partner list + redirect-out flow.</li>
+      <li><strong>Native apps.</strong> The lead inbox is the only screen with real native-app value (push notifications). Web push gets you 80% there for free.</li>
+    </ul>
+  </section>
+
+  <section id="open">
+    <span class="num">11 · Open questions for product</span>
+    <h2>Things the prototype assumes — confirm before coding</h2>
+    <ol>
+      <li><strong>Pricing visibility default.</strong> Prototype shows listed price publicly, base + markup never. Confirm this is the policy across all surfaces (site, quotes, embeds).</li>
+      <li><strong>Lead claim model.</strong> Are new leads round-robin, all-visible-claim-first, or manually assigned by manager? Prototype shows "unassigned" + manual assignment. Round-robin is a one-table change but needs a decision.</li>
+      <li><strong>SMS opt-in.</strong> TCPA compliance — do customers explicitly opt into SMS, or is the quote-form submission sufficient consent? Likely needs a checkbox.</li>
+      <li><strong>Financing pre-qual storage.</strong> Will pre-qual results ever land in our DB, or are they always external (link out, lender's site)? Affects whether we need PII handling.</li>
+      <li><strong>Audit retention.</strong> Manufactured-home sales have specific record-retention rules in SC (7 years for some docs). Need to confirm what we're storing on our side vs. the lender/state.</li>
+      <li><strong>Multi-org users.</strong> Prototype supports a user being in multiple orgs (Marlena could become a head-office user across white-label dealers). For v1, do we constrain to one-org-per-user, or build the switcher now?</li>
+    </ol>
+  </section>
+
+  <hr>
+
+  <div class="end">
+    <strong>That's the package.</strong> Pair this with the prototype's <code>site/</code> and <code>admin/</code> folders, the visual overviews (<code>site/00-overview.html</code>, <code>admin/00-overview.html</code>), and the brand guide (<code>brand/00-brand.html</code>). Open questions above should be the dev's first conversation with the product team — they unblock the schema and the lead flow.
+  </div>
+</main>
+
+</div>
+</body></html>

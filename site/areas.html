@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Service Areas — Upstate Homes</title><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/site.css">
+<style>
+.page-hero{background:var(--c-bg);padding:var(--s-12) var(--gutter) var(--s-8);border-bottom:1px solid var(--c-line)}.page-hero .inner{max-width:var(--container);margin:0 auto}.page-hero h1{font-size:clamp(40px,5vw,64px);margin:var(--s-3) 0 var(--s-3);letter-spacing:-0.02em}.page-hero h1 em{font-style:italic;font-weight:400}.page-hero p.lede{font-size:18px;max-width:640px;color:var(--c-ink-soft)}
+.areas-layout{padding:var(--s-12) var(--gutter)}.areas-layout .inner{max-width:var(--container);margin:0 auto;display:grid;grid-template-columns:1.1fr 1fr;gap:var(--s-10)}
+.map-block{background:var(--uhs-navy);color:#fff;border-radius:var(--r-2);padding:var(--s-8);min-height:540px;position:relative;overflow:hidden}
+.map-block svg{width:100%;height:auto;display:block}
+.map-legend{display:flex;gap:var(--s-5);margin-top:var(--s-5);font:500 12px/1.5 var(--f-body);letter-spacing:0.04em;color:rgba(246,239,230,0.75)}
+.map-legend .dot{display:inline-block;width:10px;height:10px;border-radius:99px;margin-right:6px;vertical-align:1px}
+.zone-list h3{font:500 28px/1.2 var(--f-display);letter-spacing:-0.01em;margin-bottom:var(--s-4)}
+.zone{padding:var(--s-5) 0;border-top:1px solid var(--c-line)}
+.zone:first-of-type{border-top:none}
+.zone .head{display:flex;align-items:baseline;gap:var(--s-3);margin-bottom:6px}
+.zone .head h4{font:500 22px/1.1 var(--f-display);letter-spacing:-0.005em}
+.zone .head .fee{margin-left:auto;font:600 16px/1 var(--f-body);font-variant-numeric:tabular-nums}
+.zone .counties{font:400 14px/1.55 var(--f-body);color:var(--c-ink-soft);margin:0}
+@media(max-width:900px){.areas-layout .inner{grid-template-columns:1fr}}
+</style></head><body>
+<div class="uhs-topbar"><div class="uhs-topbar-inner"><span>Lexington, SC · Mon–Sat 9–6</span><span class="spacer"></span><a href="financing.html">Financing</a><a href="trade-in.html">Trade-In</a><a href="locations.html">Visit our lot</a><a href="tel:8035551234" class="phone">(803) 555-1234</a></div></div>
+<nav class="uhs-nav"><div class="uhs-nav-inner"><a href="home.html" class="uhs-brand"><span class="name">Upstate <em>Homes</em></span></a><span class="spacer"></span><div class="uhs-nav-links"><a href="inventory.html">Browse homes</a><a href="manufacturers.html">Manufacturers</a><a href="land-and-home.html">Land + Home</a><a href="financing.html">Financing</a><a href="how-it-works.html">How it works</a><a href="about.html">About</a></div><div class="uhs-nav-cta"><a href="#" class="btn btn-primary btn-sm">Get a quote</a></div></div></nav>
+
+<header class="page-hero"><div class="inner"><span class="eyebrow">Where we deliver</span><h1>Carolinas-wide.<br><em>Charged honestly by zone.</em></h1><p class="lede">We serve all of South Carolina and most of North Carolina. Delivery cost is set by zone — no surprise per-mile add-ons after you sign.</p></div></header>
+
+<section class="areas-layout"><div class="inner">
+<div class="map-block">
+  <svg viewBox="0 0 600 480" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(246,239,230,0.06)" stroke-width="1"/></pattern>
+    </defs>
+    <rect width="600" height="480" fill="url(#grid)"/>
+    <!-- NC outline -->
+    <path d="M 60 100 L 540 90 L 545 165 L 510 195 L 475 200 L 430 215 L 380 220 L 60 200 Z" fill="rgba(206,77,49,0.08)" stroke="rgba(246,239,230,0.4)" stroke-width="1.5"/>
+    <!-- SC outline -->
+    <path d="M 60 200 L 380 220 L 430 215 L 475 200 L 480 290 L 420 360 L 320 400 L 200 380 L 100 320 L 60 280 Z" fill="rgba(206,77,49,0.16)" stroke="rgba(246,239,230,0.55)" stroke-width="1.5"/>
+    <!-- Zone rings centered on Lexington (~240,300) -->
+    <circle cx="240" cy="300" r="55" fill="rgba(206,77,49,0.45)" stroke="rgba(206,77,49,0.9)" stroke-width="1.5"/>
+    <circle cx="240" cy="300" r="105" fill="none" stroke="rgba(206,77,49,0.65)" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <circle cx="240" cy="300" r="165" fill="none" stroke="rgba(206,77,49,0.45)" stroke-width="1.5" stroke-dasharray="2 6"/>
+    <!-- HQ pin -->
+    <circle cx="240" cy="300" r="6" fill="#F6EFE6"/>
+    <circle cx="240" cy="300" r="11" fill="none" stroke="#F6EFE6" stroke-width="1"/>
+    <text x="252" y="304" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#F6EFE6">Lexington, SC</text>
+    <!-- City labels -->
+    <g font-family="Inter, sans-serif" font-size="11" fill="rgba(246,239,230,0.7)">
+      <circle cx="220" cy="285" r="2" fill="rgba(246,239,230,0.7)"/><text x="180" y="278">Columbia</text>
+      <circle cx="180" cy="240" r="2" fill="rgba(246,239,230,0.7)"/><text x="120" y="238">Greenville</text>
+      <circle cx="320" cy="350" r="2" fill="rgba(246,239,230,0.7)"/><text x="328" y="354">Charleston</text>
+      <circle cx="290" cy="240" r="2" fill="rgba(246,239,230,0.7)"/><text x="298" y="237">Rock Hill</text>
+      <circle cx="350" cy="190" r="2" fill="rgba(246,239,230,0.7)"/><text x="358" y="187">Charlotte</text>
+      <circle cx="430" cy="155" r="2" fill="rgba(246,239,230,0.7)"/><text x="438" y="152">Raleigh</text>
+    </g>
+  </svg>
+  <div class="map-legend">
+    <span><span class="dot" style="background:#CE4D31;"></span>Local · 50 mi</span>
+    <span><span class="dot" style="background:rgba(206,77,49,0.65);"></span>Regional · 150 mi</span>
+    <span><span class="dot" style="background:rgba(206,77,49,0.35);"></span>Extended · 300 mi</span>
+  </div>
+</div>
+
+<div class="zone-list">
+  <h3>Three zones, flat fees.</h3>
+  <div class="zone"><div class="head"><h4>Local — within 50 miles</h4><span class="fee">$2,400</span></div><p class="counties">Lexington, Richland, Saluda, Newberry, Aiken, Calhoun, Orangeburg, Fairfield, Kershaw counties.</p></div>
+  <div class="zone"><div class="head"><h4>Regional — 50–150 miles</h4><span class="fee">$3,800</span></div><p class="counties">Greenville, Spartanburg, York, Anderson, Pickens, Oconee, Chester, Lancaster, Sumter, Clarendon, Florence, Darlington counties (SC) · Mecklenburg, Union, Cabarrus, Gaston, Rowan, Cleveland (NC).</p></div>
+  <div class="zone"><div class="head"><h4>Extended — 150–300 miles</h4><span class="fee">$5,600+</span></div><p class="counties">Coastal SC (Charleston, Beaufort, Horry, Georgetown), Pee Dee, and most of central/western NC including Wake, Guilford, Forsyth, Buncombe, Henderson. Quoted in writing before signing.</p></div>
+  <div class="zone"><div class="head"><h4>Outside the zone?</h4><span class="fee">Call us</span></div><p class="counties">We've delivered as far as Asheville and the Outer Banks. We'll quote actual cost transparently — no markup, just permits + transport + setup at our hourly rate.</p></div>
+</div>
+</div></section>
+
+<footer class="uhs-footer"><div class="uhs-footer-inner"><div class="uhs-footer-grid"><div class="brandblock"><div class="name">Upstate <em>Homes</em></div><p>Family-owned manufactured-home dealer.</p></div><div><h4>Browse</h4><ul><li><a href="inventory.html">All homes</a></li></ul></div><div><h4>Programs</h4><ul><li><a href="financing.html">Financing</a></li><li><a href="land-and-home.html">Land + Home</a></li><li><a href="trade-in.html">Trade-In</a></li></ul></div><div><h4>Company</h4><ul><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li></ul></div><div><h4>Help</h4><ul><li><a href="faq.html">FAQ</a></li></ul></div></div><div class="uhs-footer-bottom"><span>© 2025 Upstate Homes, LLC.</span><span class="spacer"></span><span>SC #44218 · NC #L-2841</span></div></div></footer>
+</body></html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phase 4 — Public Site Overview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<style>
+  body { margin: 0; background: #1a1715; font-family: var(--f-body); }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { DesignCanvas, DCSection, DCArtboard } = window;
+
+function PageFrame({ src }) {
+  return <iframe src={src} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} title={src} />;
+}
+
+function App() {
+  return (
+    <DesignCanvas title="Upstate Homes — Public Site" subtitle="14 pages · Phase 4 deliverable">
+      <DCSection id="tier1" title="Tier 1 — Demo core" subtitle="Pages that win the pitch. Real prices, real flows.">
+        <DCArtboard id="home" label="Home" width={1280} height={2400}><PageFrame src="home.html" /></DCArtboard>
+        <DCArtboard id="inventory" label="Inventory" width={1280} height={2200}><PageFrame src="inventory.html" /></DCArtboard>
+        <DCArtboard id="detail" label="Home detail" width={1280} height={3200}><PageFrame src="home-detail.html" /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="tier2-programs" title="Tier 2 — Programs" subtitle="The differentiators. Financing, Land+Home, Trade-In.">
+        <DCArtboard id="financing" label="Financing" width={1280} height={2400}><PageFrame src="financing.html" /></DCArtboard>
+        <DCArtboard id="land-home" label="Land + Home" width={1280} height={2200}><PageFrame src="land-and-home.html" /></DCArtboard>
+        <DCArtboard id="trade-in" label="Trade-In" width={1280} height={1800}><PageFrame src="trade-in.html" /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="tier2-trust" title="Tier 2 — Trust &amp; education" subtitle="Why-buy-here pages. About, How it works, FAQ.">
+        <DCArtboard id="about" label="About" width={1280} height={2600}><PageFrame src="about.html" /></DCArtboard>
+        <DCArtboard id="how" label="How it works" width={1280} height={2200}><PageFrame src="how-it-works.html" /></DCArtboard>
+        <DCArtboard id="faq" label="FAQ" width={1280} height={2800}><PageFrame src="faq.html" /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="tier2-supporting" title="Tier 2 — Supporting" subtitle="Manufacturers, service areas, lot, contact.">
+        <DCArtboard id="mfrs" label="Manufacturers" width={1280} height={1600}><PageFrame src="manufacturers.html" /></DCArtboard>
+        <DCArtboard id="areas" label="Service areas" width={1280} height={1400}><PageFrame src="areas.html" /></DCArtboard>
+        <DCArtboard id="locations" label="Visit our lot" width={1280} height={1800}><PageFrame src="locations.html" /></DCArtboard>
+        <DCArtboard id="contact" label="Contact" width={1280} height={1400}><PageFrame src="contact.html" /></DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

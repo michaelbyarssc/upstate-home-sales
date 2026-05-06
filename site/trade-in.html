@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trade-In — Upstate Homes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/site.css">
+<style>
+  .page-hero { background: var(--c-bg); padding: var(--s-16) var(--gutter) var(--s-12); border-bottom: 1px solid var(--c-line); }
+  .page-hero .inner { max-width: var(--container); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-12); align-items: center; }
+  .page-hero h1 { font-size: clamp(44px, 5.5vw, 76px); margin: var(--s-3) 0 var(--s-5); line-height: 1.02; letter-spacing: -0.02em; }
+  .page-hero h1 em { font-style: italic; font-weight: 400; color: var(--c-accent); }
+  .page-hero p.lede { font-size: 19px; color: var(--c-ink-soft); margin-bottom: var(--s-6); }
+  @media (max-width: 900px) { .page-hero .inner { grid-template-columns: 1fr; } }
+
+  .valuator { background: var(--c-surface); border: 1px solid var(--c-line); border-radius: var(--r-2); padding: var(--s-8); box-shadow: var(--sh-2); }
+  .valuator h3 { font: 500 24px/1.2 var(--f-display); margin-bottom: var(--s-2); }
+  .valuator p.helper { font-size: 14px; color: var(--c-ink-mute); margin-bottom: var(--s-5); }
+  .valuator .field { margin-bottom: var(--s-3); }
+  .valuator .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+  .valuator .btn { width: 100%; margin-top: var(--s-3); }
+
+  .reasons { padding: var(--s-16) var(--gutter); }
+  .reasons .inner { max-width: var(--container); margin: 0 auto; }
+  .reasons-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--s-4); margin-top: var(--s-8); }
+  .reason { padding: var(--s-6); border: 1px solid var(--c-line); border-radius: var(--r-2); background: var(--c-surface); }
+  .reason .num { font: 500 12px/1 var(--f-body); letter-spacing: 0.16em; color: var(--c-accent); margin-bottom: var(--s-3); }
+  .reason h4 { font: 500 22px/1.2 var(--f-display); margin-bottom: var(--s-2); letter-spacing: -0.005em; }
+  .reason p { font-size: 14px; color: var(--c-ink-soft); margin: 0; }
+  @media (max-width: 800px) { .reasons-grid { grid-template-columns: 1fr; } }
+
+  .timeline { background: var(--uhs-navy); color: var(--c-bg); padding: var(--s-16) var(--gutter); }
+  .timeline .inner { max-width: var(--container); margin: 0 auto; }
+  .timeline h2 { color: #fff; }
+  .tl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-3); margin-top: var(--s-8); }
+  .tl-step { padding: var(--s-5); border-left: 2px solid var(--c-accent); }
+  .tl-step .week { font: 500 11px/1 var(--f-body); letter-spacing: 0.16em; color: var(--c-accent); margin-bottom: var(--s-2); }
+  .tl-step h4 { color: #fff; font: 500 18px/1.3 var(--f-body); margin-bottom: 6px; }
+  .tl-step p { font: 400 13px/1.4 var(--f-body); color: rgba(246,239,230,0.7); margin: 0; }
+  @media (max-width: 800px) { .tl-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="uhs-topbar"><div class="uhs-topbar-inner"><span>Lexington, SC · Mon–Sat 9–6</span><span class="spacer"></span><a href="financing.html">Financing</a><a href="trade-in.html">Trade-In</a><a href="locations.html">Visit our lot</a><a href="tel:8035551234" class="phone">(803) 555-1234</a></div></div>
+<nav class="uhs-nav"><div class="uhs-nav-inner"><a href="home.html" class="uhs-brand"><span class="name">Upstate <em>Homes</em></span></a><span class="spacer"></span><div class="uhs-nav-links"><a href="inventory.html">Browse homes</a><a href="manufacturers.html">Manufacturers</a><a href="land-and-home.html">Land + Home</a><a href="financing.html">Financing</a><a href="how-it-works.html">How it works</a><a href="about.html">About</a></div><div class="uhs-nav-cta"><a href="#" class="btn btn-primary btn-sm">Get a quote</a></div></div></nav>
+
+<header class="page-hero">
+  <div class="inner">
+    <div>
+      <span class="eyebrow">Trade-In Program</span>
+      <h1>Trade up.<br><em>We'll handle the rest.</em></h1>
+      <p class="lede">Already in a manufactured home? We'll appraise it, credit the value toward your new home, and handle the title transfer. Most trade-ins close in 6 weeks.</p>
+    </div>
+    <div class="valuator">
+      <h3>Free 24-hour appraisal</h3>
+      <p class="helper">5 questions. We'll send a written appraisal range within 24 hours.</p>
+      <div class="row">
+        <div class="field"><label class="label">Year</label><input class="input" placeholder="2014"></div>
+        <div class="field"><label class="label">Manufacturer</label><input class="input" placeholder="Clayton"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label class="label">Bedrooms</label><select class="select"><option>3</option><option>2</option><option>4+</option></select></div>
+        <div class="field"><label class="label">Sq ft</label><input class="input" placeholder="1,500"></div>
+      </div>
+      <div class="field"><label class="label">Current location ZIP</label><input class="input" placeholder="29072"></div>
+      <div class="field"><label class="label">Email</label><input class="input" type="email" placeholder="you@example.com"></div>
+      <button class="btn btn-primary">Get my appraisal</button>
+    </div>
+  </div>
+</header>
+
+<section class="reasons">
+  <div class="inner">
+    <div class="section-head"><div class="lhs"><span class="eyebrow">Why trade with us</span><h2>Three reasons it's easier than selling.</h2></div></div>
+    <div class="reasons-grid">
+      <div class="reason"><div class="num">01</div><h4>You don't show your home.</h4><p>No open houses, no strangers walking through, no listing photos. We come to you for one inspection.</p></div>
+      <div class="reason"><div class="num">02</div><h4>Title transfer, handled.</h4><p>Manufactured-home titles are notoriously messy. We process the SCDMV transfer and lien release. You sign once.</p></div>
+      <div class="reason"><div class="num">03</div><h4>Tax advantages.</h4><p>SC sales tax is calculated on the difference between trade-in value and new-home price. Real savings — usually $1,500–$3,000.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="timeline">
+  <div class="inner">
+    <div class="section-head"><div class="lhs"><span class="eyebrow" style="color:rgba(246,239,230,0.6);">Typical timeline</span><h2>Six weeks, start to keys.</h2></div></div>
+    <div class="tl-grid">
+      <div class="tl-step"><div class="week">WEEK 1</div><h4>Appraisal</h4><p>On-site inspection. Written value range within 48 hours of visit.</p></div>
+      <div class="tl-step"><div class="week">WEEK 2</div><h4>Pick your new home</h4><p>From inventory or custom. Apply trade credit to deposit.</p></div>
+      <div class="tl-step"><div class="week">WEEKS 3–5</div><h4>Financing &amp; site prep</h4><p>Loan closes, new site readied, delivery scheduled.</p></div>
+      <div class="tl-step"><div class="week">WEEK 6</div><h4>Swap day</h4><p>We move your old home (or buy it), set the new one. Same week.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer class="uhs-footer"><div class="uhs-footer-inner"><div class="uhs-footer-grid"><div class="brandblock"><div class="name">Upstate <em>Homes</em></div><p>Family-owned manufactured-home dealer.</p></div><div><h4>Browse</h4><ul><li><a href="inventory.html">All homes</a></li></ul></div><div><h4>Programs</h4><ul><li><a href="financing.html">Financing</a></li><li><a href="land-and-home.html">Land + Home</a></li><li><a href="trade-in.html">Trade-In</a></li></ul></div><div><h4>Company</h4><ul><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li></ul></div><div><h4>Help</h4><ul><li><a href="faq.html">FAQ</a></li></ul></div></div><div class="uhs-footer-bottom"><span>© 2025 Upstate Homes, LLC.</span><span class="spacer"></span><span>SC #44218 · NC #L-2841</span></div></div></footer>
+</body>
+</html>

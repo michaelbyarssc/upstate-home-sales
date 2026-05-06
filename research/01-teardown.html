@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phase 1 — Competitive Teardown</title>
+<style>
+  :root {
+    --ink: #11181c;
+    --ink-2: #3a4248;
+    --muted: #6a727a;
+    --line: #e6e8eb;
+    --bg: #fbfbf9;
+    --panel: #fff;
+    --accent: #b9532a;       /* clay/terracotta — placeholder UHS */
+    --accent-soft: #f6e9e1;
+    --good: #1f8a5b;
+    --bad: #b3261e;
+    --warn: #b07b00;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: ui-serif, Georgia, "Iowan Old Style", "Source Serif Pro", serif;
+    font-size: 17px; line-height: 1.55;
+  }
+  .doc { max-width: 880px; margin: 0 auto; padding: 80px 48px 160px; }
+  .meta { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 16px; }
+  h1 { font-size: 44px; line-height: 1.05; letter-spacing: -0.01em; margin: 0 0 12px; font-weight: 600; }
+  .lede { font-size: 20px; color: var(--ink-2); margin: 0 0 56px; max-width: 640px; }
+  h2 { font-size: 28px; letter-spacing: -0.005em; margin: 64px 0 8px; font-weight: 600;
+       padding-top: 24px; border-top: 1px solid var(--line); }
+  h2 .num { color: var(--muted); font-weight: 400; margin-right: 12px; }
+  h3 { font-size: 19px; margin: 32px 0 8px; font-weight: 600; font-family: ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.005em; }
+  h4 { font-size: 15px; margin: 20px 0 6px; font-family: ui-sans-serif, system-ui, sans-serif;
+       text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+  p { margin: 0 0 14px; text-wrap: pretty; }
+  em { font-style: italic; color: var(--ink-2); }
+  strong { font-weight: 600; }
+  ul, ol { margin: 8px 0 16px; padding-left: 22px; }
+  li { margin: 4px 0; }
+  blockquote { margin: 16px 0; padding: 12px 18px; border-left: 3px solid var(--accent);
+    background: var(--accent-soft); font-style: italic; color: var(--ink-2); }
+  .callout { margin: 20px 0; padding: 16px 20px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 4px; }
+  .callout h4 { margin-top: 0; }
+  .callout.good { border-left: 4px solid var(--good); }
+  .callout.bad  { border-left: 4px solid var(--bad); }
+  .callout.warn { border-left: 4px solid var(--warn); }
+  .grid { display: grid; gap: 12px; }
+  .grid.two { grid-template-columns: 1fr 1fr; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; background: #f1efe9; color: var(--ink); position: sticky; top: 0;
+       font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+  td.y { color: var(--good); font-weight: 600; }
+  td.n { color: #c7c7c4; }
+  td.p { color: var(--warn); }
+  .site-row td:first-child { font-weight: 600; white-space: nowrap; }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px;
+    background: #ecebe6; color: var(--ink-2); letter-spacing: 0.04em; text-transform: uppercase;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 600; }
+  .pill.mfr { background: #e7eef6; color: #2a4a73; }
+  .pill.dealer { background: var(--accent-soft); color: #7a3618; }
+  .quote-bar { margin: 32px 0; padding: 24px 28px; border-left: 4px solid var(--ink);
+    background: #fff; font-size: 18px; line-height: 1.45; }
+  .quote-bar .who { display: block; margin-top: 8px; font-size: 13px; color: var(--muted);
+    font-family: ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 48px 0; }
+  .toc { background: var(--panel); border: 1px solid var(--line); padding: 20px 24px;
+    margin: 0 0 56px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; }
+  .toc ol { margin: 8px 0 0; padding-left: 22px; }
+  .toc a { color: var(--ink-2); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  .footnote { font-size: 13px; color: var(--muted); margin-top: 4px;
+    font-family: ui-sans-serif, system-ui, sans-serif; }
+  .scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main class="doc">
+
+  <div class="meta">Phase 1 · Competitive Teardown · For UHS</div>
+  <h1>What's actually on the manufactured-home internet</h1>
+  <p class="lede">Nine sites read end-to-end across both sides of the category — three SC dealers UHS will compete with, and six manufacturers whose homes UHS sells. Here's what's working, what's broken, and where the opportunity sits.</p>
+
+  <nav class="toc">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#sample">The sample</a></li>
+      <li><a href="#tldr">TL;DR — three things to internalize</a></li>
+      <li><a href="#patterns">Category-wide patterns (the unwritten rules)</a></li>
+      <li><a href="#great">What's great (steal these)</a></li>
+      <li><a href="#good">What's competent (table stakes)</a></li>
+      <li><a href="#awful">What's awful (the opportunity)</a></li>
+      <li><a href="#matrix">Feature matrix</a></li>
+      <li><a href="#opportunity">Strategic opportunity for UHS</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="sample"><span class="num">01</span>The sample</h2>
+  <p>9 sites read in full (~915 pages, screenshots + markdown). Two more (Deer Valley, SC Manufactured Homes) were bot-blocked beyond the homepage and are excluded from analysis.</p>
+
+  <table>
+    <thead><tr><th>Site</th><th>Type</th><th>Role in analysis</th></tr></thead>
+    <tbody>
+      <tr class="site-row"><td>Lexington Discount Homes</td><td><span class="pill dealer">SC Dealer</span></td><td><strong>Direct competitor.</strong> SC's incumbent — 35 yrs, 3,600 families, 100 homes/yr. Sets the floor.</td></tr>
+      <tr class="site-row"><td>Mobile Homes of SC (Skipper)</td><td><span class="pill dealer">SC Dealer</span></td><td>Direct competitor. Smaller, thinner. Easy to beat.</td></tr>
+      <tr class="site-row"><td>Lumbee Homes</td><td><span class="pill dealer">SC Dealer</span></td><td>Direct competitor. Best-looking dealer site in the sample — multi-location.</td></tr>
+      <tr class="site-row"><td>Acme Homes (NC/SC)</td><td><span class="pill dealer">Dealer</span></td><td>Adjacent geography. Same off-the-shelf platform as Lexington.</td></tr>
+      <tr class="site-row"><td>Clayton Homes</td><td><span class="pill mfr">Manufacturer</span></td><td>Category leader. Sets aesthetic + UX expectations consumers bring.</td></tr>
+      <tr class="site-row"><td>Champion Homes</td><td><span class="pill mfr">Manufacturer</span></td><td>"Smarter Way Home." Strong brand, weak execution.</td></tr>
+      <tr class="site-row"><td>Cavco</td><td><span class="pill mfr">Manufacturer</span></td><td>Corporate / B2B-leaning. Best spec depth in the sample.</td></tr>
+      <tr class="site-row"><td>Franklin Homes</td><td><span class="pill mfr">Manufacturer</span></td><td>Mid-market. Same dealer plugin as Lexington/Acme — useful for spotting platform conventions.</td></tr>
+      <tr class="site-row"><td>Live Oak</td><td><span class="pill mfr">Mfr+Dealer hybrid</span></td><td>Project-portfolio approach worth studying.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="tldr"><span class="num">02</span>TL;DR — three things to internalize</h2>
+
+  <div class="callout">
+    <h4>1. The dealer side of this category runs on one Wordpress plugin</h4>
+    <p>Lexington Discount, Acme, Franklin (and likely many of the 100 dealers Champion lists) all share the <em>exact same</em> CDN (<code>d132mt2yijm03y.cloudfront.net</code>), the <em>exact same</em> URL grammar (<code>/floor-plan/&lt;id&gt;/&lt;series&gt;/&lt;model&gt;/</code>, <code>/quote/floorplan/&lt;id&gt;/dealer/&lt;dealerId&gt;/</code>), and the <em>exact same</em> filter UI. This is a white-label "ManufacturedHomes.com" dealer plugin. <strong>Every dealer using it looks 95% identical.</strong> A custom-built site is an instant 10x differentiator.</p>
+  </div>
+
+  <div class="callout">
+    <h4>2. The manufacturer-vs-dealer divide is real and exploitable</h4>
+    <p>Manufacturers (Clayton, Champion) have agency-built sites with photo direction, geo-personalization, and editorial content. Dealers have spreadsheet-grade catalog dumps. <strong>The buyer's expectation is set by the manufacturer; their actual purchase happens at the dealer.</strong> The expectation gap is enormous — and that's where UHS plays.</p>
+  </div>
+
+  <div class="callout">
+    <h4>3. Nobody shows price. Nobody.</h4>
+    <p>Across 915 pages, I saw zero published purchase prices. Every dealer routes you through a "Get Price Quote" or "Call for Price" lead-capture modal. Mobile Homes of SC literally labels homes "Call for Price" on the card. This is the category's biggest UX failure — and a defensible reason (dealer markup varies by region, by lot/no-lot, by financing) — but there's still room to be <strong>radically more transparent</strong> than competitors without giving away pricing strategy.</p>
+  </div>
+
+  <h2 id="patterns"><span class="num">03</span>Category-wide patterns</h2>
+  <p>Read these as "the conventions a manufactured-home shopper expects." Break them only with intention.</p>
+
+  <h3>The catalog is the site</h3>
+  <p>On every dealer site I read, the homepage's primary job is to surface filter chrome and dump 6–12 home cards. The "About / Why us / Testimonials" stuff is below the fold or on secondary pages. Manufactured-home shoppers come to <em>browse inventory</em>, not to be sold a brand. UHS should respect this instinct, even while elevating the visual frame around it.</p>
+
+  <h3>The home card is standardized</h3>
+  <p>Across all 9 sites, a home card carries the same anatomy:</p>
+  <ul>
+    <li>Hero exterior photo (occasionally interior)</li>
+    <li>Series / Model name</li>
+    <li>"Built by: [Manufacturer]"</li>
+    <li>Beds · Baths · Sq Ft · (sometimes Sections / Width × Length)</li>
+    <li>Two utility links: <strong>Floor Plan</strong> + <strong>3D Tour</strong> (Matterport)</li>
+    <li>One primary CTA: "Get Price Quote" / "Get Pricing" / "Price Quote"</li>
+  </ul>
+  <p>This is so consistent that any deviation will read as "broken" to a return shopper. Keep the anatomy; redesign the styling.</p>
+
+  <h3>The filter set is also standardized</h3>
+  <p>Sq Ft buckets · Beds · Baths · Sections · Stories · "Has 3D Tour" · Property Type (Manufactured / Modular / Park Model / Multi-Family / Commercial / MH Advantage) · Style (Ranch / Cape Cod / etc).</p>
+  <p>A buyer who's been on Lexington's site already knows this taxonomy. UHS should use the same vocabulary — but present it better (we'll prototype combobox + chip-tray instead of the typical stack of dropdowns).</p>
+
+  <h3>The lead capture is a "price quote" modal</h3>
+  <p>When you click any "Get Price Quote" CTA, you land on a form that asks: name, email, phone, ZIP, "what's your timeframe," "do you own land," "are you working with a lender." This is the dealer's funnel; it doubles as light qualification. UHS will replicate this flow.</p>
+
+  <h3>The trust block is: years + families + homes/year</h3>
+  <p>Lexington: <em>"35 Years In Business · 3,600 Families · 100 Homes Built/Year."</em> Champion: <em>"3M+ homes built · 24 brands · 8,400+ employees."</em> Big numbers, plain-spoken. This is how the category establishes credibility; UHS needs its own version (even if smaller — "Family-owned since [year], [N] homes delivered, [N] manufacturers represented").</p>
+
+  <h3>"Authorized Retailer of [logo wall]" is the manufacturer trust signal</h3>
+  <p>Both Lexington and Lumbee dedicate a homepage strip to manufacturer logos (Clayton, Cavco, Champion, Live Oak, Scotbilt, Kabco, TRU, Fleetwood, Maynardville, Marlette, Southern Energy, Appalachia, Buccaneer). For a multi-brand dealer this is a primary trust badge — the buyer trusts the manufacturer, the dealer borrows that trust. UHS must do this prominently.</p>
+
+  <h2 id="great"><span class="num">04</span>What's great — steal these</h2>
+
+  <div class="callout good">
+    <h4>Clayton's geo-personalization</h4>
+    <p>Every page header on Clayton's site shows <em>"Shopping Near 27502"</em> with an editable ZIP. Listings filter to <em>"Show homes within 50 miles of 27502."</em> Locations page filters too. It's the single best UX decision in the entire sample — the site feels like it's working <em>for you</em>, not the other way around. <strong>UHS should ship this on day one.</strong> Default to the user's IP-derived ZIP; let them override; persist to localStorage.</p>
+  </div>
+
+  <div class="callout good">
+    <h4>Clayton's "How It Works" 6-step explainer</h4>
+    <p>Shop Online → Tour a Home → Get Financing → Get Insurance → Close on Your Home → Welcome Home. This belongs on every dealer site. Manufactured-home buyers — especially first-timers — are anxious about the unknowns (foundation, delivery, hookups, financing). Demystifying the process is high-leverage trust-building.</p>
+  </div>
+
+  <div class="callout good">
+    <h4>Clayton's "Curated Collections"</h4>
+    <p>Pre-built browse-by-vibe pages: <em>"Homes Under $200k"</em>, <em>"Best of the Best"</em>, <em>"Featured Facebook Homes."</em> A friendlier on-ramp than raw filtering, and SEO gold. UHS should ship 4–6 of these (Under $X · 3-Bedroom Family Favorites · Tiny / Park Models · Move-In Ready · Premium / Luxury · Multi-section).</p>
+  </div>
+
+  <div class="callout good">
+    <h4>Cavco's deep spec table</h4>
+    <p>Cavco lists every electrical, plumbing, structural, and finish spec on the detail page (200 AMP service, 2x6 floor joists 16" OC, R40 insulation, PEX water lines, etc.). The other dealers hide this. <strong>Serious buyers — especially those comparing to site-built — want it.</strong> UHS should have it as a "Specs" tab on every detail page, with smart defaults from the manufacturer brochure.</p>
+  </div>
+
+  <div class="callout good">
+    <h4>Lumbee's photo-forward inventory cards</h4>
+    <p>Lumbee uses real exterior lifestyle photography (homes set on actual lots with landscaping) instead of the white-background factory renders everyone else uses. The cards <em>look like real houses you could live in.</em> The emotional uplift is enormous. UHS should commission or borrow a small library of "homes in the wild" photography — even 8–12 hero images set on SC lots transforms the inventory.</p>
+  </div>
+
+  <div class="callout good">
+    <h4>Franklin's "Explore Our Home Collections" series grid</h4>
+    <p>Franklin groups their floor plans into 4 named "series" (Classic SW, Classic DW, Essentials, Prefab) with a card for each on the homepage. It's a less-overwhelming entry point than "browse 235 homes." UHS could do the same with manufacturer brands or with experiential collections.</p>
+  </div>
+
+  <div class="callout good">
+    <h4>Champion's product-type clarity</h4>
+    <p>Champion's nav distinguishes <em>Manufactured · Modular · Park Models &amp; Cabins · ADUs.</em> This is a real difference (modular = built to local code, manufactured = HUD code, park model = ≤400 sqft titled as RV). Most dealer sites mash them together. UHS should expose the distinction clearly — it's both an SEO play and a trust signal.</p>
+  </div>
+
+  <div class="callout good">
+    <h4>Lexington's phone-first hero</h4>
+    <p>Lexington's hero literally puts <code>(803) 951-1900</code> as a tel: link <em>above</em> the H1. Crude, but it's working — manufactured-home buyers skew older and call more than they form-fill. Don't be too polite to put the phone number front and center.</p>
+  </div>
+
+  <h2 id="good"><span class="num">05</span>What's competent — table stakes</h2>
+
+  <p>These appear on most sites and should be present on UHS without ceremony:</p>
+  <ul>
+    <li><strong>Filter chrome</strong> — Sq Ft / Beds / Baths / Sections / Stories / Property Type / Style. Either a sticky left rail or a top bar of dropdowns.</li>
+    <li><strong>Floor plan + 3D tour</strong> on every detail page. Matterport links from the manufacturer; floor-plan PDFs/images.</li>
+    <li><strong>Photo gallery</strong> — exterior + 6–10 interior shots, lightbox-able.</li>
+    <li><strong>"Where to Buy" / "Find a Retailer" map.</strong> For UHS this becomes the locations page (single-location for now, but designed for multi-).</li>
+    <li><strong>Spec table</strong> — beds, baths, sqft, sections, length, width, style, manufacturer, model number.</li>
+    <li><strong>Brochure download</strong> — dealers borrow the manufacturer's PDF.</li>
+    <li><strong>Embedded video</strong> — Wistia or YouTube walk-through.</li>
+    <li><strong>Financing landing page</strong> — explains lender partners, loan types (chattel vs. land+home), rough payment calculator. Half the sites have this; the other half should.</li>
+    <li><strong>Areas Served / Local SEO pages</strong> — Lumbee has one per SC town. Cheap traffic; we should do it.</li>
+    <li><strong>Testimonials carousel</strong> — every site has one. Boring but expected.</li>
+    <li><strong>Trust strip</strong> — years in business, families served, homes/year.</li>
+    <li><strong>Manufacturer logo wall.</strong></li>
+    <li><strong>FAQ page.</strong> Clayton has 26 of them — that's overkill, but 12–15 well-written entries (foundations, delivery, lifespan, financing, insurance, warranty, land requirements) are essential.</li>
+    <li><strong>Buyer's Guide</strong> — Franklin has one. PDF or web. Long-form, SEO and trust.</li>
+    <li><strong>Sticky contact CTA</strong> on mobile — phone + form.</li>
+  </ul>
+
+  <h2 id="awful"><span class="num">06</span>What's awful — the opportunity</h2>
+
+  <div class="callout bad">
+    <h4>Visual sameness</h4>
+    <p>Every dealer site uses the same template, the same blue, the same Helvetica-or-similar sans, the same stock photos. Lexington, Acme, Franklin, and most of Champion's 100 retailers are visually indistinguishable. <strong>UHS can win on aesthetics alone.</strong> A confident, restrained, photo-driven site with a real visual identity will look like a different category.</p>
+  </div>
+
+  <div class="callout bad">
+    <h4>"Call for Price" / no pricing whatsoever</h4>
+    <p>Mobile Homes of SC ships cards labeled "Call for Price." Lexington has nothing — every quote is a modal form. <strong>Buyers hate this.</strong> Even if final price is a quote, UHS could show: <em>"Starting from $X with standard finishes, before delivery and site prep"</em> — a base MSRP from the manufacturer, with a clear caveat. This alone would feel revolutionary.</p>
+  </div>
+
+  <div class="callout bad">
+    <h4>SEO doorway-page boilerplate</h4>
+    <p>Every detail page on Mobile Homes of SC says some variant of <em>"The [model] has X Beds and Y Baths. This Z sqft Modular home is available for delivery in South Carolina."</em> No real description, no story, no reason to buy <em>this one</em>. UHS should write 2–3 sentences of actual product copy per home (or auto-generate from the spec sheet with Claude — easy).</p>
+  </div>
+
+  <div class="callout bad">
+    <h4>Loading spinners and broken layouts on the homepage</h4>
+    <p>Champion's homepage screenshot (a Fortune 500 manufacturer) shows a spinner where "Featured Homes Near You" should render. Cavco's "Move-In Ready" page returned 254 characters of content — entirely empty. <strong>The big players ship sloppy work.</strong> Hitting basic competence puts UHS ahead of half the category.</p>
+  </div>
+
+  <div class="callout bad">
+    <h4>Endless mega-menus and corporate clutter</h4>
+    <p>Champion's mega-menu has ~25 items across 4 columns. Cavco's homepage promotes "Become a Retailer" and "National Community Partner" to consumer shoppers. <strong>Dealers and manufacturers conflate B2B and B2C audiences.</strong> UHS, as a single-purpose dealer site, can be ruthlessly focused on the buyer.</p>
+  </div>
+
+  <div class="callout bad">
+    <h4>No saved-homes / favorites (except Clayton)</h4>
+    <p>Only Clayton has a "Heart" + "MyHome Account" — everyone else expects you to either bookmark URLs or fill a form. Cross-shopping is the literal point of an inventory site. UHS should have local-storage favorites on day one (no login required), and a dead-simple "email me my saved homes" capture.</p>
+  </div>
+
+  <div class="callout bad">
+    <h4>Mobile-hostile filter UX</h4>
+    <p>Most filters are dropdown stacks that occupy a full mobile screen before you see a single home. Modern pattern: collapsed filter bar with "X filters · Y homes" pill, expand on tap, results visible behind sheet. UHS should ship the modern pattern.</p>
+  </div>
+
+  <div class="callout warn">
+    <h4>Half-built community/parks pretense</h4>
+    <p>Champion and Cavco list "communities" they sell into. For a single-location SC dealer, this is irrelevant clutter. UHS should not pretend to be a network operator — be a great dealer.</p>
+  </div>
+
+  <h2 id="matrix"><span class="num">07</span>Feature matrix</h2>
+  <p>What's actually present across the category. <strong class="footnote">Y = present, p = partial/poor, n = absent.</strong></p>
+
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>Lexington</th>
+        <th>Lumbee</th>
+        <th>Mobile&nbsp;Homes&nbsp;SC</th>
+        <th>Acme</th>
+        <th>Clayton</th>
+        <th>Champion</th>
+        <th>Cavco</th>
+        <th>Franklin</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Inventory grid w/ filters</td>     <td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td></tr>
+      <tr><td>Geo-personalization (ZIP)</td>     <td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="p">p</td><td class="n">n</td><td class="n">n</td></tr>
+      <tr><td>Published price (any form)</td>    <td class="n">n</td><td class="n">n</td><td class="p">"call"</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td></tr>
+      <tr><td>Saved-homes / favorites</td>       <td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="n">n</td><td class="n">n</td><td class="n">n</td></tr>
+      <tr><td>3D Matterport tours</td>           <td class="y">Y</td><td class="p">p</td><td class="n">n</td><td class="y">Y</td><td class="p">p</td><td class="p">p</td><td class="y">Y</td><td class="y">Y</td></tr>
+      <tr><td>Floor-plan PDF/image</td>          <td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td></tr>
+      <tr><td>Embedded walkthrough video</td>    <td class="y">Y</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="y">Y</td><td class="n">n</td><td class="y">Y</td></tr>
+      <tr><td>Deep spec table (HVAC/plumb/etc)</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="p">p</td><td class="p">p</td><td class="y">Y</td><td class="n">n</td></tr>
+      <tr><td>Manufacturer logo wall</td>        <td class="y">Y</td><td class="y">Y</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="n">n</td><td class="n">n</td><td class="n">n</td></tr>
+      <tr><td>"How It Works" explainer</td>     <td class="n">n</td><td class="p">p</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="p">p</td><td class="n">n</td><td class="p">p</td></tr>
+      <tr><td>Financing landing page</td>        <td class="y">Y</td><td class="y">Y</td><td class="p">p</td><td class="n">n</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td></tr>
+      <tr><td>Payment calculator</td>            <td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="p">p</td><td class="y">Y</td><td class="n">n</td><td class="n">n</td></tr>
+      <tr><td>Curated collections</td>           <td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td></tr>
+      <tr><td>FAQ page</td>                      <td class="n">n</td><td class="p">p</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td></tr>
+      <tr><td>Buyer's guide / long-form</td>     <td class="n">n</td><td class="p">p</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td></tr>
+      <tr><td>Blog / inspiration content</td>    <td class="n">n</td><td class="y">Y</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="y">Y</td><td class="y">Y</td><td class="n">n</td></tr>
+      <tr><td>Areas-served local SEO pages</td>  <td class="n">n</td><td class="y">Y</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td></tr>
+      <tr><td>Testimonials</td>                  <td class="y">Y</td><td class="p">p</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="y">Y</td><td class="p">p</td><td class="n">n</td></tr>
+      <tr><td>Real lifestyle photography</td>    <td class="n">n</td><td class="y">Y</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="y">Y</td><td class="p">p</td><td class="p">p</td></tr>
+      <tr><td>Trust strip (years/families/yr)</td><td class="y">Y</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="y">Y</td><td class="n">n</td><td class="n">n</td></tr>
+      <tr><td>Sticky phone CTA</td>              <td class="y">Y</td><td class="p">p</td><td class="y">Y</td><td class="p">p</td><td class="n">n</td><td class="y">Y</td><td class="n">n</td><td class="y">Y</td></tr>
+      <tr><td>Land + Home offering</td>          <td class="n">n</td><td class="p">p</td><td class="n">n</td><td class="n">n</td><td class="p">p</td><td class="p">p</td><td class="n">n</td><td class="n">n</td></tr>
+      <tr><td>Trade-in offering</td>             <td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td><td class="n">n</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p class="footnote">Two rows worth highlighting: <strong>nobody publishes price</strong> (8/8 absent), and <strong>nobody offers trade-in</strong> (8/8 absent). The first is a known UX failure; the second is a real product gap UHS could fill if there's appetite.</p>
+
+  <h2 id="opportunity"><span class="num">08</span>Strategic opportunity for UHS</h2>
+
+  <p>Synthesizing the above, here's the positioning I'd recommend we design toward:</p>
+
+  <div class="quote-bar">
+    <strong>UHS is the dealer that treats manufactured-home buyers like adults.</strong>
+    <br>Real photos of real homes. Honest starting prices. Specs you can actually compare. A site that loads, a phone that's answered, a process that's explained.
+    <span class="who">— Working positioning · v0</span>
+  </div>
+
+  <h3>The five concrete moves that put UHS ahead of every site in this teardown</h3>
+
+  <ol>
+    <li><strong>Geo-personalize from ZIP one.</strong> "Showing homes near 29072." Persist. This single feature ends the "site as catalog dump" feeling.</li>
+    <li><strong>Show a base price + caveat on every home.</strong> "Starting at $148,400. Final price varies by site, finishes, delivery, and financing." More honest than 100% of the competition.</li>
+    <li><strong>Real photography over stock renders.</strong> Even 8 hero photos of UHS-delivered homes on actual SC lots reframes the entire shopping experience.</li>
+    <li><strong>Saved homes + email-me-my-list.</strong> No login wall. Local storage. One-tap email capture for the cross-shopping buyer.</li>
+    <li><strong>"How buying a manufactured home actually works."</strong> A 6-step explainer on the homepage + a dedicated page. Demystifies foundation, delivery, hookups, financing, insurance, closing. Removes the #1 anxiety blocker.</li>
+  </ol>
+
+  <h3>Things to deliberately NOT do</h3>
+  <ul>
+    <li>No mega-menu. 4–5 nav items max.</li>
+    <li>No pretending to be a community operator or a manufacturer.</li>
+    <li>No emoji, no stock illustrations, no gradient hero overlays.</li>
+    <li>No "Become a Retailer" or B2B clutter — UHS is a buyer-only experience.</li>
+    <li>No 26 FAQ entries. 12 well-written ones.</li>
+    <li>No carousel testimonials with stock headshots — we'll find a better trust pattern.</li>
+  </ul>
+
+  <h3>Open questions for you (Tarek)</h3>
+  <ol>
+    <li><strong>Pricing transparency:</strong> are you willing to publish "starting at" base MSRP? This is the single biggest differentiator on the table — but it commits you to a posture.</li>
+    <li><strong>Land + Home and Trade-In:</strong> do you offer these? Both are gaps in the category. If yes, they're prime real estate.</li>
+    <li><strong>Real photography:</strong> do you have a library of delivered-home photos, or do we plan around manufacturer renders for v1 and shoot later?</li>
+    <li><strong>Multi-tenant scope:</strong> the admin/inventory tool — is it strictly UHS for now, or do you intend to white-label it to other dealers (which would change the data model)?</li>
+    <li><strong>Geographic scope:</strong> which SC counties does UHS deliver to? This drives the geo-default ZIP and Areas-Served pages.</li>
+  </ol>
+
+  <hr>
+
+  <p class="footnote">Phase 1 deliverable. Source data: <code>uploads/&lt;site&gt;.json</code> (Firecrawl crawls), <code>research/extracts/&lt;site&gt;.json</code> (parsed home/list/detail samples), <code>research/screenshots/&lt;site&gt;-home.png</code> (homepage captures). Next: Phase 2 — brand identity directions for UHS.</p>
+
+</main>
+</body>
+</html>
