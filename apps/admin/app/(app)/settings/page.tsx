@@ -1,13 +1,46 @@
-export default function SettingsPage() {
+import { cookies } from 'next/headers';
+import Link from 'next/link';
+import { createClient } from '@uhs/db/server';
+import { ACTIVE_ORG_COOKIE, type Lot, type Org } from '@uhs/db';
+import { OrgSettingsForm } from './org-form';
+import { LotsManager } from './lots-manager';
+
+export const dynamic = 'force-dynamic';
+
+export default async function SettingsPage() {
+  const supabase = createClient();
+  const orgId = cookies().get(ACTIVE_ORG_COOKIE)?.value ?? null;
+  if (!orgId) {
+    return (
+      <div className="placeholder">
+        <strong>No active org.</strong> <Link href="/select-org">Choose an org</Link> first.
+      </div>
+    );
+  }
+
+  const [{ data: org }, { data: lots }] = await Promise.all([
+    supabase.from('orgs').select('*').eq('id', orgId).maybeSingle(),
+    supabase.from('lots').select('*').eq('org_id', orgId).is('deleted_at', null).order('name'),
+  ]);
+
+  if (!org) {
+    return <div className="placeholder">Org not found.</div>;
+  }
+
   return (
     <>
       <div className="page-header">
-        <div className="eyebrow">Week 7</div>
+        <div className="eyebrow">Workspace · Week 7</div>
         <h1>Settings</h1>
-        <p>Org branding, default markup %, SMS consent wording, lots, integrations.</p>
+        <p>Org branding, default markup %, SMS consent text, lots.</p>
       </div>
-      <div className="placeholder">
-        <strong>Stub.</strong> Backed by <code>orgs</code> + <code>lots</code>.
+
+      <div style={{ display: 'grid', gap: 24, gridTemplateColumns: '1fr', maxWidth: 800 }}>
+        <OrgSettingsForm org={org as Org} />
+        <LotsManager orgId={orgId} initialLots={(lots ?? []) as Lot[]} />
+        <Link href="/audit" style={{ color: 'var(--adm-accent)', fontSize: 13 }}>
+          View audit log →
+        </Link>
       </div>
     </>
   );

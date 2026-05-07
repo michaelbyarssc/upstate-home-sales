@@ -1,0 +1,32 @@
+.ti-table {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--adm-line);
+  border-radius: var(--r-2);
+  border-collapse: collapse;
+  font-size: 13px;
+  overflow: hidden;
+}
+.ti-table th {
+  text-align: left;
+  font: 600 11px/1 var(--f-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--adm-ink-mute);
+  padding: 12px 14px;
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--adm-line);
+}
+.ti-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #efeae0;
+}
+.ti-table td .sub { color: var(--adm-ink-mute); font-size: 11px; margin-top: 2px; }
+.ti-table tr:last-child td { border-bottom: none; }
+
+.ti-detail {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+}
+@media (max-width: 1000px) { .ti-detail { grid-template-columns: 1fr; } }

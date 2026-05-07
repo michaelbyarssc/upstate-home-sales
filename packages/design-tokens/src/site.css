@@ -1,0 +1,197 @@
+/* Upstate Homes — Shared site chrome (nav, footer) and page-level helpers */
+
+/* ─── Top nav ────────────────────────────────────────────────── */
+.uhs-topbar {
+  background: var(--uhs-navy);
+  color: rgba(246, 239, 230, 0.78);
+  font: 500 12px/1 var(--f-body);
+  letter-spacing: 0.02em;
+}
+.uhs-topbar-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 8px var(--gutter);
+  display: flex;
+  gap: var(--s-6);
+  align-items: center;
+}
+.uhs-topbar a { color: inherit; text-decoration: none; }
+.uhs-topbar a:hover { color: #fff; }
+.uhs-topbar .spacer { flex: 1; }
+.uhs-topbar .phone { color: #fff; font-weight: 600; letter-spacing: 0.04em; }
+
+.uhs-nav {
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-line);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: saturate(140%) blur(8px);
+}
+.uhs-nav-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--s-4) var(--gutter);
+  display: flex;
+  gap: var(--s-8);
+  align-items: center;
+}
+.uhs-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--c-ink);
+}
+.uhs-brand .name {
+  font: 500 26px/1 var(--f-display);
+  letter-spacing: -0.015em;
+}
+.uhs-brand .name em {
+  font-style: italic;
+  font-weight: 300;
+}
+.uhs-brand .tag {
+  font: 600 9px/1 var(--f-body);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-ink-mute);
+}
+.uhs-nav-links {
+  display: flex;
+  gap: var(--s-6);
+  align-items: center;
+  font: 500 14px/1 var(--f-body);
+}
+.uhs-nav-links a {
+  color: var(--c-ink);
+  text-decoration: none;
+  padding: 8px 0;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--d-fast) var(--ease);
+}
+.uhs-nav-links a:hover { border-bottom-color: var(--c-accent); }
+.uhs-nav-links a.active { border-bottom-color: var(--c-ink); }
+.uhs-nav .spacer { flex: 1; }
+.uhs-nav-cta { display: flex; gap: var(--s-3); align-items: center; }
+
+/* ─── Footer ─────────────────────────────────────────────────── */
+.uhs-footer {
+  background: var(--uhs-navy);
+  color: rgba(246, 239, 230, 0.78);
+  padding: var(--s-16) var(--gutter) var(--s-8);
+}
+.uhs-footer-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+}
+.uhs-footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: var(--s-8);
+  padding-bottom: var(--s-12);
+  border-bottom: 1px solid rgba(246, 239, 230, 0.12);
+}
+.uhs-footer h4 {
+  color: #fff;
+  font: 600 12px/1 var(--f-body);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: var(--s-4);
+}
+.uhs-footer ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.uhs-footer a { color: rgba(246, 239, 230, 0.7); text-decoration: none; font-size: 14px; }
+.uhs-footer a:hover { color: #fff; }
+.uhs-footer .brandblock .name { font: 500 32px/1 var(--f-display); color: #fff; letter-spacing: -0.015em; }
+.uhs-footer .brandblock .name em { font-style: italic; font-weight: 300; }
+.uhs-footer .brandblock p { font-size: 14px; color: rgba(246, 239, 230, 0.65); margin-top: var(--s-3); max-width: 320px; }
+.uhs-footer-bottom {
+  display: flex; gap: var(--s-6); align-items: center; flex-wrap: wrap;
+  padding-top: var(--s-6);
+  font-size: 12px; color: rgba(246, 239, 230, 0.55);
+}
+.uhs-footer-bottom .spacer { flex: 1; }
+
+/* ─── Inventory shared (used on home + inventory + detail) ──── */
+.home-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-2);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow var(--d-base) var(--ease), transform var(--d-base) var(--ease), border-color var(--d-base) var(--ease);
+}
+.home-card:hover {
+  box-shadow: var(--sh-2);
+  border-color: #d4ccba;
+  transform: translateY(-2px);
+}
+.home-card .photo {
+  aspect-ratio: 4/3;
+  position: relative;
+  overflow: hidden;
+}
+.home-card .photo .placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font: 500 11px/1 var(--f-body); color: rgba(255,255,255,0.7); letter-spacing: 0.16em; text-transform: uppercase;
+}
+.home-card .badge {
+  position: absolute; top: 12px; left: 12px;
+  background: var(--uhs-marsh); color: #fff;
+  font: 600 10px/1 var(--f-body); padding: 5px 9px;
+  border-radius: var(--r-pill); letter-spacing: 0.08em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.home-card .badge.new { background: var(--uhs-brick); }
+.home-card .badge.sold { background: var(--c-ink-mute); }
+.home-card .fav {
+  position: absolute; top: 12px; right: 12px;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  border: none; cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--d-fast) var(--ease);
+}
+.home-card .fav:hover { background: #fff; }
+.home-card .body { padding: var(--s-5); display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.home-card .eyebrow-card { font: 500 11px/1 var(--f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-ink-mute); }
+.home-card .name { font: 600 18px/1.2 var(--f-body); color: var(--c-ink); margin: 2px 0 4px; letter-spacing: -0.005em; }
+.home-card .specs { font: 400 14px/1.4 var(--f-body); color: var(--c-ink-mute); }
+.home-card .price-row {
+  margin-top: auto;
+  padding-top: var(--s-4);
+  display: flex; align-items: baseline; justify-content: space-between;
+}
+.home-card .price { font: 600 22px/1 var(--f-body); color: var(--c-ink); font-variant-numeric: tabular-nums; }
+.home-card .price-caveat { font: 400 11px/1.4 var(--f-body); color: var(--c-ink-mute); margin-top: 2px; }
+.home-card .view { font: 500 13px/1 var(--f-body); color: var(--c-accent); }
+
+/* Photo placeholders — earthy gradients standing in for real lot photography */
+.ph-1 { background: linear-gradient(135deg, #d8c8a8 0%, #8a7558 100%); }
+.ph-2 { background: linear-gradient(160deg, #b8a384 0%, #5e4f3a 100%); }
+.ph-3 { background: linear-gradient(145deg, #a8b598 0%, #4f5e44 100%); }
+.ph-4 { background: linear-gradient(135deg, #c9b896 0%, #6b5a44 100%); }
+.ph-5 { background: linear-gradient(150deg, #d6c5a3 0%, #7a6448 100%); }
+.ph-6 { background: linear-gradient(125deg, #b8c0a8 0%, #4a5340 100%); }
+.ph-7 { background: linear-gradient(140deg, #c4a884 0%, #5a4530 100%); }
+.ph-8 { background: linear-gradient(135deg, #aabba0 0%, #4d5a45 100%); }
+.ph-9 { background: linear-gradient(155deg, #d2bd9a 0%, #75603e 100%); }
+
+/* Page sections */
+.section { padding: var(--s-16) var(--gutter); }
+.section .inner { max-width: var(--container); margin: 0 auto; }
+.section.tight { padding: var(--s-12) var(--gutter); }
+.section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-6); margin-bottom: var(--s-8); flex-wrap: wrap; }
+.section-head .lhs { max-width: 640px; }
+.section-head .lhs h2 { margin-top: var(--s-2); }
+.section-head .rhs { display: flex; gap: var(--s-3); align-items: center; }
+
+@media (max-width: 900px) {
+  .uhs-footer-grid { grid-template-columns: 1fr 1fr; }
+  .uhs-nav-links { display: none; }
+}

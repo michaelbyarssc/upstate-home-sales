@@ -66,6 +66,9 @@ importers:
 
   apps/public:
     dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.45.4
+        version: 2.105.3
       '@uhs/db':
         specifier: workspace:*
         version: link:../../packages/db

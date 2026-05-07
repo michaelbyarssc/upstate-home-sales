@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { SiteHeader, SiteFooter } from './site-chrome';
 
 export const metadata: Metadata = {
-  title: 'Upstate Home Sales',
-  description: 'Manufactured homes for South Carolina families.',
+  title: { default: 'Upstate Home Sales', template: '%s · Upstate Home Sales' },
+  description:
+    'Manufactured homes in the South Carolina Upstate. Family-owned dealer with two lots, every major manufacturer, honest pricing.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +19,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <SiteHeader />
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }
