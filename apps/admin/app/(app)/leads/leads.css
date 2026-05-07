@@ -218,3 +218,16 @@
   margin-right: auto;
   align-self: center;
 }
+
+.lead-claim-btn {
+  margin-left: auto;
+  padding: 4px 10px;
+  font: 500 11px/1 var(--f-body);
+  border: 1px solid var(--adm-accent);
+  background: #fff;
+  color: var(--adm-accent);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.lead-claim-btn:hover { background: var(--adm-accent); color: #fff; }
+.lead-claim-btn:disabled { opacity: 0.5; cursor: default; }

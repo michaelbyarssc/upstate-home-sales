@@ -1,5 +1,5 @@
 /**
- * Outbound notification dispatch — SendGrid (email) + Twilio (SMS).
+ * Outbound notification dispatch — Resend (email) + Twilio (SMS).
  * Used by lead-message server actions when kind=outbound.
  *
  * If credentials are missing the helpers no-op and return { ok: true, skipped: true }
@@ -12,28 +12,29 @@ export async function sendEmail(args: {
   to: string;
   subject: string;
   text: string;
-  replyToToken: string; // becomes Reply-To: replies+{token}@SENDGRID_INBOUND_DOMAIN
+  replyToToken: string; // becomes Reply-To: replies+{token}@EMAIL_INBOUND_DOMAIN
   fromName?: string;
 }): Promise<Result> {
-  const apiKey = process.env.SENDGRID_API_KEY;
-  const domain = process.env.SENDGRID_INBOUND_DOMAIN;
-  const fromAddr = process.env.SENDGRID_FROM_EMAIL ?? `noreply@${domain ?? 'upstatehomesales.com'}`;
-  if (!apiKey || !domain) {
-    console.log('[notify.sendEmail] SendGrid not configured — skipping', { to: args.to });
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromAddr = process.env.RESEND_FROM_EMAIL;
+  const inboundDomain = process.env.EMAIL_INBOUND_DOMAIN;
+  if (!apiKey || !fromAddr || !inboundDomain) {
+    console.log('[notify.sendEmail] Resend not configured — skipping', { to: args.to });
     return { ok: true, skipped: true };
   }
 
-  const replyTo = `replies+${args.replyToToken}@${domain}`;
+  const replyTo = `replies+${args.replyToToken}@${inboundDomain}`;
+  const fromName = args.fromName ?? 'Upstate Home Sales';
   const body = {
-    personalizations: [{ to: [{ email: args.to }] }],
-    from: { email: fromAddr, name: args.fromName ?? 'Upstate Home Sales' },
-    reply_to: { email: replyTo },
+    from: `${fromName} <${fromAddr}>`,
+    to: [args.to],
+    reply_to: replyTo,
     subject: args.subject,
-    content: [{ type: 'text/plain', value: args.text }],
+    text: args.text,
   };
 
   try {
-    const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -43,7 +44,7 @@ export async function sendEmail(args: {
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      return { ok: false, error: `SendGrid ${res.status}: ${text}` };
+      return { ok: false, error: `Resend ${res.status}: ${text}` };
     }
     return { ok: true };
   } catch (e) {

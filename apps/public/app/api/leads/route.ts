@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@uhs/db/service';
 import type { LeadSource } from '@uhs/db';
+import { sendEmail } from '../../../lib/notify';
 
 /**
  * Public lead-intake endpoint. Anon -> service-role insert. Per CLAUDE.md the
@@ -109,7 +110,28 @@ export async function POST(req: Request) {
     body: initialBody,
   });
 
-  // TODO Week 5: dispatch SendGrid notify + (if consent) Twilio greeting.
+  // Notify dealer inbox of the new lead. Best-effort — failures don't block intake.
+  const notifyTo = process.env.LEAD_NOTIFY_EMAIL;
+  if (notifyTo) {
+    const adminBase = process.env.NEXT_PUBLIC_ADMIN_URL ?? 'https://admin.upstatehomesales.com';
+    const inboxUrl = `${adminBase}/leads/${lead.id}`;
+    const subjectLabel = source.replace('_', ' ');
+    await sendEmail({
+      to: notifyTo,
+      subject: `New ${subjectLabel} lead: ${contact_name}${body.stock_no ? ` re ${body.stock_no}` : ''}`,
+      text: [
+        `Name: ${contact_name}`,
+        `Email: ${email}`,
+        `Phone: ${(body.phone ?? '').trim() || '—'}`,
+        body.stock_no ? `Home: ${body.stock_no}` : null,
+        `Source: ${subjectLabel}`,
+        '',
+        initialBody,
+        '',
+        `Open in admin: ${inboxUrl}`,
+      ].filter(Boolean).join('\n'),
+    }).catch((e) => console.error('[lead-intake] notify failed:', e));
+  }
 
   return NextResponse.json({ ok: true, lead_id: lead.id });
 }

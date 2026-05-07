@@ -214,7 +214,6 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members }
                 {err && <span className="err">{err}</span>}
                 <span style={{ alignSelf: 'center', fontSize: 11, color: 'var(--adm-ink-mute)' }}>
                   {compose === 'sms' && !lead.sms_consent && '⚠ no SMS consent on file'}
-                  {compose === 'email' && '(send wired in Week 5 — currently logs to timeline only)'}
                 </span>
                 <button
                   type="button"

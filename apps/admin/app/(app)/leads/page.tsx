@@ -19,6 +19,16 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
   const supabase = createClient();
   const stage = (searchParams.stage as LeadStage | 'open' | undefined) ?? 'open';
 
+  // Lazy maintenance: flag any 'quoted' lead untouched for 48h+ as hot. Cheap
+  // update; runs once per inbox load. RLS already scopes to the active org.
+  const stale = new Date(Date.now() - 48 * 3600_000).toISOString();
+  await supabase
+    .from('leads')
+    .update({ is_hot: true })
+    .eq('stage', 'quoted')
+    .eq('is_hot', false)
+    .lt('updated_at', stale);
+
   let query = supabase
     .from('leads')
     .select('id, contact_name, email, phone, stage, source, is_hot, assignee_id, home_id, created_at, homes(name, stock_no)')

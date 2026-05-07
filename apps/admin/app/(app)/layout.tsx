@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@uhs/db/server';
 import { ACTIVE_ORG_COOKIE } from '@uhs/db';
 import { UserMenu } from './user-menu';
+import { RealtimeToasts } from './realtime-toasts';
 import './app-shell.css';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -37,7 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {(org?.name ?? 'U').slice(0, 1)}
           </div>
           <div className="name">
-            <div className="org-name">{org?.name ?? 'Upstate Homes'}</div>
+            <div className="org-name">{org?.name ?? 'Upstate Home Sales'}</div>
             <div className="org-tag">Dealer admin</div>
           </div>
         </div>
@@ -60,6 +61,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <main className="app-main">{children}</main>
+      <RealtimeToasts orgId={activeOrgId} />
     </div>
   );
 }

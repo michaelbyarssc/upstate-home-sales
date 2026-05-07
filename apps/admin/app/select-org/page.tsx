@@ -42,7 +42,7 @@ export default async function SelectOrgPage({
         <div className="brand">
           <div className="mark">U</div>
           <div className="name">
-            Upstate <em>Homes</em>
+            Upstate Home <em>Sales</em>
           </div>
         </div>
         <h2>Choose a dealership</h2>

@@ -16,7 +16,7 @@ export function SiteHeader() {
         <div className="uhs-nav-inner">
           <Link href="/" className="uhs-brand">
             <span className="name">
-              Upstate <em>Homes</em>
+              Upstate Home <em>Sales</em>
             </span>
             <span className="tag">South Carolina</span>
           </Link>
@@ -45,7 +45,7 @@ export function SiteFooter() {
         <div className="uhs-footer-grid">
           <div className="brandblock">
             <div className="name">
-              Upstate <em>Homes</em>
+              Upstate Home <em>Sales</em>
             </div>
             <p>
               Family-owned manufactured home dealer serving the South Carolina Upstate since 1998.

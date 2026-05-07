@@ -35,27 +35,20 @@ export async function inviteUser(args: {
   const sb = createServiceClient();
   const scoped_lots = args.scopedLot ? [args.scopedLot] : null;
 
-  // Check if user already exists.
-  const { data: existing } = await sb.auth.admin.listUsers({ page: 1, perPage: 1 });
-  // listUsers doesn't filter by email server-side; do a separate query.
-  const { data: byEmail } = await sb.rpc('noop_user_lookup', {}).then(
-    () => ({ data: null as { id: string } | null }),
-    () => ({ data: null }),
-  );
-  void existing; void byEmail;
-
-  // Use admin getUserByEmail when available; fall back to inviteUserByEmail.
+  // Look up existing user by email if the SDK exposes it; otherwise invite
+  // unconditionally and let Supabase return an error if the user exists.
   let userId: string | null = null;
-  try {
-    // @ts-expect-error — newer SDKs expose getUserByEmail; older ones don't.
-    if (typeof sb.auth.admin.getUserByEmail === 'function') {
-      // @ts-expect-error
-      const r = await sb.auth.admin.getUserByEmail(args.email);
-      userId = r?.data?.user?.id ?? null;
-    }
-  } catch { /* ignore */ }
-
   let invited_existing = false;
+
+  type AdminWithLookup = { getUserByEmail?: (email: string) => Promise<{ data?: { user?: { id: string } } | null }> };
+  const adminApi = sb.auth.admin as unknown as AdminWithLookup;
+  if (typeof adminApi.getUserByEmail === 'function') {
+    try {
+      const r = await adminApi.getUserByEmail(args.email);
+      userId = r?.data?.user?.id ?? null;
+    } catch { /* not found */ }
+  }
+
   if (userId) {
     invited_existing = true;
   } else {

@@ -2,8 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@uhs/db/server';
+import { createServiceClient } from '@uhs/db/service';
 import type { LeadMessage, LeadStage, MessageChannel, MessageKind } from '@uhs/db';
 import { sendEmail, sendSms } from '../../../../lib/notify';
+import { renderQuotePdf, type QuotePdfData } from '../../../../lib/quote-pdf';
 
 export async function postMessage(
   leadId: string,
@@ -112,12 +114,25 @@ export async function createQuote(args: {
 }): Promise<{ public_token: string; expires_at: string; listed_price_cents: number }> {
   const supabase = createClient();
 
-  // Snapshot listed_price_cents from the home AT THIS MOMENT.
-  const { data: home, error: hErr } = await supabase
-    .from('homes')
-    .select('listed_price_cents')
-    .eq('id', args.homeId)
-    .maybeSingle();
+  // Snapshot listed_price_cents from the home AT THIS MOMENT, plus full
+  // home + lead + org context for the PDF and the customer email.
+  const [{ data: home, error: hErr }, { data: lead }, { data: org }] = await Promise.all([
+    supabase
+      .from('homes')
+      .select('id, name, stock_no, beds, baths, sqft, headline, description, listed_price_cents')
+      .eq('id', args.homeId)
+      .maybeSingle(),
+    supabase
+      .from('leads')
+      .select('contact_name, email, reply_token')
+      .eq('id', args.leadId)
+      .maybeSingle(),
+    supabase
+      .from('orgs')
+      .select('name, brand_color')
+      .eq('id', args.orgId)
+      .maybeSingle(),
+  ]);
   if (hErr || !home) throw new Error(hErr?.message ?? 'Home not found');
 
   const expires = new Date(Date.now() + (args.validDays ?? 14) * 86_400_000).toISOString();
@@ -131,26 +146,95 @@ export async function createQuote(args: {
       listed_price_cents: home.listed_price_cents,
       expires_at: expires,
     })
-    .select('public_token, expires_at, listed_price_cents')
+    .select('id, public_token, expires_at, listed_price_cents, created_at')
     .single();
   if (error || !quote) throw new Error(error?.message ?? 'Quote insert failed');
 
   // Advance lead stage to 'quoted'.
   await supabase.from('leads').update({ stage: 'quoted' }).eq('id', args.leadId);
 
-  // Drop a system message into the timeline with the public link.
   const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomesales.com';
-  const url = `${publicBase}/q/${quote.public_token}`;
+  const publicUrl = `${publicBase}/q/${quote.public_token}`;
+
+  // Render PDF, upload to Storage, persist the path. Best-effort: a PDF
+  // failure shouldn't block the quote creation — the public URL still works.
+  let signedPdfUrl: string | null = null;
+  try {
+    const pdfData: QuotePdfData = {
+      orgName: org?.name ?? 'Upstate Home Sales',
+      brandColor: org?.brand_color ?? null,
+      homeName: home.name,
+      stockNo: home.stock_no,
+      beds: home.beds ?? null,
+      baths: home.baths ?? null,
+      sqft: home.sqft ?? null,
+      headline: home.headline ?? null,
+      description: home.description ?? null,
+      listedPriceCents: quote.listed_price_cents,
+      expiresAt: quote.expires_at,
+      createdAt: quote.created_at,
+      publicUrl,
+    };
+    const buf = await renderQuotePdf(pdfData);
+    const path = `${args.orgId}/${quote.id}.pdf`;
+    // Service client bypasses RLS — upload happens under a server action so
+    // the user's session-bound client lacks insert privs on storage.objects.
+    const svc = createServiceClient();
+    const { error: upErr } = await svc.storage
+      .from('quote-pdfs')
+      .upload(path, buf, { contentType: 'application/pdf', upsert: true });
+    if (upErr) throw upErr;
+    await supabase.from('quotes').update({ pdf_storage_path: path }).eq('id', quote.id);
+
+    const { data: signed, error: signErr } = await svc.storage
+      .from('quote-pdfs')
+      .createSignedUrl(path, 60 * 60 * 24 * 7); // 7-day expiry per handoff §07
+    if (!signErr && signed?.signedUrl) signedPdfUrl = signed.signedUrl;
+  } catch (e) {
+    console.error('[quote] PDF generation/upload failed:', e);
+  }
+
+  // System message in the timeline.
   await supabase.from('lead_messages').insert({
     lead_id: args.leadId,
     org_id: args.orgId,
     kind: 'system',
     channel: null,
-    body: `Quote created · ${url} · expires ${new Date(quote.expires_at).toLocaleDateString()}`,
+    body: `Quote created · ${publicUrl} · expires ${new Date(quote.expires_at).toLocaleDateString()}`,
   });
 
+  // Email the customer if we have an address.
+  if (lead?.email) {
+    const lines = [
+      `Hi ${lead.contact_name},`,
+      '',
+      `Here's your quote for ${home.name} (${home.stock_no}).`,
+      '',
+      `View online: ${publicUrl}`,
+    ];
+    if (signedPdfUrl) {
+      lines.push(`Download PDF (good for 7 days): ${signedPdfUrl}`);
+    }
+    lines.push(
+      '',
+      "Reply to this email with any questions — we'll get back to you the same business day.",
+      '',
+      '— Upstate Home Sales',
+    );
+    await sendEmail({
+      to: lead.email,
+      subject: `Your quote for ${home.name}`,
+      replyToToken: lead.reply_token,
+      text: lines.join('\n'),
+    }).catch((e) => console.error('[quote] customer email failed:', e));
+  }
+
   revalidatePath(`/leads/${args.leadId}`);
-  return quote;
+  return {
+    public_token: quote.public_token,
+    expires_at: quote.expires_at,
+    listed_price_cents: quote.listed_price_cents,
+  };
 }
 
 export async function toggleLeadHot(leadId: string, isHot: boolean) {

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { createClient } from '@uhs/db/browser';
 import type { LeadStage } from '@uhs/db';
+import { claimLead } from './actions';
 
 type Row = {
   id: string;
@@ -32,6 +33,24 @@ const STAGE_BADGE: Record<LeadStage, string> = {
 export function LeadsRealtime({ initialRows, stage }: Props) {
   const [rows, setRows] = useState<Row[]>(initialRows);
   const [pulse, setPulse] = useState(0); // re-render trigger for the "X new" toast
+  const [claiming, setClaiming] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  function handleClaim(e: React.MouseEvent, leadId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    setClaiming(leadId);
+    startTransition(async () => {
+      try {
+        const res = await claimLead(leadId);
+        setRows((prev) => prev.map((r) => (r.id === leadId ? { ...r, assignee_id: res.assignee_id } : r)));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setClaiming(null);
+      }
+    });
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -102,7 +121,19 @@ export function LeadsRealtime({ initialRows, stage }: Props) {
             <div className="meta">
               <span className={`bd ${STAGE_BADGE[r.stage] ?? 'bd-soft'}`}>{r.stage.replace('_', ' ')}</span>
               <span className="bd bd-soft">{r.source.replace('_', ' ')}</span>
-              {!r.assignee_id && <span className="bd bd-warn">unassigned</span>}
+              {!r.assignee_id && (
+                <>
+                  <span className="bd bd-warn">unassigned</span>
+                  <button
+                    type="button"
+                    onClick={(e) => handleClaim(e, r.id)}
+                    disabled={claiming === r.id}
+                    className="lead-claim-btn"
+                  >
+                    {claiming === r.id ? 'Claiming…' : 'Claim'}
+                  </button>
+                </>
+              )}
             </div>
           </Link>
         );

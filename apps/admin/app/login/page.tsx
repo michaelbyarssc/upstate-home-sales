@@ -5,7 +5,16 @@ export default function LoginPage({
 }: {
   searchParams: { next?: string; error?: string };
 }) {
-  const next = searchParams.next ?? '/dashboard';
+  // Only allow same-origin relative paths as the post-login redirect target.
+  // Anything containing "://" or starting with "//" or not starting with "/"
+  // is rejected to prevent open-redirects (and to avoid 404s from malformed
+  // values left over from upstream redirects).
+  const rawNext = searchParams.next ?? '/dashboard';
+  const isSafeNext =
+    rawNext.startsWith('/') &&
+    !rawNext.startsWith('//') &&
+    !rawNext.includes('://');
+  const next = isSafeNext ? rawNext : '/dashboard';
 
   return (
     <div className="auth-wrap">
@@ -13,7 +22,7 @@ export default function LoginPage({
         <div className="brand">
           <div className="mark">U</div>
           <div className="name">
-            Upstate <em>Homes</em>
+            Upstate Home <em>Sales</em>
           </div>
         </div>
         <div>
