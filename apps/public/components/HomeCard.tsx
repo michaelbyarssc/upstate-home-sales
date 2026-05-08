@@ -18,7 +18,7 @@ export function HomeCard({ home, index = 0 }: Props) {
     : false;
 
   return (
-    <Link href={`/inventory/${home.stock_no}`} className="home-card">
+    <Link href={`/inventory/${encodeURIComponent(home.stock_no)}`} className="home-card">
       <div className="photo">
         {photo ? (
           <div

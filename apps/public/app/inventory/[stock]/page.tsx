@@ -8,25 +8,27 @@ type Params = { stock: string };
 
 export const revalidate = 60;
 
-export async function generateMetadata({ params }: { params: Params }) {
+export async function generateMetadata({ params }: { params: Promise<Params> }) {
+  const { stock } = await params;
   const supabase = createPublicClient();
   const { data } = await supabase
     .from('public_homes')
     .select('name, model, manufacturers(name)')
-    .eq('stock_no', params.stock)
+    .eq('stock_no', decodeURIComponent(stock))
     .maybeSingle();
   if (!data) return { title: 'Not found' };
   return { title: data.name };
 }
 
-export default async function HomeDetailPage({ params }: { params: Params }) {
+export default async function HomeDetailPage({ params }: { params: Promise<Params> }) {
+  const { stock } = await params;
   const supabase = createPublicClient();
   const { data: home } = await supabase
     .from('public_homes')
     .select(
       'id, stock_no, name, model, type, beds, baths, sqft, width_ft, length_ft, year_built, construction, listed_price_cents, starting_from, headline, description, on_lot_since, manufacturer_id, manufacturers(name)'
     )
-    .eq('stock_no', params.stock)
+    .eq('stock_no', decodeURIComponent(stock))
     .maybeSingle();
 
   if (!home) notFound();
