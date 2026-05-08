@@ -16,7 +16,7 @@ export default function ContactPage() {
 
           <div style={{ marginTop: 'var(--s-8)' }}>
             <h3 style={{ marginBottom: 'var(--s-2)' }}>Phone</h3>
-            <p><a href="tel:803-555-0124" style={{ fontSize: 'var(--t-body-l)' }}>(803) 555-0124</a></p>
+            <p><a href="tel:864-680-4030" style={{ fontSize: 'var(--t-body-l)' }}>(864) 680-4030</a></p>
 
             <h3 style={{ marginTop: 'var(--s-6)', marginBottom: 'var(--s-2)' }}>Email</h3>
             <p><a href="mailto:hello@upstatehomesales.com" style={{ fontSize: 'var(--t-body-l)' }}>hello@upstatehomesales.com</a></p>

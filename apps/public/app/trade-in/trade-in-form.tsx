@@ -22,6 +22,7 @@ export function TradeInForm() {
         size_w: numOrNull(fd.get('size_w')),
         size_l: numOrNull(fd.get('size_l')),
         condition_notes: strOrNull(fd.get('notes')),
+        sms_consent: fd.get('sms_consent') === 'on',
       };
       if (!body.contact_name || !body.email) throw new Error('Please include your name and email.');
       const res = await fetch('/api/trade-ins', {
@@ -85,6 +86,14 @@ export function TradeInForm() {
         <textarea className="textarea" id="ti-notes" name="notes" rows={4}
           placeholder="Year of last roof, AC age, anything notable about the interior or exterior." />
       </div>
+
+      <label className="consent">
+        <input type="checkbox" name="sms_consent" />
+        <span>
+          I agree to receive text messages about my trade-in. Msg &amp; data rates may apply.
+          Reply STOP to opt out.
+        </span>
+      </label>
 
       <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: '100%' }}>
         {submitting ? 'Sending…' : 'Submit for review'}

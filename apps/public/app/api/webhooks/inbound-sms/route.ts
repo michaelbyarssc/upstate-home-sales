@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   }
   if (upper === 'HELP') {
     return new NextResponse(
-      `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Upstate Home Sales: call (803) 555-0124 for help. Reply STOP to opt out.</Message></Response>`,
+      `<?xml version="1.0" encoding="UTF-8"?><Response><Message>Upstate Home Sales: call (864) 680-4030 for help. Reply STOP to opt out.</Message></Response>`,
       { headers: { 'Content-Type': 'text/xml' } },
     );
   }

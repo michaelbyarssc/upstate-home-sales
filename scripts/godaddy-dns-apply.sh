@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
-# Apply all required DNS records for upstatehomesales.com via GoDaddy API.
 #
-# Prereq: domain status must be ACTIVE (not PENDING_HOLD_ESCROW).
-# Verify with:
-#   curl -sS -H "Authorization: sso-key $GD_KEY:$GD_SECRET" \
-#        https://api.godaddy.com/v1/domains/upstatehomesales.com | jq .status
+# DEPRECATED — DO NOT RUN.
 #
-# Usage:
-#   GD_KEY=... GD_SECRET=... ./scripts/godaddy-dns-apply.sh
+# DNS for upstatehomesales.com has moved to Cloudflare. Domain registration
+# remains at GoDaddy but nameservers point at Cloudflare. Use:
+#   ./scripts/cloudflare-dns-apply.sh
+# The records below reference SendGrid (also retired in favor of Resend) and
+# would conflict with the live Cloudflare records.
+#
+# Kept in repo for historical reference only.
+
+echo "This script is deprecated. Use scripts/cloudflare-dns-apply.sh"
+exit 1
 
 set -euo pipefail
 

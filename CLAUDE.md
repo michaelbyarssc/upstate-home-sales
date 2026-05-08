@@ -4,6 +4,19 @@ You're picking up a **high-fidelity HTML prototype** of a multi-tenant SaaS for 
 
 ---
 
+## ⚠ Email + DNS stack — DO NOT REVERT
+
+This project's email stack was migrated from SendGrid to **Resend + Cloudflare Email Routing** (commit `81af731`, "Switch email to Resend"). DNS for `upstatehomesales.com` lives at **Cloudflare** (registration stays at GoDaddy; nameservers point at Cloudflare).
+
+- **Outbound email:** Resend, sending domain `mail.upstatehomesales.com`. Code lives in `apps/admin/lib/notify.ts` and `apps/public/lib/notify.ts`. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`.
+- **Inbound email:** Cloudflare Email Routing → Cloudflare Worker at `workers/inbound-email-router/` → POST to `apps/public/app/api/webhooks/inbound-email/route.ts`. Env: `EMAIL_INBOUND_DOMAIN`, `INBOUND_WEBHOOK_SECRET`.
+- **DNS:** all records applied via `scripts/cloudflare-dns-apply.sh` using `CF_API_TOKEN` + `CF_ZONE_ID`. The `scripts/godaddy-dns-apply.sh` file is **deprecated** and exits 1 on run.
+- **Full setup walkthrough:** `docs/email-setup.md`.
+
+**Do NOT** add `SENDGRID_API_KEY` env vars, `@sendgrid/*` packages, SendGrid Inbound Parse webhooks, or DNS records pointing to `*.sendgrid.net`/`*.wlNNN.sendgrid.net`. Do not write GoDaddy DNS API code; DNS is on Cloudflare. If the user asks for SendGrid or GoDaddy DNS, surface this section and confirm before proceeding — they may not realize the migration happened.
+
+---
+
 ## Read these files in this order
 
 1. **`handoff.html`** — the technical spec. Read it cover to cover. It contains the full Supabase data model, RLS policies, generated SQL, API surface, auth flow, storage buckets, env vars, and a week-by-week build roadmap. **This is your primary source of truth.**

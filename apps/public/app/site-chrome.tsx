@@ -5,10 +5,10 @@ export function SiteHeader() {
     <>
       <div className="uhs-topbar">
         <div className="uhs-topbar-inner">
-          <span>Lexington · Anderson · serving the Upstate</span>
+          <span>Serving South Carolina and North Carolina</span>
           <span className="spacer" />
-          <a href="tel:803-555-0124" className="phone">
-            (803) 555-0124
+          <a href="tel:864-680-4030" className="phone">
+            (864) 680-4030
           </a>
         </div>
       </div>
@@ -74,7 +74,7 @@ export function SiteFooter() {
             <ul>
               <li>Lexington, SC</li>
               <li>Anderson, SC</li>
-              <li><a href="tel:803-555-0124">(803) 555-0124</a></li>
+              <li><a href="tel:864-680-4030">(864) 680-4030</a></li>
             </ul>
           </div>
           <div>

@@ -234,6 +234,9 @@ export interface TradeIn {
   photos_paths: string[] | null;
   offer_cents: number | null;
   status: 'submitted' | 'reviewed' | 'offered' | 'accepted' | 'declined';
+  sms_consent: boolean;
+  sms_consent_at: string | null;
+  sms_consent_text: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;

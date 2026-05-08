@@ -1,0 +1,8 @@
+name = "uhs-inbound-email-router"
+main = "src/index.ts"
+compatibility_date = "2026-05-06"
+
+# Triggered by Cloudflare Email Routing — no HTTP route needed.
+# Set secrets via:
+#   wrangler secret put INBOUND_WEBHOOK_SECRET
+#   wrangler secret put PUBLIC_APP_URL

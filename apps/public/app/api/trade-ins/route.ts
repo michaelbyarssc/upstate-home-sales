@@ -25,6 +25,11 @@ export async function POST(req: Request) {
     .maybeSingle();
   if (!org) return NextResponse.json({ message: 'No active org' }, { status: 500 });
 
+  const consent = body.sms_consent === true;
+  const consentText = consent
+    ? 'I agree to receive text messages about my trade-in. Reply STOP to opt out.'
+    : null;
+
   const { data, error } = await sb
     .from('trade_ins')
     .insert({
@@ -38,6 +43,9 @@ export async function POST(req: Request) {
       size_w: numOrNull(body.size_w),
       size_l: numOrNull(body.size_l),
       condition_notes: strOrNull(body.condition_notes),
+      sms_consent: consent,
+      sms_consent_at: consent ? new Date().toISOString() : null,
+      sms_consent_text: consentText,
       status: 'submitted',
     })
     .select('id')

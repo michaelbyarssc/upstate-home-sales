@@ -60,7 +60,7 @@ export default function FinancingPage() {
         <div className="inner section-text">
           <h2>Not sure where to start?</h2>
           <p style={{ fontSize: 'var(--t-body-l)', marginTop: 'var(--s-3)' }}>
-            Call (803) 555-0124 or visit a lot. We&rsquo;ll talk through your options for free, no
+            Call (864) 680-4030 or visit a lot. We&rsquo;ll talk through your options for free, no
             commitment. Most folks have a clear answer in about 20 minutes.
           </p>
           <div style={{ marginTop: 'var(--s-6)', display: 'flex', gap: 'var(--s-3)' }}>
