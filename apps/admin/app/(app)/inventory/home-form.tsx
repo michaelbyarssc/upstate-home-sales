@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition, type FormEvent } from 'react';
 import Link from 'next/link';
 import { formatCents, type Home, type HomeAddon, type HomePhoto, type Lot, type Manufacturer } from '@uhs/db';
 import { uploadPhotos } from './photo-upload';
-import { createHome, updateHome, archiveHome, deletePhoto } from './actions';
+import { createHome, updateHome, archiveHome, deletePhoto, reorderPhotos } from './actions';
 
 type Props = {
   mode: 'create' | 'edit';
@@ -28,6 +28,8 @@ export function HomeForm(props: Props) {
   const [error, setError] = useState<string | null>(null);
   const [photos, setPhotos] = useState(initialPhotos);
   const [uploading, setUploading] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   // Live-calc state — drives both the readout and the public preview card.
   const [base, setBase] = useState((home?.base_price_cents ?? 0) / 100);
@@ -105,6 +107,41 @@ export function HomeForm(props: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Delete failed');
     }
+  }
+
+  async function persistOrder(next: typeof photos) {
+    if (!home) return;
+    try {
+      await reorderPhotos(home.id, next.map((p) => p.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Reorder failed');
+      setPhotos(initialPhotos);
+    }
+  }
+
+  function reorder(sourceId: string, targetId: string) {
+    setPhotos((prev) => {
+      const from = prev.findIndex((p) => p.id === sourceId);
+      const to = prev.findIndex((p) => p.id === targetId);
+      if (from < 0 || to < 0 || from === to) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved!);
+      const renumbered = next.map((p, i) => ({ ...p, sort_order: i }));
+      void persistOrder(renumbered);
+      return renumbered;
+    });
+  }
+
+  function makeHero(photoId: string) {
+    setPhotos((prev) => {
+      const idx = prev.findIndex((p) => p.id === photoId);
+      if (idx <= 0) return prev;
+      const next = [prev[idx]!, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
+      const renumbered = next.map((p, i) => ({ ...p, sort_order: i }));
+      void persistOrder(renumbered);
+      return renumbered;
+    });
   }
 
   return (
@@ -401,18 +438,51 @@ export function HomeForm(props: Props) {
             <div className="card">
               <div className="card-head">
                 <h3>Photos</h3>
-                <div className="sub">First photo is the hero on the public detail page.</div>
+                <div className="sub">Drag to reorder. The first photo is the hero on the public detail page.</div>
               </div>
               <div className="card-body">
                 <div className="photo-grid">
                   {photos.map((p, i) => (
                     <div
                       key={p.id}
-                      className={`photo-tile ${i === 0 ? 'hero' : ''}`}
+                      className={`photo-tile ${i === 0 ? 'hero' : ''} ${dragId === p.id ? 'dragging' : ''} ${dragOverId === p.id && dragId !== p.id ? 'drag-over' : ''}`}
                       style={{
                         backgroundImage: `url(${publicPhotoBaseUrl}/${p.storage_path})`,
                       }}
+                      draggable
+                      onDragStart={(e) => {
+                        setDragId(p.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', p.id);
+                      }}
+                      onDragEnd={() => {
+                        setDragId(null);
+                        setDragOverId(null);
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        if (dragId && dragId !== p.id) setDragOverId(p.id);
+                      }}
+                      onDragLeave={() => {
+                        if (dragOverId === p.id) setDragOverId(null);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const sourceId = e.dataTransfer.getData('text/plain') || dragId;
+                        if (sourceId && sourceId !== p.id) reorder(sourceId, p.id);
+                        setDragId(null);
+                        setDragOverId(null);
+                      }}
                     >
+                      {i !== 0 && (
+                        <button
+                          type="button"
+                          className="hero-btn"
+                          onClick={() => makeHero(p.id)}
+                          aria-label="Make hero photo"
+                        >Make hero</button>
+                      )}
                       <button
                         type="button"
                         className="delete-btn"
