@@ -11,7 +11,7 @@ import { RecentlyViewedRecorder } from './recently-viewed';
 
 type Params = { stock: string };
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<Params> }) {
   const { stock } = await params;
