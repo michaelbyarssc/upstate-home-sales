@@ -9,7 +9,7 @@ import { SmartSearchBar } from '../../components/SmartSearchBar';
 import { InventoryFilters } from '../../components/InventoryFilters';
 
 export const metadata = { title: 'Inventory' };
-export const revalidate = 120;
+export const dynamic = 'force-dynamic';
 
 type SearchParams = { type?: string; mfr?: string; q?: string; price?: string };
 
