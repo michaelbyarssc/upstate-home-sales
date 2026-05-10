@@ -41,7 +41,8 @@ test.describe('public site smoke', () => {
   test('inventory list renders + has at least one home card', async ({ page }) => {
     const errors = attachConsoleAssertions(page);
     await page.goto('/inventory');
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    // Inventory page uses breadcrumb + h2 sections (no h1).
+    await expect(page.getByRole('heading', { name: /Our homes/i })).toBeVisible();
     // Filter form should be present.
     await expect(page.getByRole('button', { name: 'Filter' })).toBeVisible();
     // Smart-search button (Phase H follow-up) should render.
