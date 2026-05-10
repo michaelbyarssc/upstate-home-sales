@@ -14,9 +14,53 @@ export interface Org {
   sms_consent_text: string;
   /** When true, public-facing pages render "Contact for pricing" instead of dollar amounts. */
   prices_hidden: boolean;
+  /** Phase H — toggle for the public AI chatbot widget. */
+  ai_chat_enabled: boolean;
+  /** Phase H — daily token cap for cost control (0 = unlimited; default 100k). */
+  ai_daily_token_cap: number;
+  /** Phase H — markdown text appended to the chatbot's system prompt. */
+  faq_markdown: string | null;
   status: 'active' | 'suspended' | 'archived';
   created_at: string;
   updated_at: string;
+}
+
+// ─── AI (Phase H) ─────────────────────────────────────────────────────────
+
+export type ChatRole = 'system' | 'user' | 'assistant' | 'tool';
+
+export interface ChatSession {
+  id: string;
+  org_id: string;
+  visitor_session_id: string | null;
+  lead_id: string | null;
+  buyer_id: string | null;
+  started_at: string;
+  ended_at: string | null;
+  message_count: number;
+  lead_captured: boolean;
+  tokens_used: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  session_id: string;
+  org_id: string;
+  role: ChatRole;
+  content: string | null;
+  tool_calls: Array<{ name: string; args: Record<string, unknown>; result?: unknown }> | null;
+  tokens_used: number;
+  created_at: string;
+}
+
+export interface NlSearchQuery {
+  id: string;
+  org_id: string;
+  query_text: string;
+  parsed_filters: Record<string, unknown> | null;
+  result_count: number;
+  clicked_home_id: string | null;
+  occurred_at: string;
 }
 
 export interface OrgMember {

@@ -4,6 +4,7 @@ import { SiteHeader, SiteFooter } from './site-chrome';
 import { AttributionCapture } from './attribution-capture';
 import { CompareBar } from '../components/CompareBar';
 import { PixelInstaller } from '../components/PixelInstaller';
+import { AIChatWidget } from '../components/AIChatWidget';
 import { createPublicClient } from '../lib/supabase';
 import type { OrgIntegration } from '@uhs/db';
 
@@ -13,24 +14,20 @@ export const metadata: Metadata = {
     'Manufactured homes in the South Carolina Upstate. Family-owned dealer with two lots, every major manufacturer, honest pricing.',
 };
 
-/** Look up the active org's pixel/analytics integration IDs. We read once
- *  per request via this helper so the layout stays simple. Multi-tenant
- *  caveat: a single public site currently maps to one org (the default
- *  active one); when multi-org goes live, gate this on the locationSlug
- *  in middleware. */
-async function getPixelConfig(): Promise<{
-  ga4: string | null;
-  gtm: string | null;
-  meta: string | null;
+/** Look up active org's pixel + AI config in a single round trip per request. */
+async function getOrgConfig(): Promise<{
+  pixels: { ga4: string | null; gtm: string | null; meta: string | null };
+  ai: { enabled: boolean; orgSlug: string | null };
 }> {
-  const empty = { ga4: null, gtm: null, meta: null };
+  const empty = {
+    pixels: { ga4: null, gtm: null, meta: null },
+    ai: { enabled: false, orgSlug: null },
+  };
   try {
     const sb = createPublicClient();
-    // Pick the first active org as the public site's owner. Once multi-org
-    // public domains land, replace this with a domain→org lookup.
     const { data: org } = await sb
       .from('orgs')
-      .select('id')
+      .select('id, slug, ai_chat_enabled')
       .eq('status', 'active')
       .order('created_at')
       .limit(1)
@@ -47,18 +44,25 @@ async function getPixelConfig(): Promise<{
       return typeof v === 'string' && v.length > 0 ? v : null;
     };
     return {
-      ga4: get('ga4', 'measurement_id'),
-      gtm: get('gtm', 'container_id'),
-      meta: get('meta', 'pixel_id'),
+      pixels: {
+        ga4: get('ga4', 'measurement_id'),
+        gtm: get('gtm', 'container_id'),
+        meta: get('meta', 'pixel_id'),
+      },
+      ai: {
+        enabled: Boolean(org.ai_chat_enabled),
+        orgSlug: (org.slug as string) ?? null,
+      },
     };
   } catch {
-    // Pre-migration or table missing → render no pixels. Don't crash layout.
+    // Pre-migration or table missing → render minimal layout. Don't crash.
     return empty;
   }
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const pixels = await getPixelConfig();
+  const config = await getOrgConfig();
+  const pixels = config.pixels;
   return (
     <html lang="en">
       <head>
@@ -80,6 +84,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {children}
         <SiteFooter />
         <CompareBar />
+        {config.ai.enabled && <AIChatWidget orgSlug={config.ai.orgSlug} />}
       </body>
     </html>
   );

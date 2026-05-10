@@ -70,6 +70,27 @@ export default async function SettingsPage() {
         <LotsManager orgId={orgId} initialLots={(lots ?? []) as Lot[]} />
         <DeliveryZonesManager orgId={orgId} initialZones={(zones ?? []) as DeliveryZone[]} />
         <SetbackForm orgId={orgId} initial={(setback as OrgSetbackRules | null) ?? null} />
+
+        {/* AI settings entry-point */}
+        <Link
+          href="/settings/ai"
+          style={{
+            display: 'block', padding: '14px 18px',
+            background: '#fff', border: '1px solid var(--adm-line, #e5dfd1)',
+            borderRadius: 6, textDecoration: 'none', color: 'var(--adm-ink)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 500, fontSize: 14 }}>AI chatbot</div>
+              <div style={{ fontSize: 12, color: 'var(--adm-ink-mute)', marginTop: 4 }}>
+                Toggle the public chatbot · daily token cap · FAQ that informs the bot
+              </div>
+            </div>
+            <span style={{ color: 'var(--adm-accent)', fontSize: 13 }}>Manage →</span>
+          </div>
+        </Link>
+
         <Link href="/audit" style={{ color: 'var(--adm-accent)', fontSize: 13 }}>
           View audit log →
         </Link>
