@@ -139,8 +139,63 @@ export interface Lot {
   name: string;
   address: string | null;
   manager_id: string | null;
+  /** Phase F — every lot lives under a location. Null only for very old rows
+   *  pre-migration (the 0018 backfill assigns all to the org's default location). */
+  location_id: string | null;
   deleted_at: string | null;
   deleted_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── Multi-location (Phase F) ─────────────────────────────────────────────
+
+export type DayHours = {
+  open?: string;
+  close?: string;
+  closed?: boolean;
+};
+
+export type LocationHours = Partial<Record<
+  'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun',
+  DayHours
+>>;
+
+export interface Location {
+  id: string;
+  org_id: string;
+  slug: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  phone: string | null;
+  hours_jsonb: LocationHours | null;
+  brand_color: string | null;
+  logo_storage_path: string | null;
+  lat: number | null;
+  lng: number | null;
+  is_default: boolean;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RegionKind = 'zip' | 'county' | 'state';
+
+export interface HomeRegionPricing {
+  id: string;
+  home_id: string;
+  org_id: string;
+  region_type: RegionKind;
+  region_value: string;
+  override_price_cents: number;
+  effective_at: string | null;
+  expires_at: string | null;
+  notes: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -324,6 +379,9 @@ export interface Lead {
   source: LeadSource;
   stage: LeadStage;
   assignee_id: string | null;
+  /** Phase F — set by lead-intake's nearest-location lookup or by manual
+   *  routing in the admin. Null only for very old rows pre-migration. */
+  assigned_location_id: string | null;
   is_hot: boolean;
   next_action: string | null;
   reply_token: string;
