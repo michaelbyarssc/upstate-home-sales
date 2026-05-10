@@ -39,3 +39,4 @@ coverage/
 # Heavy binaries / archives (the prototype zip lives here for reference only)
 *.zip
 .claude/
+.vercel

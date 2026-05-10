@@ -140,7 +140,7 @@ export function LoginForm({ next }: { next: string }) {
             autoComplete="email"
             required
             className="input"
-            placeholder="you@upstatehomesales.com"
+            placeholder="you@upstatehomecenter.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />

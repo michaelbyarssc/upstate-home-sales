@@ -54,7 +54,11 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
       <div className="page-header">
         <div className="eyebrow">Workspace · Week 4</div>
         <h1>Leads</h1>
-        <p>{tally.open ?? 0} open · realtime — new leads appear without refresh.</p>
+        <p>
+          {tally.open ?? 0} open · realtime — new leads appear without refresh.
+          {' · '}
+          <Link href="/leads/kanban" style={{ color: 'var(--adm-accent)' }}>Pipeline view →</Link>
+        </p>
       </div>
 
       <div className="leads-grid full">

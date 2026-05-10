@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createPublicClient } from '../../../lib/supabase';
 import { formatCents } from '@uhs/db';
+import { SignBlock } from './sign-block';
 
 type Params = { token: string };
 
@@ -21,11 +22,18 @@ export async function generateMetadata({ params }: { params: Params }) {
 
 export default async function QuotePage({ params }: { params: Params }) {
   const sb = createPublicClient();
-  const { data: q } = await sb
-    .from('public_quotes')
-    .select('public_token, listed_price_cents, expires_at, created_at, home_id, home_name, stock_no, beds, baths, sqft, headline, description, org_name, brand_color')
-    .eq('public_token', params.token)
-    .maybeSingle();
+  const [{ data: q }, { data: sig }] = await Promise.all([
+    sb
+      .from('public_quotes')
+      .select('public_token, listed_price_cents, expires_at, created_at, home_id, home_name, stock_no, beds, baths, sqft, headline, description, org_name, brand_color')
+      .eq('public_token', params.token)
+      .maybeSingle(),
+    sb
+      .from('public_quote_signatures')
+      .select('signer_name, signed_at')
+      .eq('public_token', params.token)
+      .maybeSingle(),
+  ]);
 
   if (!q) {
     return (
@@ -121,6 +129,12 @@ export default async function QuotePage({ params }: { params: Params }) {
                 <li>Schedule a walk-through at the lot. We&rsquo;re open seven days.</li>
               </ol>
             </div>
+
+            <SignBlock
+              token={q.public_token}
+              brandColor={q.brand_color ?? null}
+              alreadySigned={sig ? { signer_name: sig.signer_name, signed_at: sig.signed_at } : null}
+            />
 
             <div style={{ marginTop: 'var(--s-8)', display: 'flex', gap: 12, justifyContent: 'center' }}>
               <Link href="/financing" className="btn btn-primary">Pre-qualify</Link>

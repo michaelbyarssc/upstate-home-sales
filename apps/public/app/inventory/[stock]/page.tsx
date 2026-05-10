@@ -2,7 +2,10 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createPublicClient, publicPhotoUrl } from '../../../lib/supabase';
 import { QuoteForm } from './quote-form';
-import { formatCents, type PublicHome, type PublicHomePhoto } from '@uhs/db';
+import { type PublicHome, type PublicHomePhoto } from '@uhs/db';
+import { absoluteUrl, homeProductSchema } from '../../../lib/seo';
+import { HomeCard } from '../../../components/HomeCard';
+import { RecentlyViewedRecorder } from './recently-viewed';
 
 type Params = { stock: string };
 
@@ -26,14 +29,13 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
   const { data: home } = await supabase
     .from('public_homes')
     .select(
-      'id, stock_no, name, model, type, beds, baths, sqft, width_ft, length_ft, year_built, construction, listed_price_cents, starting_from, headline, description, on_lot_since, manufacturer_id, manufacturers(name)'
+      'id, stock_no, name, model, type, beds, baths, sqft, width_ft, length_ft, year_built, construction, listed_price_cents, prices_hidden, starting_from, headline, description, on_lot_since, manufacturer_id, manufacturers(name)'
     )
     .eq('stock_no', decodeURIComponent(stock))
     .maybeSingle();
 
   if (!home) notFound();
 
-  // Note: the .select above returns inner-joined manufacturers; PostgREST gives us {name}.
   const h = home as unknown as PublicHome & { manufacturers?: { name: string } | null };
 
   const { data: photos } = await supabase
@@ -41,26 +43,90 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
     .select('id, home_id, storage_path, sort_order, alt_text, width, height')
     .eq('home_id', h.id)
     .order('sort_order');
-  const heroPhoto = (photos ?? [])[0] as PublicHomePhoto | undefined;
-  const heroUrl = heroPhoto ? publicPhotoUrl(heroPhoto.storage_path) : null;
+  const allPhotos = (photos ?? []) as PublicHomePhoto[];
+  const heroPrimary = allPhotos[0];
+  const heroSecondary = allPhotos[1];
+  const restPhotos = allPhotos.slice(2);
+
+  const heroUrl = heroPrimary ? publicPhotoUrl(heroPrimary.storage_path) : null;
+  const heroSecondaryUrl = heroSecondary ? publicPhotoUrl(heroSecondary.storage_path) : null;
+
+  // ─── Smart recommendations ──────────────────────────────────────────────
+  // Score nearby homes by manufacturer match → type match → price-band match.
+  // Pull a candidate set, exclude the current home, sort in JS by score, take top 4.
+  const priceLo = h.listed_price_cents ? Math.round(h.listed_price_cents * 0.7) : 0;
+  const priceHi = h.listed_price_cents ? Math.round(h.listed_price_cents * 1.3) : Number.MAX_SAFE_INTEGER;
+  const { data: candidates } = await supabase
+    .from('public_homes')
+    .select(
+      'id, stock_no, name, model, type, beds, baths, sqft, width_ft, length_ft, listed_price_cents, prices_hidden, starting_from, on_lot_since, is_featured, manufacturer_id, manufacturers(name), public_home_photos(storage_path, sort_order)'
+    )
+    .neq('id', h.id)
+    .or(`manufacturer_id.eq.${h.manufacturer_id ?? '00000000-0000-0000-0000-000000000000'},type.eq.${h.type}`)
+    .gte('listed_price_cents', priceLo)
+    .lte('listed_price_cents', priceHi)
+    .limit(20);
+  const similarHomes = scoreAndRankSimilar(h, (candidates ?? []) as unknown as Array<PublicHome & { manufacturer_id: string | null; type: string }>).slice(0, 4);
+
+  const productJsonLd = homeProductSchema(
+    {
+      url: absoluteUrl(`/inventory/${encodeURIComponent(h.stock_no)}`),
+      name: h.name,
+      description: h.headline ?? h.description ?? null,
+      manufacturer: h.manufacturers?.name ?? null,
+      model: h.model,
+      imageUrls: allPhotos.slice(0, 6).map((p) => publicPhotoUrl(p.storage_path)),
+      beds: h.beds,
+      baths: h.baths,
+      sqft: h.sqft,
+      priceCents: h.listed_price_cents,
+      startingFrom: h.starting_from,
+      stockNo: h.stock_no,
+      status: 'in_stock',
+    },
+    'Upstate Home Sales',
+  );
 
   return (
     <main className="section">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: productJsonLd }} />
       <div className="inner">
-        <div style={{ marginBottom: 'var(--s-6)', fontSize: 13, color: 'var(--c-ink-mute)' }}>
-          <Link href="/inventory" style={{ color: 'inherit' }}>← Inventory</Link>
-          <span style={{ margin: '0 8px' }}>/</span>
-          <span style={{ color: 'var(--c-ink)' }}>{h.stock_no}</span>
+        <nav className="inv-breadcrumb" aria-label="Breadcrumb">
+          <Link href="/">Home</Link>
+          <span className="sep">›</span>
+          <Link href="/inventory">Inventory</Link>
+          <span className="sep">›</span>
+          {h.manufacturers?.name && (
+            <>
+              <Link href={`/inventory?mfr=${encodeURIComponent(h.manufacturers.name.toLowerCase())}`}>
+                {h.manufacturers.name}
+              </Link>
+              <span className="sep">›</span>
+            </>
+          )}
+          <span className="current">{h.name}</span>
+        </nav>
+
+        <div className="detail-gallery">
+          <div
+            className="pane"
+            style={heroUrl ? { backgroundImage: `url(${heroUrl})` } : undefined}
+          >
+            <button type="button" className="expand" aria-label="Expand photo">⤢</button>
+          </div>
+          <div
+            className="pane"
+            style={heroSecondaryUrl ? { backgroundImage: `url(${heroSecondaryUrl})` } : undefined}
+          >
+            {heroSecondaryUrl && <button type="button" className="expand" aria-label="Expand photo">⤢</button>}
+          </div>
         </div>
 
         <div className="detail-grid">
-          {/* LEFT — gallery + specs + description */}
           <div>
-            <div className="gallery-main"
-              style={heroUrl ? { backgroundImage: `url(${heroUrl})` } : undefined} />
-            {(photos?.length ?? 0) > 1 && (
-              <div className="gallery-thumbs">
-                {(photos ?? []).slice(0, 8).map((p: { id: string; storage_path: string; alt_text: string | null }) => (
+            {restPhotos.length > 0 && (
+              <div className="gallery-thumbs" style={{ marginBottom: 'var(--s-8)' }}>
+                {restPhotos.slice(0, 8).map((p) => (
                   <button
                     key={p.id}
                     type="button"
@@ -71,7 +137,7 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
               </div>
             )}
 
-            <div style={{ marginTop: 'var(--s-8)' }}>
+            <div>
               <div className="eyebrow">{h.manufacturers?.name ?? 'Manufactured Home'}{h.model ? ` · ${h.model}` : ''}</div>
               <h1 style={{ marginTop: 8 }}>{h.name}</h1>
               {h.headline && (
@@ -98,9 +164,19 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
                 <p style={{ fontSize: 'var(--t-body-l)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{h.description}</p>
               </div>
             )}
+
+            {/* Anchor target for HomeCard's "Design home" CTA. Phase C will replace
+                this placeholder with the real configurator. */}
+            <div id="design" style={{ marginTop: 'var(--s-10)', padding: 'var(--s-6)', background: 'var(--c-bg)', borderRadius: 'var(--r-2)', border: '1px dashed var(--c-line)' }}>
+              <div className="eyebrow">Coming soon</div>
+              <h3 style={{ marginTop: 6 }}>Design this home</h3>
+              <p style={{ marginTop: 8, color: 'var(--c-ink-soft)' }}>
+                Pick siding colors, cabinets, flooring, and appliances — see your real-time price as you build.
+                In the meantime, <Link href="/contact" style={{ color: 'var(--c-accent)' }}>tell us what you have in mind</Link>.
+              </p>
+            </div>
           </div>
 
-          {/* RIGHT — sticky quote card + modal */}
           <aside className="detail-aside">
             <QuoteForm
               homeId={h.id}
@@ -108,15 +184,39 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
               stockNo={h.stock_no}
               listedPriceCents={h.listed_price_cents}
               startingFrom={h.starting_from}
+              pricesHidden={h.prices_hidden}
               beds={h.beds}
               baths={h.baths}
               sqft={h.sqft}
+              widthFt={h.width_ft ?? null}
+              lengthFt={h.length_ft ?? null}
               manufacturerName={h.manufacturers?.name ?? null}
               modelName={h.model}
               heroUrl={heroUrl}
             />
           </aside>
         </div>
+
+        {similarHomes.length > 0 && (
+          <section style={{ marginTop: 'var(--s-12)' }}>
+            <div className="section-head">
+              <div className="lhs">
+                <div className="eyebrow">Similar homes</div>
+                <h2>You might also like</h2>
+                <p style={{ color: 'var(--c-ink-mute)', marginTop: 8 }}>
+                  Picked by manufacturer, type, and price range.
+                </p>
+              </div>
+            </div>
+            <div className="inv-grid-public">
+              {similarHomes.map((sh, i) => (
+                <HomeCard key={sh.id} home={sh as any} index={i} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <RecentlyViewedRecorder stock_no={h.stock_no} name={h.name} />
       </div>
     </main>
   );
@@ -124,4 +224,24 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
 
 function cap(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function scoreAndRankSimilar(
+  current: PublicHome & { manufacturer_id?: string | null },
+  candidates: Array<PublicHome & { manufacturer_id: string | null; type: string }>,
+): Array<PublicHome & { manufacturer_id: string | null; type: string }> {
+  const currentPrice = current.listed_price_cents ?? 0;
+  function score(c: typeof candidates[number]): number {
+    let s = 0;
+    if (c.manufacturer_id && current.manufacturer_id && c.manufacturer_id === current.manufacturer_id) s += 5;
+    if (c.type === current.type) s += 3;
+    if (currentPrice && c.listed_price_cents) {
+      const delta = Math.abs(c.listed_price_cents - currentPrice) / currentPrice;
+      if (delta < 0.1) s += 2;
+      else if (delta < 0.2) s += 1;
+    }
+    if (current.beds != null && c.beds != null && Math.abs(c.beds - current.beds) <= 1) s += 1;
+    return s;
+  }
+  return [...candidates].sort((a, b) => score(b) - score(a));
 }

@@ -24,6 +24,7 @@ export function OrgSettingsForm({ org: initial }: { org: Org }) {
           brand_color: org.brand_color,
           default_markup_pct: org.default_markup_pct,
           sms_consent_text: org.sms_consent_text,
+          prices_hidden: org.prices_hidden,
         });
         setMsg({ kind: 'success', text: 'Saved.' });
       } catch (e) {
@@ -70,6 +71,21 @@ export function OrgSettingsForm({ org: initial }: { org: Org }) {
           <textarea className="textarea" rows={3} value={org.sms_consent_text}
             onChange={(e) => set('sms_consent_text', e.target.value)} />
           <div className="help">Shown next to the consent checkbox on quote forms. Edit with your lawyer.</div>
+        </div>
+
+        <div className="field">
+          <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={org.prices_hidden}
+              onChange={(e) => set('prices_hidden', e.target.checked)}
+            />
+            <span>Hide prices on the public site</span>
+          </label>
+          <div className="help">
+            When on, listing/detail/kiosk pages render <strong>&ldquo;Contact for pricing&rdquo;</strong> instead of dollar amounts.
+            Quotes already sent are unaffected. Useful if competitors are watching and you&rsquo;d rather quote case-by-case.
+          </div>
         </div>
 
         {msg && (

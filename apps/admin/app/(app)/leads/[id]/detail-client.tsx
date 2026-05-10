@@ -11,25 +11,69 @@ import {
   toggleLeadHot,
   createQuote,
 } from './actions';
+import { enrollLeadInCampaign } from '../../automations/campaigns/actions';
+
+type EnrollmentRow = {
+  id: string;
+  campaign_id: string;
+  status: string;
+  current_step: number;
+  next_send_at: string | null;
+  campaigns?: { name: string; channel: string } | { name: string; channel: string }[] | null;
+};
 
 type Props = {
   lead: Lead & { homes?: { name: string; stock_no: string; listed_price_cents: number } | null };
   initialMessages: LeadMessage[];
   members: Array<{ user_id: string; role: string }>;
+  campaigns: Array<{ id: string; name: string; channel: string; status: string }>;
+  initialEnrollments: EnrollmentRow[];
 };
 
 type ComposeKind = 'email' | 'sms' | 'note' | 'call';
 
 const STAGES: LeadStage[] = ['new', 'in_progress', 'quoted', 'won', 'lost'];
 
-export function LeadDetailClient({ lead: initialLead, initialMessages, members }: Props) {
+export function LeadDetailClient({ lead: initialLead, initialMessages, members, campaigns, initialEnrollments }: Props) {
   const [lead, setLead] = useState(initialLead);
   const [messages, setMessages] = useState<LeadMessage[]>(initialMessages);
+  const [enrollments, setEnrollments] = useState<EnrollmentRow[]>(initialEnrollments);
+  const [enrolling, setEnrolling] = useState(false);
   const [compose, setCompose] = useState<ComposeKind>('email');
   const [body, setBody] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const timelineRef = useRef<HTMLDivElement>(null);
+
+  async function handleEnroll(campaignId: string) {
+    if (!campaignId) return;
+    setEnrolling(true);
+    setErr(null);
+    try {
+      await enrollLeadInCampaign(campaignId, lead.id);
+      // Optimistically add to local list (server will revalidate too).
+      const camp = campaigns.find((c) => c.id === campaignId);
+      setEnrollments((prev) => {
+        const existing = prev.find((e) => e.campaign_id === campaignId);
+        if (existing) return prev.map((e) => e.campaign_id === campaignId ? { ...e, status: 'active' } : e);
+        return [
+          ...prev,
+          {
+            id: 'temp-' + campaignId,
+            campaign_id: campaignId,
+            status: 'active',
+            current_step: 0,
+            next_send_at: new Date().toISOString(),
+            campaigns: camp ? { name: camp.name, channel: camp.channel } : null,
+          },
+        ];
+      });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Enroll failed');
+    } finally {
+      setEnrolling(false);
+    }
+  }
 
   // Realtime: subscribe to new lead_messages for this lead.
   useEffect(() => {
@@ -252,6 +296,63 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members }
             <div className="kv"><span className="k">Channel</span><span>{lead.source.replace('_', ' ')}</span></div>
             <div className="kv"><span className="k">Created</span><span>{new Date(lead.created_at).toLocaleString()}</span></div>
             <div className="kv"><span className="k">SMS opt-in</span><span>{lead.sms_consent ? 'Yes' : 'No'}</span></div>
+
+            {(lead.utm_source || lead.utm_campaign || lead.gclid || lead.fbclid || lead.referrer_url) && (
+              <>
+                <h4>Attribution</h4>
+                {lead.utm_source && <div className="kv"><span className="k">utm_source</span><span>{lead.utm_source}</span></div>}
+                {lead.utm_medium && <div className="kv"><span className="k">utm_medium</span><span>{lead.utm_medium}</span></div>}
+                {lead.utm_campaign && <div className="kv"><span className="k">utm_campaign</span><span>{lead.utm_campaign}</span></div>}
+                {lead.utm_term && <div className="kv"><span className="k">utm_term</span><span>{lead.utm_term}</span></div>}
+                {lead.utm_content && <div className="kv"><span className="k">utm_content</span><span>{lead.utm_content}</span></div>}
+                {lead.gclid && <div className="kv"><span className="k">gclid</span><span style={{ fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>{lead.gclid}</span></div>}
+                {lead.fbclid && <div className="kv"><span className="k">fbclid</span><span style={{ fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>{lead.fbclid}</span></div>}
+                {lead.landing_path && <div className="kv"><span className="k">Landing</span><span style={{ fontSize: 11, wordBreak: 'break-all' }}>{lead.landing_path}</span></div>}
+                {lead.referrer_url && <div className="kv"><span className="k">Referrer</span><span style={{ fontSize: 11, wordBreak: 'break-all' }}>{lead.referrer_url}</span></div>}
+              </>
+            )}
+
+            <h4>Campaigns</h4>
+            {enrollments.length > 0 && (
+              <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {enrollments.map((e) => {
+                  const c = Array.isArray(e.campaigns) ? e.campaigns[0] : e.campaigns;
+                  return (
+                    <div key={e.id} style={{ fontSize: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                      <span>{c?.name ?? '—'}</span>
+                      <span style={{
+                        fontSize: 10, padding: '2px 6px', borderRadius: 8, textTransform: 'uppercase', letterSpacing: 0.4,
+                        background: e.status === 'active' ? '#dcfce7' : e.status === 'errored' ? '#fee2e2' : '#f3f4f6',
+                        color: e.status === 'active' ? '#166534' : e.status === 'errored' ? '#991b1b' : '#6b7280',
+                      }}>{e.status}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {campaigns.length === 0 ? (
+              <div style={{ fontSize: 11, color: 'var(--adm-ink-mute)' }}>
+                No active campaigns. <Link href="/automations/campaigns/new" style={{ color: 'var(--adm-accent)' }}>Create one</Link>.
+              </div>
+            ) : (
+              <select
+                disabled={enrolling}
+                value=""
+                onChange={(e) => handleEnroll(e.target.value)}
+                style={{ width: '100%', padding: '6px 8px', fontSize: 12, marginBottom: 4 }}
+              >
+                <option value="">{enrolling ? 'Enrolling…' : '+ Enroll in campaign'}</option>
+                {campaigns.map((c) => (
+                  <option
+                    key={c.id}
+                    value={c.id}
+                    disabled={enrollments.some((e) => e.campaign_id === c.id && e.status === 'active')}
+                  >
+                    {c.name} ({c.channel})
+                  </option>
+                ))}
+              </select>
+            )}
 
             {lead.homes && (
               <>

@@ -19,13 +19,10 @@ export default function ContactPage() {
             <p><a href="tel:864-680-4030" style={{ fontSize: 'var(--t-body-l)' }}>(864) 680-4030</a></p>
 
             <h3 style={{ marginTop: 'var(--s-6)', marginBottom: 'var(--s-2)' }}>Email</h3>
-            <p><a href="mailto:hello@upstatehomesales.com" style={{ fontSize: 'var(--t-body-l)' }}>hello@upstatehomesales.com</a></p>
+            <p><a href="mailto:hello@upstatehomecenter.com" style={{ fontSize: 'var(--t-body-l)' }}>hello@upstatehomecenter.com</a></p>
 
-            <h3 style={{ marginTop: 'var(--s-6)', marginBottom: 'var(--s-2)' }}>Lots</h3>
-            <p>
-              Lexington · 1234 Augusta Hwy<br />
-              Anderson · 5678 Clemson Blvd
-            </p>
+            <h3 style={{ marginTop: 'var(--s-6)', marginBottom: 'var(--s-2)' }}>Lot</h3>
+            <p>Spartanburg, SC</p>
           </div>
         </div>
 

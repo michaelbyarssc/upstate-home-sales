@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { SiteHeader, SiteFooter } from './site-chrome';
+import { AttributionCapture } from './attribution-capture';
+import { CompareBar } from '../components/CompareBar';
 
 export const metadata: Metadata = {
   title: { default: 'Upstate Home Sales', template: '%s · Upstate Home Sales' },
@@ -20,9 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <AttributionCapture />
         <SiteHeader />
         {children}
         <SiteFooter />
+        <CompareBar />
       </body>
     </html>
   );

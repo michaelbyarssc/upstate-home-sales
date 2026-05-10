@@ -4,6 +4,18 @@ End-to-end walkthrough for getting customer email working on `upstatehomesales.c
 Domain registration stays at GoDaddy; DNS moves to Cloudflare so Email Routing
 and Workers are available.
 
+> ## Note on the web/email split
+>
+> The dealer's **web domain** moved to `upstatehomecenter.com` (also at Cloudflare,
+> see `scripts/cloudflare-dns-apply-newdomain.sh`). **Email** still runs on
+> `upstatehomesales.com` (this doc) — the Resend sender, Cloudflare Email Routing
+> catch-all, and Worker bindings have not been migrated. Re-verifying a sending
+> domain in Resend requires new DKIM keys and DNS propagation, so we kept the
+> email stack stable while the web cutover happened. When you're ready to migrate
+> email too, repeat sections 2 and 3 of this doc against `mail.upstatehomecenter.com`
+> and `replies.upstatehomecenter.com`, then update `RESEND_FROM_EMAIL`,
+> `EMAIL_INBOUND_DOMAIN`, and the Worker secret `PUBLIC_APP_URL`.
+
 > ## ⚠ DO NOT BUILD WITH SENDGRID
 >
 > SendGrid was the original choice in `handoff.html`, but was **retired** in
