@@ -53,7 +53,7 @@ export function DeliveryZonesManager({ orgId, initialZones }: Props) {
       <div className="card-head">
         <h3>Delivery zones</h3>
         <div className="sub">
-          Where you'll deliver. Leave empty if you ship anywhere — buyers won't see a service-area banner.
+          Where you&rsquo;ll deliver. Leave empty if you ship anywhere — buyers won&rsquo;t see a service-area banner.
         </div>
       </div>
       <div className="card-body">

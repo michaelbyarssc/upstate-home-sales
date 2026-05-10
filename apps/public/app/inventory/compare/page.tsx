@@ -134,9 +134,9 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
             label="Price"
             cells={homes.map((h) => (
               h.prices_hidden || h.listed_price_cents == null ? (
-                <span style={{ color: 'var(--c-ink-mute)', fontSize: 13 }}>Contact for pricing</span>
+                <span key={h.id} style={{ color: 'var(--c-ink-mute)', fontSize: 13 }}>Contact for pricing</span>
               ) : (
-                <span style={{ fontWeight: 600 }}>
+                <span key={h.id} style={{ fontWeight: 600 }}>
                   {formatCompactPrice(h.listed_price_cents)}
                   {bestPill(minPrice != null && h.listed_price_cents === minPrice)}
                 </span>
@@ -147,14 +147,14 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
             label="Est. monthly"
             cells={homes.map((h) => (
               h.prices_hidden || h.listed_price_cents == null
-                ? <span style={{ color: 'var(--c-ink-mute)' }}>—</span>
-                : <span>{formatMonthly(h.listed_price_cents)}</span>
+                ? <span key={h.id} style={{ color: 'var(--c-ink-mute)' }}>—</span>
+                : <span key={h.id}>{formatMonthly(h.listed_price_cents)}</span>
             ))}
           />
           <CompareRow
             label="Beds"
             cells={homes.map((h) => (
-              <span>
+              <span key={h.id}>
                 {h.beds ?? '—'}
                 {bestPill(maxBeds != null && h.beds === maxBeds && (homes.length > 1))}
               </span>
@@ -163,7 +163,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
           <CompareRow
             label="Baths"
             cells={homes.map((h) => (
-              <span>
+              <span key={h.id}>
                 {h.baths ?? '—'}
                 {bestPill(maxBaths != null && h.baths === maxBaths && (homes.length > 1))}
               </span>
@@ -172,7 +172,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
           <CompareRow
             label="Square feet"
             cells={homes.map((h) => (
-              <span>
+              <span key={h.id}>
                 {h.sqft?.toLocaleString() ?? '—'}
                 {bestPill(maxSqft != null && h.sqft === maxSqft && (homes.length > 1))}
               </span>
@@ -181,31 +181,31 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
           <CompareRow
             label="Dimensions"
             cells={homes.map((h) => (
-              <span>{h.width_ft && h.length_ft ? `${h.width_ft}′ × ${h.length_ft}′` : '—'}</span>
+              <span key={h.id}>{h.width_ft && h.length_ft ? `${h.width_ft}′ × ${h.length_ft}′` : '—'}</span>
             ))}
           />
           <CompareRow
             label="Type"
-            cells={homes.map((h) => <span>{cap(h.type)}-wide</span>)}
+            cells={homes.map((h) => <span key={h.id}>{cap(h.type)}-wide</span>)}
           />
           <CompareRow
             label="Year built"
-            cells={homes.map((h) => <span>{h.year_built ?? '—'}</span>)}
+            cells={homes.map((h) => <span key={h.id}>{h.year_built ?? '—'}</span>)}
           />
           <CompareRow
             label="Construction"
-            cells={homes.map((h) => <span>{h.construction ?? '—'}</span>)}
+            cells={homes.map((h) => <span key={h.id}>{h.construction ?? '—'}</span>)}
           />
           <CompareRow
             label="On the lot since"
             cells={homes.map((h) => (
-              <span>{h.on_lot_since ? new Date(h.on_lot_since).toLocaleDateString() : '—'}</span>
+              <span key={h.id}>{h.on_lot_since ? new Date(h.on_lot_since).toLocaleDateString() : '—'}</span>
             ))}
           />
           <CompareRow
             label="Stock #"
             cells={homes.map((h) => (
-              <span style={{ fontVariantNumeric: 'tabular-nums', fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 13 }}>
+              <span key={h.id} style={{ fontVariantNumeric: 'tabular-nums', fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 13 }}>
                 {h.stock_no}
               </span>
             ))}

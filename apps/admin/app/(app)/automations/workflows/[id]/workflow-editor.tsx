@@ -296,7 +296,7 @@ export function WorkflowEditor({ rule, campaigns, members }: Props) {
                     onChange={(e) => patchAction(idx, { type: 'tag', value: e.target.value })}
                     placeholder="vip"
                   />
-                  <span className="hint">Stored on the lead's qualifier_payload.tags array.</span>
+                  <span className="hint">Stored on the lead&rsquo;s qualifier_payload.tags array.</span>
                 </div>
               )}
 

@@ -98,7 +98,7 @@ export default async function KioskHomeDetail({ params }: { params: Params }) {
               {h.beds != null && <li><span className="icon">🛏</span>{h.beds} bedroom{h.beds === 1 ? '' : 's'}</li>}
               {h.baths != null && <li><span className="icon">🛁</span>{h.baths} bathroom{h.baths === 1 ? '' : 's'}</li>}
               {h.sqft != null && <li><span className="icon">↔</span>{h.sqft.toLocaleString()} sq. ft.</li>}
-              {h.width_ft && h.length_ft && <li><span className="icon">▭</span>{h.width_ft}' × {h.length_ft}'</li>}
+              {h.width_ft && h.length_ft && <li><span className="icon">▭</span>{h.width_ft}&prime; × {h.length_ft}&prime;</li>}
               <li><span className="icon">#</span>Stock {h.stock_no}</li>
             </ul>
 

@@ -194,7 +194,7 @@ export function CollectionEditor({ collection, initialMemberIds, homes }: Props)
         <div style={{ maxHeight: 420, overflowY: 'auto', border: '1px solid var(--adm-line)', borderRadius: 6 }}>
           {filtered.length === 0 ? (
             <div style={{ padding: 20, textAlign: 'center', color: 'var(--adm-ink-mute)', fontSize: 13 }}>
-              No homes match "{search}".
+              No homes match &ldquo;{search}&rdquo;.
             </div>
           ) : (
             filtered.map((h) => {
