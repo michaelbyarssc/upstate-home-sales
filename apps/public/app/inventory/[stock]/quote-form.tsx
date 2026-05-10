@@ -121,7 +121,7 @@ export function QuoteForm({
               Contact for pricing
             </span>
             <p style={{ fontSize: 12, color: 'var(--c-ink-mute)', marginTop: 4, marginBottom: 0 }}>
-              Tap "Get a quote" below — we'll send a written number within one business day.
+              Tap &ldquo;Get a quote&rdquo; below — we&rsquo;ll send a written number within one business day.
             </p>
           </div>
         ) : (
@@ -158,7 +158,7 @@ export function QuoteForm({
             <li><span className="icon" aria-hidden>↔</span>{sqft.toLocaleString()} sq. ft.</li>
           )}
           {widthFt && lengthFt && (
-            <li><span className="icon" aria-hidden>▭</span>{widthFt}' × {lengthFt}'</li>
+            <li><span className="icon" aria-hidden>▭</span>{widthFt}&prime; × {lengthFt}&prime;</li>
           )}
           <li><span className="icon" aria-hidden>#</span>Stock {stockNo}</li>
         </ul>

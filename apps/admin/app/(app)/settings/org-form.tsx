@@ -83,8 +83,8 @@ export function OrgSettingsForm({ org: initial }: { org: Org }) {
             <span>Hide prices on the public site</span>
           </label>
           <div className="help">
-            When on, listing/detail/kiosk pages render <strong>"Contact for pricing"</strong> instead of dollar amounts.
-            Quotes already sent are unaffected. Useful if competitors are watching and you'd rather quote case-by-case.
+            When on, listing/detail/kiosk pages render <strong>&ldquo;Contact for pricing&rdquo;</strong> instead of dollar amounts.
+            Quotes already sent are unaffected. Useful if competitors are watching and you&rsquo;d rather quote case-by-case.
           </div>
         </div>
 

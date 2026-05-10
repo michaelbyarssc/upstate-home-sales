@@ -43,7 +43,7 @@ export default function NewWorkflowPage() {
           />
           <span className="hint">
             Only run when the event payload matches all keys. Examples:<br />
-            <code>{'{ "stage": "quoted" }'}</code> for stage-changes only when moving to "quoted".<br />
+            <code>{'{ "stage": "quoted" }'}</code> for stage-changes only when moving to &ldquo;quoted&rdquo;.<br />
             <code>{'{ "utm_source": "google" }'}</code> for leads from Google ads only.
           </span>
         </div>

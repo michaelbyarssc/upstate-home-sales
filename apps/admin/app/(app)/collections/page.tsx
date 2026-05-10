@@ -30,7 +30,7 @@ export default async function CollectionsListPage() {
         <div className="eyebrow">Workspace · Curated</div>
         <h1>Collections</h1>
         <p>
-          Group homes for marketing landing pages — "Under $100k", "Single-wides", "New arrivals".
+          Group homes for marketing landing pages — &ldquo;Under $100k&rdquo;, &ldquo;Single-wides&rdquo;, &ldquo;New arrivals&rdquo;.
           Each collection gets its own URL on the public site.
         </p>
       </div>
