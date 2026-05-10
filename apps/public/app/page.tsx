@@ -36,7 +36,7 @@ export default async function HomePage() {
     phone: '+1-864-680-4030',
     addressLocality: 'Spartanburg',
     addressRegion: 'SC',
-    addressCountry: 'US' as never,
+    addressCountry: 'US',
   });
   const itemListJsonLd = itemListSchema(
     homes.map((h) => ({

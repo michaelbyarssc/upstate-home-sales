@@ -15,6 +15,7 @@ export type LDOrganization = {
   addressLocality?: string; // city
   addressRegion?: string;   // state code
   postalCode?: string;
+  addressCountry?: string;  // ISO country code (default 'US')
   sameAs?: string[];        // social URLs
 };
 
@@ -57,7 +58,7 @@ export function organizationSchema(org: LDOrganization): string {
       addressLocality: org.addressLocality,
       addressRegion: org.addressRegion,
       postalCode: org.postalCode,
-      addressCountry: 'US',
+      addressCountry: org.addressCountry ?? 'US',
     };
   }
   if (org.sameAs?.length) node.sameAs = org.sameAs;

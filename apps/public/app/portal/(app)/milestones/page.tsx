@@ -86,7 +86,7 @@ export default async function MilestonesPage() {
 
                 <ol style={{ listStyle: 'none', padding: 0, margin: 0, position: 'relative' }}>
                   {items.map((m, i) => {
-                    const status = STATUS_TINT[m.status];
+                    const status = STATUS_TINT[m.status] ?? STATUS_TINT.pending!;
                     return (
                       <li key={m.id} style={{ display: 'flex', gap: 16, paddingBottom: i === items.length - 1 ? 0 : 20, position: 'relative' }}>
                         {i < items.length - 1 && (

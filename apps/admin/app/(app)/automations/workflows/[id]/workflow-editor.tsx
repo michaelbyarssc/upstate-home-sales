@@ -113,7 +113,10 @@ export function WorkflowEditor({ rule, campaigns, members }: Props) {
     const swap = direction === 'up' ? idx - 1 : idx + 1;
     if (swap < 0 || swap >= actions.length) return;
     const copy = [...actions];
-    [copy[idx], copy[swap]] = [copy[swap], copy[idx]];
+    const a = copy[idx]!;
+    const b = copy[swap]!;
+    copy[idx] = b;
+    copy[swap] = a;
     persistActions(copy);
   }
 

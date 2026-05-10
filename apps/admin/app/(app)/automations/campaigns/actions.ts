@@ -120,11 +120,11 @@ export async function moveCampaignStep(id: string, campaignId: string, direction
   const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
   if (swapIdx < 0 || swapIdx >= steps.length) return;
 
-  const a = steps[idx];
-  const b = steps[swapIdx];
+  const a = steps[idx]!;
+  const b = steps[swapIdx]!;
   // Two-phase swap to avoid unique-constraint collision on (campaign_id, step_order).
   // Step 1: move a to a temporary order > all current orders.
-  const tempOrder = (steps[steps.length - 1].step_order ?? 0) + 1000;
+  const tempOrder = (steps[steps.length - 1]!.step_order ?? 0) + 1000;
   await supabase.from('campaign_steps').update({ step_order: tempOrder }).eq('id', a.id);
   await supabase.from('campaign_steps').update({ step_order: a.step_order }).eq('id', b.id);
   await supabase.from('campaign_steps').update({ step_order: b.step_order }).eq('id', a.id);
