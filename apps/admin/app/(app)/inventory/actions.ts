@@ -31,6 +31,7 @@ type HomeFields = {
   on_lot_since: string | null;
   is_featured: boolean;
   hide_from_search: boolean;
+  marketplace_opt_in: boolean;
   lot_id: string | null;
 };
 
@@ -95,6 +96,7 @@ function readFields(fd: FormData): HomeFields {
     on_lot_since: parseStr(fd.get('on_lot_since')),
     is_featured: parseChecked(fd, 'is_featured'),
     hide_from_search: parseChecked(fd, 'hide_from_search'),
+    marketplace_opt_in: parseChecked(fd, 'marketplace_opt_in'),
     lot_id: parseStr(fd.get('lot_id')),
   };
 }
