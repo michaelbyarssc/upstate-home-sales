@@ -512,6 +512,36 @@ export interface ParcelCacheEntry {
   cached_at: string;
 }
 
+/** Per-county parcel record from the DIY pipeline (Phase E.2).
+ *  Sourced from free public county GIS portals or Local Gradient bulk data. */
+export interface Parcel {
+  id: string;
+  parcel_id: string;
+  state: string;
+  county: string;
+  address: string | null;
+  city: string | null;
+  zip: string | null;
+  /** Read via the RPC `lookup_parcel_by_point()` which projects ST_AsGeoJSON. */
+  geom?: unknown;
+  centroid_lat: number;
+  centroid_lng: number;
+  raw_props: Record<string, unknown> | null;
+  source: string | null;
+  imported_at: string;
+}
+
+export interface ParcelImport {
+  id: string;
+  state: string;
+  county: string;
+  source: string;
+  feature_count: number;
+  imported_by: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface PropertyPlacement {
   id: string;
   org_id: string;

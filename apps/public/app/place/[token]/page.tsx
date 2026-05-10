@@ -44,6 +44,7 @@ export default async function PlaceSharePage({ params }: { params: Params }) {
 
   const placement = data as PublicPropertyPlacement;
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? null;
+  const lgTileKey = process.env.NEXT_PUBLIC_LOCAL_GRADIENT_TILE_KEY ?? null;
 
   return (
     <main className="section" style={{ paddingTop: 'var(--s-6)' }}>
@@ -78,7 +79,11 @@ export default async function PlaceSharePage({ params }: { params: Params }) {
           </div>
         </header>
 
-        <PlacementViewer placement={placement} googleMapsApiKey={apiKey} />
+        <PlacementViewer
+          placement={placement}
+          googleMapsApiKey={apiKey}
+          localGradientTileKey={lgTileKey}
+        />
 
         <section style={{
           marginTop: 16,

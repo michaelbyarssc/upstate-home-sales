@@ -39,6 +39,7 @@ export default async function PlacementPage({ params }: { params: { id: string }
   };
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? null;
+  const lgTileKey = process.env.NEXT_PUBLIC_LOCAL_GRADIENT_TILE_KEY ?? null;
   const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com';
 
   return (
@@ -72,6 +73,7 @@ export default async function PlacementPage({ params }: { params: { id: string }
         existing={(existing as PropertyPlacement | null) ?? null}
         setbacks={setbacks}
         googleMapsApiKey={apiKey}
+        localGradientTileKey={lgTileKey}
         publicBaseUrl={publicBase}
       />
     </>
