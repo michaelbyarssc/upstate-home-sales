@@ -287,27 +287,42 @@ Other env vars:
   this if unset, but explicit is better)
 - `NEXT_PUBLIC_ADMIN_URL=https://admin.upstatehomecenter.com`
 
-### Monitoring (Sentry — optional)
+### Monitoring — Sentry ✅ live
 
-Sentry SDK scaffolded in both apps; **no-op when DSN is unset**. To enable:
+Sentry SDK wired in both apps and **verified receiving events** in the
+`slingshot-technologies/upstate-home-sales` Sentry project. Env vars
+already set on both Vercel projects across all 3 envs:
 
-- `NEXT_PUBLIC_SENTRY_DSN` (both apps) — browser error reporting
-- `SENTRY_DSN` (both apps) — server-side error reporting
-- `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` (build env) — source-map upload at build time. Without `SENTRY_AUTH_TOKEN`, the build skips Sentry's webpack wrapper entirely.
+- `NEXT_PUBLIC_SENTRY_DSN` + `SENTRY_DSN`
+- `SENTRY_ORG=slingshot-technologies` + `SENTRY_PROJECT=upstate-home-sales`
+- `SENTRY_AUTH_TOKEN` — **deferred** (optional). When added, source maps
+  upload at build time so stack traces show un-minified source. Without
+  it, runtime error tracking still works fully.
 
-### E2E tests (Playwright)
+Next 14 requires `experimental.instrumentationHook: true` (set in both
+`next.config.mjs`). Default-on in Next 15 — remove the flag when upgrading.
 
-`pnpm test:e2e` runs the smoke suite at `tests/e2e/smoke.spec.ts` against
-`PLAYWRIGHT_BASE_URL` (default `https://upstatehomecenter.com`). Covers
-home / inventory / marketplace / location sub-site / Design Studio /
-financing / contact + the public API + token-share 404 pages. CI run is a
-follow-up — currently this is a manual command.
+Verification: `GET /api/sentry-test` triggers a deliberate server error
+with explicit `Sentry.captureException` + `Sentry.flush(2000)`. Issue
+`UPSTATE-HOME-SALES-1` confirms the pipeline.
 
-### AI chatbot (Phase H — wired, awaits billing)
+### E2E tests (Playwright) ✅ live in CI
 
-- `AI_GATEWAY_API_KEY` is set on `uhs-public` for all 3 envs (created at vercel.com/<team>/~/ai-gateway).
-- `ai_chat_enabled` is **true** on the `uhs-spartanburg` org.
-- Chat endpoint streams successfully; LLM calls return `AI Gateway requires a valid credit card on file to service requests`. **Add a card at https://vercel.com/&lt;team&gt;/~/ai → modal=add-credit-card to unlock $5 free credit and start serving.**
+`pnpm test:e2e` runs the 13-test smoke suite at `tests/e2e/smoke.spec.ts`
+against `PLAYWRIGHT_BASE_URL` (default `https://upstatehomecenter.com`).
+Covers home / inventory / marketplace / location sub-site / Design Studio /
+financing / contact + the public API + token-share 404 pages. CI runs
+on every PR via the `e2e` job in `.github/workflows/ci.yml`. Local install
+(one-time): `pnpm exec playwright install chromium`.
+
+### AI chatbot (Phase H) ✅ live
+
+- `AI_GATEWAY_API_KEY` set on `uhs-public` for all 3 envs.
+- `ai_chat_enabled = true` on the `uhs-spartanburg` org.
+- Vercel AI Gateway billing has a credit card on file.
+- Chat endpoint streams Anthropic responses end-to-end including tool
+  calls (verified with `searchInventory({beds:3, max_price:80000})`).
+- Default model: `anthropic/claude-sonnet-4-6`. Override with `AI_CHAT_MODEL`.
 
 ---
 
