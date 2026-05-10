@@ -22,7 +22,7 @@ export default async function CampaignDetailPage({ params }: { params: { id: str
 
   if (!campaign) notFound();
 
-  const enrollmentsArr = (enrollments ?? []) as Array<CampaignEnrollment & { leads?: { contact_name: string } | null }>;
+  const enrollmentsArr = (enrollments ?? []) as unknown as Array<CampaignEnrollment & { leads?: { contact_name: string } | null }>;
   const counts = { active: 0, completed: 0, unsubscribed: 0, errored: 0 };
   for (const e of enrollmentsArr) counts[e.status as keyof typeof counts] = (counts[e.status as keyof typeof counts] ?? 0) + 1;
 

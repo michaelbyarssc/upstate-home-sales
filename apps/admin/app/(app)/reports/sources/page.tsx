@@ -28,7 +28,7 @@ type LeadRow = {
 export default async function SourcesReportPage({ searchParams }: { searchParams: SearchParams }) {
   const supabase = createClient();
   const winKey = (searchParams.window as typeof WINDOWS[number]['key'] | undefined) ?? '30';
-  const win = WINDOWS.find((w) => w.key === winKey) ?? WINDOWS[1];
+  const win = WINDOWS.find((w) => w.key === winKey) ?? WINDOWS[1]!;
 
   let query = supabase
     .from('leads')

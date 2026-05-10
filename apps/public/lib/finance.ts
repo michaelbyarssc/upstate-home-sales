@@ -22,7 +22,7 @@ export type EstimateOpts = {
 };
 
 export function monthlyPaymentCents(
-  priceCents: number,
+  priceCents: number | null | undefined,
   opts: EstimateOpts = {},
 ): number {
   if (!priceCents || priceCents <= 0) return 0;
@@ -39,7 +39,7 @@ export function monthlyPaymentCents(
 }
 
 /** "$294/mo" — for inline display in cards. */
-export function formatMonthly(priceCents: number, opts: EstimateOpts = {}): string {
+export function formatMonthly(priceCents: number | null | undefined, opts: EstimateOpts = {}): string {
   const m = monthlyPaymentCents(priceCents, opts);
   if (m <= 0) return '—';
   return `$${Math.round(m / 100).toLocaleString()}/mo`;

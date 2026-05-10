@@ -34,7 +34,7 @@ function delayToHuman(seconds: number): { value: number; unit: string } {
   return { value: Math.round(seconds / 60), unit: 'minutes' };
 }
 function humanToDelay(value: number, unit: string): number {
-  const u = DELAY_UNITS.find((d) => d.unit === unit) ?? DELAY_UNITS[2];
+  const u = DELAY_UNITS.find((d) => d.unit === unit) ?? DELAY_UNITS[2]!;
   return Math.max(0, Math.round(value)) * u.sec;
 }
 
