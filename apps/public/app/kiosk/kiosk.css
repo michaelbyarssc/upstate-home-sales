@@ -1,0 +1,235 @@
+/* Hide global chrome whenever <body> has the kiosk-mode class. */
+body.kiosk-mode .uhs-topbar,
+body.kiosk-mode .uhs-nav,
+body.kiosk-mode .uhs-footer,
+body.kiosk-mode .compare-bar {
+  display: none !important;
+}
+body.kiosk-mode {
+  background: var(--c-bg);
+}
+
+.kiosk-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top stripe — minimal branding + phone number, always visible. */
+.kiosk-bar {
+  background: var(--c-ink);
+  color: #fff;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: 500 16px/1 var(--f-body);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.kiosk-bar .brand {
+  font-family: var(--f-display);
+  font-size: 22px;
+}
+.kiosk-bar .brand em { font-style: italic; color: rgba(255, 255, 255, 0.85); }
+.kiosk-bar .right {
+  display: flex; gap: 24px; align-items: center;
+}
+.kiosk-bar .phone {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.kiosk-bar a {
+  color: #fff;
+  text-decoration: none;
+}
+
+/* Page content area — large, breathable, touch-friendly. */
+.kiosk-content {
+  flex: 1;
+  padding: 32px 28px 80px;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Big touch buttons */
+.kiosk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-accent);
+  color: #fff;
+  border: none;
+  padding: 18px 32px;
+  border-radius: var(--r-2);
+  font: 600 18px/1 var(--f-body);
+  text-decoration: none;
+  cursor: pointer;
+  min-height: 56px;
+  transition: background var(--d-fast) var(--ease);
+}
+.kiosk-btn:hover { background: var(--c-accent-hover); }
+.kiosk-btn.secondary {
+  background: #fff;
+  color: var(--c-ink);
+  border: 2px solid var(--c-ink);
+}
+.kiosk-btn.secondary:hover {
+  background: var(--c-ink);
+  color: #fff;
+}
+
+/* Large card grid for kiosk */
+.kiosk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+.kiosk-card {
+  background: #fff;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-3);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--d-base) var(--ease), box-shadow var(--d-base) var(--ease);
+}
+.kiosk-card:hover {
+  border-color: var(--c-accent);
+  box-shadow: 0 4px 16px rgba(15, 28, 41, 0.10);
+}
+.kiosk-card .photo {
+  aspect-ratio: 5/3;
+  background: linear-gradient(140deg, #b8a384, #5e4f3a);
+  background-size: cover;
+  background-position: center;
+}
+.kiosk-card .body {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kiosk-card .name {
+  font: 600 22px/1.2 var(--f-body);
+  color: var(--c-ink);
+  letter-spacing: -0.01em;
+}
+.kiosk-card .price {
+  font: 700 24px/1 var(--f-body);
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+.kiosk-card .specs {
+  font: 400 15px/1.4 var(--f-body);
+  color: var(--c-ink-mute);
+}
+.kiosk-card .tap {
+  margin-top: 8px;
+  background: var(--c-ink);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: var(--r-2);
+  text-align: center;
+  font: 600 16px/1 var(--f-body);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Detail page */
+.kiosk-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) 380px;
+  gap: 32px;
+  margin-top: 16px;
+}
+@media (max-width: 900px) {
+  .kiosk-detail-grid { grid-template-columns: 1fr; }
+}
+.kiosk-detail-photo {
+  aspect-ratio: 4/3;
+  border-radius: var(--r-3);
+  background: linear-gradient(140deg, #b8a384, #5e4f3a);
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 6px 24px rgba(15, 28, 41, 0.10);
+}
+.kiosk-detail-aside {
+  background: #fff;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-3);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 96px;
+  align-self: start;
+}
+.kiosk-detail-aside h2 {
+  font: 700 24px/1.2 var(--f-body);
+  margin: 0;
+}
+.kiosk-detail-aside .price {
+  font: 700 32px/1 var(--f-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-ink);
+}
+.kiosk-detail-aside .specs li {
+  display: flex; align-items: center; gap: 10px;
+  font: 500 16px/1.4 var(--f-body);
+  margin: 6px 0;
+}
+.kiosk-detail-aside .specs li .icon {
+  color: var(--c-ink-mute); width: 22px; flex-shrink: 0;
+}
+
+/* Inline contact form (no modal — finger-friendly) */
+.kiosk-form {
+  display: flex; flex-direction: column; gap: 14px;
+  margin-top: 8px;
+}
+.kiosk-form label {
+  font: 600 13px/1 var(--f-body);
+  color: var(--c-ink);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.kiosk-form input,
+.kiosk-form textarea {
+  font: 400 18px/1.4 var(--f-body);
+  padding: 14px 16px;
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-2);
+  background: #fff;
+  color: var(--c-ink);
+  font-family: inherit;
+  min-height: 52px;
+}
+.kiosk-form input:focus,
+.kiosk-form textarea:focus {
+  outline: none;
+  border-color: var(--c-accent);
+}
+.kiosk-form textarea { min-height: 80px; resize: vertical; }
+.kiosk-form .ok {
+  background: #ecf7ed;
+  color: #1d6f3f;
+  border: 1px solid #b9deba;
+  padding: 16px;
+  border-radius: var(--r-2);
+  font: 500 16px/1.4 var(--f-body);
+}
+.kiosk-form .err {
+  background: #faf0ee;
+  color: #a53a2c;
+  border: 1px solid #e0c0bc;
+  padding: 12px;
+  border-radius: var(--r-2);
+  font: 500 14px/1.4 var(--f-body);
+}

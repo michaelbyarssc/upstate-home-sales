@@ -6,7 +6,11 @@ import { ACTIVE_ORG_COOKIE } from '@uhs/db';
 const PUBLIC_PREFIXES = ['/login', '/auth/callback', '/_next', '/favicon.ico'];
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next({ request: { headers: req.headers } });
+  // Expose the current pathname to server components via a request header so
+  // layouts can highlight active nav items without each child duplicating the work.
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set('x-pathname', req.nextUrl.pathname);
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
   const { pathname } = req.nextUrl;
 
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {

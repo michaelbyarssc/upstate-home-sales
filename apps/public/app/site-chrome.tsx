@@ -49,7 +49,7 @@ export function SiteFooter() {
             </div>
             <p>
               Family-owned manufactured home dealer serving the South Carolina Upstate since 1998.
-              Two lots, every major manufacturer, honest pricing.
+              Spartanburg lot, every major manufacturer, honest pricing.
             </p>
           </div>
           <div>
@@ -72,8 +72,7 @@ export function SiteFooter() {
           <div>
             <h4>Visit</h4>
             <ul>
-              <li>Lexington, SC</li>
-              <li>Anderson, SC</li>
+              <li>Spartanburg, SC</li>
               <li><a href="tel:864-680-4030">(864) 680-4030</a></li>
             </ul>
           </div>

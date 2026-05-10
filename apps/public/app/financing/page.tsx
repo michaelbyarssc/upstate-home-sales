@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import { LoanCalculator } from './loan-calculator';
 
 export const metadata = { title: 'Financing' };
+
+type SearchParams = { price?: string };
 
 const PARTNERS = [
   {
@@ -20,7 +23,8 @@ const PARTNERS = [
   },
 ];
 
-export default function FinancingPage() {
+export default function FinancingPage({ searchParams }: { searchParams: SearchParams }) {
+  const initialPrice = searchParams.price ? Number(searchParams.price) : undefined;
   return (
     <main>
       <section className="section" style={{ paddingBottom: 'var(--s-8)' }}>
@@ -53,6 +57,12 @@ export default function FinancingPage() {
             We don&rsquo;t store any of your financial information on our side. Pre-qual happens entirely on
             the lender&rsquo;s site.
           </p>
+        </div>
+      </section>
+
+      <section className="section" style={{ paddingTop: 'var(--s-10)', paddingBottom: 'var(--s-10)' }}>
+        <div className="inner">
+          <LoanCalculator initialPrice={Number.isFinite(initialPrice) ? initialPrice : undefined} />
         </div>
       </section>
 

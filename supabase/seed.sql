@@ -3,9 +3,14 @@
 -- Idempotent seed for staging. Re-runs cleanly via `supabase db reset`.
 --
 -- Creates:
---   • One org: "Upstate Home Sales — Lexington"
---   • Two lots: Lexington (primary), Anderson (secondary, for switcher testing)
+--   • One org: "Upstate Home Sales — Spartanburg"
+--   • One active lot: Spartanburg
 --   • One owner: MichaelByarsSC@gmail.com (also platform admin)
+--
+-- Note: legacy Lexington (UUID …0010) and Anderson (UUID …0011) lot rows
+-- created by historical seeds are intentionally not removed here — they have
+-- been soft-deleted in production via scripts/migrate-lexington-to-spartanburg.mjs
+-- and won't appear in any active queries (UI filters deleted_at IS NULL).
 --
 -- The auth.users row is provisioned via the Supabase auth admin API at deploy
 -- time; this script only links it up. If the user does not exist yet, the
@@ -15,12 +20,13 @@
 insert into public.orgs (id, slug, name, brand_color, default_markup_pct)
 values (
   '00000000-0000-0000-0000-000000000001',
-  'uhs-lexington',
-  'Upstate Home Sales — Lexington',
+  'uhs-spartanburg',
+  'Upstate Home Sales — Spartanburg',
   '#B9532A',
   25.00
 )
-on conflict (slug) do update set
+on conflict (id) do update set
+  slug = excluded.slug,
   name = excluded.name,
   brand_color = excluded.brand_color,
   default_markup_pct = excluded.default_markup_pct;
@@ -28,20 +34,15 @@ on conflict (slug) do update set
 insert into public.lots (id, org_id, name, address)
 values
   (
-    '00000000-0000-0000-0000-000000000010',
+    'fe1448f2-0609-42f1-b7a9-48034fcd4a6b',
     '00000000-0000-0000-0000-000000000001',
-    'Lexington',
-    '1234 Augusta Hwy, Lexington, SC 29073'
-  ),
-  (
-    '00000000-0000-0000-0000-000000000011',
-    '00000000-0000-0000-0000-000000000001',
-    'Anderson',
-    '5678 Clemson Blvd, Anderson, SC 29621'
+    'Spartanburg',
+    'Spartanburg, SC'
   )
 on conflict (id) do update set
   name = excluded.name,
-  address = excluded.address;
+  address = excluded.address,
+  deleted_at = null;
 
 -- Link the first admin user. Must already exist in auth.users.
 do $$
@@ -72,5 +73,5 @@ begin
   values (v_user_id, 'Initial platform admin from seed')
   on conflict (user_id) do nothing;
 
-  raise notice 'Seed: linked % as owner of uhs-lexington and platform admin', v_user_id;
+  raise notice 'Seed: linked % as owner of uhs-spartanburg and platform admin', v_user_id;
 end $$;

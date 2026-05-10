@@ -7,7 +7,7 @@ import type { OrgMember, Role } from '@uhs/db';
 
 export async function updateMember(
   userId: string,
-  patch: Partial<Pick<OrgMember, 'role' | 'status' | 'scoped_lots'>>,
+  patch: Partial<Pick<OrgMember, 'role' | 'status' | 'scoped_lots' | 'in_rotation'>>,
 ) {
   const supabase = createClient();
   const { error } = await supabase.from('org_members').update(patch).eq('user_id', userId);

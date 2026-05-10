@@ -8,7 +8,7 @@ import '../leads.css';
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const [{ data: lead }, { data: messages }, { data: members }] = await Promise.all([
+  const [{ data: lead }, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }] = await Promise.all([
     supabase
       .from('leads')
       .select('*, homes(name, stock_no, listed_price_cents)')
@@ -24,6 +24,15 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .select('user_id, role')
       .eq('status', 'active')
       .in('role', ['owner', 'manager', 'sales']),
+    supabase
+      .from('campaigns')
+      .select('id, name, channel, status')
+      .eq('status', 'active')
+      .order('name'),
+    supabase
+      .from('campaign_enrollments')
+      .select('id, campaign_id, status, current_step, next_send_at, campaigns(name, channel)')
+      .eq('lead_id', params.id),
   ]);
 
   if (!lead) notFound();
@@ -39,6 +48,8 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         lead={lead as Lead & { homes?: { name: string; stock_no: string; listed_price_cents: number } | null }}
         initialMessages={(messages ?? []) as LeadMessage[]}
         members={(members ?? []) as Array<{ user_id: string; role: string }>}
+        campaigns={(campaigns ?? []) as Array<{ id: string; name: string; channel: string; status: string }>}
+        initialEnrollments={(enrollments ?? []) as Array<{ id: string; campaign_id: string; status: string; current_step: number; next_send_at: string | null; campaigns?: { name: string; channel: string } | { name: string; channel: string }[] | null }>}
       />
     </>
   );

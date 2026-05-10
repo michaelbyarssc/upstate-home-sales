@@ -46,7 +46,7 @@ export default function LoginPage({
           <LoginForm next={next} />
           <p className="auth-foot">
             By signing in you agree to the dealer terms. Not a dealer yet?{' '}
-            <a href="mailto:hello@upstatehomesales.com">Request access</a>.
+            <a href="mailto:hello@upstatehomecenter.com">Request access</a>.
           </p>
         </div>
       </div>

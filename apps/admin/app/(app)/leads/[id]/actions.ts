@@ -6,6 +6,7 @@ import { createServiceClient } from '@uhs/db/service';
 import type { LeadMessage, LeadStage, MessageChannel, MessageKind } from '@uhs/db';
 import { sendEmail, sendSms } from '../../../../lib/notify';
 import { renderQuotePdf, type QuotePdfData } from '../../../../lib/quote-pdf';
+import { dispatchWorkflowEvent } from '../../../../lib/workflows';
 
 export async function postMessage(
   leadId: string,
@@ -84,9 +85,14 @@ export async function updateLeadStage(leadId: string, stage: LeadStage) {
     .from('leads')
     .update({ stage })
     .eq('id', leadId)
-    .select('id, stage')
+    .select('id, stage, org_id')
     .single();
   if (error || !data) throw new Error(error?.message ?? 'Update failed');
+  await dispatchWorkflowEvent({
+    event: 'lead.stage.changed',
+    orgId: data.org_id,
+    payload: { id: data.id, stage: data.stage, lead_id: data.id },
+  }).catch((e) => console.error('[lead-stage] workflow dispatch failed:', e));
   revalidatePath('/leads');
   revalidatePath(`/leads/${leadId}`);
   return data;
@@ -153,7 +159,7 @@ export async function createQuote(args: {
   // Advance lead stage to 'quoted'.
   await supabase.from('leads').update({ stage: 'quoted' }).eq('id', args.leadId);
 
-  const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomesales.com';
+  const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com';
   const publicUrl = `${publicBase}/q/${quote.public_token}`;
 
   // Render PDF, upload to Storage, persist the path. Best-effort: a PDF
@@ -228,6 +234,18 @@ export async function createQuote(args: {
       text: lines.join('\n'),
     }).catch((e) => console.error('[quote] customer email failed:', e));
   }
+
+  await dispatchWorkflowEvent({
+    event: 'quote.sent',
+    orgId: args.orgId,
+    payload: {
+      quote_id: quote.id,
+      lead_id: args.leadId,
+      home_id: args.homeId,
+      listed_price_cents: quote.listed_price_cents,
+      public_token: quote.public_token,
+    },
+  }).catch((e) => console.error('[quote] workflow dispatch failed:', e));
 
   revalidatePath(`/leads/${args.leadId}`);
   return {

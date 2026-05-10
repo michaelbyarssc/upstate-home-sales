@@ -12,6 +12,8 @@ export interface Org {
   logo_url: string | null;
   default_markup_pct: number;
   sms_consent_text: string;
+  /** When true, public-facing pages render "Contact for pricing" instead of dollar amounts. */
+  prices_hidden: boolean;
   status: 'active' | 'suspended' | 'archived';
   created_at: string;
   updated_at: string;
@@ -23,9 +25,44 @@ export interface OrgMember {
   role: Role;
   scoped_lots: string[] | null;
   status: 'active' | 'suspended' | 'pending';
+  /** Round-robin opt-in flag. Members with `false` are skipped by `pick_next_assignee`. */
+  in_rotation: boolean;
   invited_by: string | null;
   invited_at: string | null;
   last_active_at: string | null;
+  created_at: string;
+}
+
+export interface HomeCollection {
+  id: string;
+  org_id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  hero_storage_path: string | null;
+  sort_order: number;
+  is_published: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HomeCollectionMember {
+  collection_id: string;
+  home_id: string;
+  org_id: string;
+  sort_order: number;
+  added_at: string;
+}
+
+export type ZoneKind = 'zip' | 'county';
+
+export interface DeliveryZone {
+  id: string;
+  org_id: string;
+  kind: ZoneKind;
+  value: string;
+  label: string | null;
   created_at: string;
 }
 
@@ -64,10 +101,49 @@ export interface Manufacturer {
   created_at: string;
 }
 
+export interface HomeModel {
+  id: string;
+  org_id: string;
+  manufacturer_id: string | null;
+  name: string;
+  model_code: string | null;
+  series: string | null;
+  type: HomeType;
+  beds: number | null;
+  baths: number | null;
+  sqft: number | null;
+  width_ft: number | null;
+  length_ft: number | null;
+  year_built: number | null;
+  construction: string | null;
+  headline: string | null;
+  description: string | null;
+  source_url: string | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HomeModelPhoto {
+  id: string;
+  home_model_id: string;
+  org_id: string;
+  storage_path: string;
+  sort_order: number;
+  alt_text: string | null;
+  width: number | null;
+  height: number | null;
+  created_at: string;
+}
+
 export interface Home {
   id: string;
   org_id: string;
   lot_id: string | null;
+  model_id: string | null;
   stock_no: string;
   name: string;
   manufacturer_id: string | null;
@@ -102,7 +178,8 @@ export interface Home {
   updated_at: string;
 }
 
-/** What anon (public site) sees — base_price_cents and markup_pct stripped. */
+/** What anon (public site) sees — base_price_cents and markup_pct stripped.
+ *  listed_price_cents is null when the org has prices_hidden=true. */
 export interface PublicHome {
   id: string;
   org_id: string;
@@ -119,7 +196,8 @@ export interface PublicHome {
   length_ft: number | null;
   year_built: number | null;
   construction: string | null;
-  listed_price_cents: number;
+  listed_price_cents: number | null;
+  prices_hidden: boolean;
   starting_from: boolean;
   headline: string | null;
   description: string | null;
@@ -186,8 +264,28 @@ export interface Lead {
   sms_consent_at: string | null;
   sms_consent_text: string | null;
   qualifier_payload: Record<string, unknown> | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_term: string | null;
+  utm_content: string | null;
+  gclid: string | null;
+  fbclid: string | null;
+  referrer_url: string | null;
+  landing_path: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface LeadStageHistory {
+  id: string;
+  lead_id: string;
+  org_id: string;
+  from_stage: LeadStage | null;
+  to_stage: LeadStage;
+  changed_by: string | null;
+  changed_at: string;
+  reason: string | null;
 }
 
 export interface LeadMessage {
@@ -215,6 +313,102 @@ export interface Quote {
   public_token: string;
   expires_at: string;
   created_by: string | null;
+  created_at: string;
+}
+
+export interface QuoteSignature {
+  id: string;
+  quote_id: string;
+  org_id: string;
+  signer_name: string;
+  signer_email: string;
+  signature_path: string;
+  signer_ip: string | null;
+  signer_useragent: string | null;
+  signed_at: string;
+}
+
+// ─── Campaigns ────────────────────────────────────────────────────────────
+export type CampaignChannel = 'email' | 'sms';
+export type CampaignStatus = 'draft' | 'active' | 'paused' | 'archived';
+export type EnrollmentStatus = 'active' | 'completed' | 'unsubscribed' | 'errored';
+
+export interface Campaign {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string | null;
+  channel: CampaignChannel;
+  status: CampaignStatus;
+  trigger_event: string | null;
+  trigger_filter: Record<string, unknown> | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CampaignStep {
+  id: string;
+  campaign_id: string;
+  org_id: string;
+  step_order: number;
+  delay_seconds: number;
+  subject: string | null;
+  body: string;
+}
+
+export interface CampaignEnrollment {
+  id: string;
+  campaign_id: string;
+  org_id: string;
+  lead_id: string;
+  status: EnrollmentStatus;
+  current_step: number;
+  next_send_at: string | null;
+  enrolled_at: string;
+  completed_at: string | null;
+  error_text: string | null;
+}
+
+// ─── Workflow rules ───────────────────────────────────────────────────────
+export type WorkflowEvent =
+  | 'lead.created'
+  | 'lead.stage.changed'
+  | 'quote.sent'
+  | 'quote.signed'
+  | 'lead.message.received';
+
+export type WorkflowAction =
+  | { type: 'enroll_in_campaign'; campaign_id: string }
+  | { type: 'assign_lead'; user_id: string | 'round_robin' }
+  | { type: 'set_stage'; stage: LeadStage }
+  | { type: 'tag'; value: string }
+  | { type: 'notify_email'; to: string; subject: string; body: string };
+
+export interface WorkflowRule {
+  id: string;
+  org_id: string;
+  name: string;
+  enabled: boolean;
+  event: WorkflowEvent;
+  filter: Record<string, unknown> | null;
+  actions: WorkflowAction[];
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkflowRun {
+  id: string;
+  rule_id: string;
+  org_id: string;
+  event: WorkflowEvent;
+  payload: Record<string, unknown>;
+  status: 'pending' | 'running' | 'success' | 'error' | 'skipped';
+  result: Record<string, unknown> | null;
+  error_text: string | null;
+  started_at: string | null;
+  finished_at: string | null;
   created_at: string;
 }
 

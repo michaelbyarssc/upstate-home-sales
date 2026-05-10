@@ -1,6 +1,8 @@
 import Link from 'next/link';
-import { formatCents, type PublicHome } from '@uhs/db';
+import type { PublicHome } from '@uhs/db';
 import { publicPhotoUrl } from '../lib/supabase';
+import { formatCompactPrice, formatMonthly } from '../lib/finance';
+import { CompareToggle } from './CompareToggle';
 
 type Props = {
   home: PublicHome & {
@@ -10,6 +12,15 @@ type Props = {
   index?: number;
 };
 
+/**
+ * Inventory card. Layout matches the BuildTrove dealer-site aesthetic:
+ * large photo top, name + price/mo header, pipe-separated spec line,
+ * dual CTAs (View details + Design home).
+ *
+ * The "Design home" route (Phase C) doesn't exist yet, so it deep-links
+ * to the detail page with a #design hash that the detail page can later
+ * scroll to.
+ */
 export function HomeCard({ home, index = 0 }: Props) {
   const photo = home.public_home_photos?.[0];
   const phClass = `ph-${(index % 9) + 1}`;
@@ -17,15 +28,26 @@ export function HomeCard({ home, index = 0 }: Props) {
     ? Math.floor((Date.now() - new Date(home.on_lot_since).getTime()) / 86_400_000) <= 14
     : false;
 
+  const detailHref = `/inventory/${encodeURIComponent(home.stock_no)}`;
+  const designHref = `${detailHref}#design`;
+
+  const specBits: string[] = [];
+  if (home.beds != null) specBits.push(`${home.beds} Bed`);
+  if (home.baths != null) specBits.push(`${home.baths} Bath`);
+  if (home.sqft) specBits.push(`${home.sqft.toLocaleString()} Sq. Ft.`);
+  if (home.width_ft && home.length_ft) specBits.push(`${home.width_ft}' × ${home.length_ft}'`);
+
+  const pricesHidden = home.prices_hidden || home.listed_price_cents == null;
+  const compactPrice = pricesHidden ? null : formatCompactPrice(home.listed_price_cents);
+  const monthly = pricesHidden ? null : formatMonthly(home.listed_price_cents);
+
   return (
-    <Link href={`/inventory/${encodeURIComponent(home.stock_no)}`} className="home-card">
-      <div className="photo">
+    <article className="home-card">
+      <Link href={detailHref} className="home-card-photo" aria-label={home.name}>
         {photo ? (
           <div
             className="placeholder"
             style={{
-              width: '100%',
-              height: '100%',
               backgroundImage: `url(${publicPhotoUrl(photo.storage_path)})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
@@ -36,25 +58,40 @@ export function HomeCard({ home, index = 0 }: Props) {
         )}
         {isNew && <span className="badge new">New</span>}
         {home.is_featured && !isNew && <span className="badge">Featured</span>}
+        <CompareToggle stock_no={home.stock_no} name={home.name} />
+      </Link>
+
+      <div className="home-card-body">
+        <div className="home-card-head">
+          <Link href={detailHref} className="home-card-name">
+            {home.name}
+          </Link>
+          {pricesHidden ? (
+            <div className="home-card-price" style={{ color: 'var(--c-ink-mute)', fontWeight: 500, fontSize: 13 }}>
+              Contact for pricing
+            </div>
+          ) : (
+            <div className="home-card-price">
+              <span className="total">{compactPrice}</span>
+              <span className="sep">|</span>
+              <span className="monthly">{monthly}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="home-card-specs">
+          {specBits.length > 0 ? specBits.join(' | ') : '—'}
+        </div>
+
+        <div className="home-card-ctas">
+          <Link href={detailHref} className="home-card-btn">
+            View details
+          </Link>
+          <Link href={designHref} className="home-card-btn">
+            Design home
+          </Link>
+        </div>
       </div>
-      <div className="body">
-        <div className="eyebrow-card">
-          {home.manufacturers?.name ?? 'Manufactured Home'}
-          {home.model ? ` · ${home.model}` : ''}
-        </div>
-        <div className="name">{home.name}</div>
-        <div className="specs">
-          {home.beds ?? '—'} bed · {home.baths ?? '—'} bath
-          {home.sqft ? ` · ${home.sqft.toLocaleString()} sqft` : ''}
-        </div>
-        <div className="price-row">
-          <div>
-            <div className="price">{formatCents(home.listed_price_cents)}</div>
-            {home.starting_from && <div className="price-caveat">Starting from</div>}
-          </div>
-          <span className="view">View →</span>
-        </div>
-      </div>
-    </Link>
+    </article>
   );
 }

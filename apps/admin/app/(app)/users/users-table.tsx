@@ -6,18 +6,22 @@ import { updateMember } from './actions';
 
 const ROLES: Role[] = ['owner', 'manager', 'sales', 'service', 'readonly'];
 
+export type MemberProfile = { email: string | null; name: string | null };
+
 export function UsersTable({
   members,
   lots,
+  profiles,
 }: {
   members: OrgMember[];
   lots: Pick<Lot, 'id' | 'name'>[];
+  profiles: Record<string, MemberProfile>;
 }) {
   const [rows, setRows] = useState(members);
   const [, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
-  function update(userId: string, patch: Partial<Pick<OrgMember, 'role' | 'status' | 'scoped_lots'>>) {
+  function update(userId: string, patch: Partial<Pick<OrgMember, 'role' | 'status' | 'scoped_lots' | 'in_rotation'>>) {
     setRows((prev) => prev.map((m) => (m.user_id === userId ? { ...m, ...patch } : m)));
     startTransition(async () => {
       try {
@@ -40,18 +44,30 @@ export function UsersTable({
             <th style={th}>User</th>
             <th style={th}>Role</th>
             <th style={th}>Lot scope</th>
+            <th style={th} title="Round-robin lead assignment">Lead rotation</th>
             <th style={th}>Status</th>
             <th style={th}>Last active</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && (
-            <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--adm-ink-mute)' }}>No members yet.</td></tr>
+            <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--adm-ink-mute)' }}>No members yet.</td></tr>
           )}
-          {rows.map((m) => (
+          {rows.map((m) => {
+            const p = profiles[m.user_id];
+            const primary = p?.name ?? p?.email ?? null;
+            const secondary = p?.name && p?.email ? p.email : null;
+            return (
             <tr key={m.user_id}>
               <td style={td}>
-                <code style={{ fontSize: 11 }}>{m.user_id.slice(0, 8)}…</code>
+                {primary ? (
+                  <div style={{ fontWeight: 500 }}>{primary}</div>
+                ) : (
+                  <code style={{ fontSize: 11 }}>{m.user_id.slice(0, 8)}…</code>
+                )}
+                {secondary && (
+                  <div style={{ color: 'var(--adm-ink-mute)', fontSize: 11, marginTop: 2 }}>{secondary}</div>
+                )}
                 <div style={{ color: 'var(--adm-ink-mute)', fontSize: 11, marginTop: 2 }}>
                   Joined {new Date(m.created_at).toLocaleDateString()}
                 </div>
@@ -72,6 +88,22 @@ export function UsersTable({
                 </select>
               </td>
               <td style={td}>
+                {(['owner', 'manager', 'sales'] as Role[]).includes(m.role) ? (
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={m.in_rotation}
+                      onChange={(e) => update(m.user_id, { in_rotation: e.target.checked })}
+                    />
+                    <span style={{ fontSize: 12, color: m.in_rotation ? 'var(--adm-ink)' : 'var(--adm-ink-mute)' }}>
+                      {m.in_rotation ? 'In rotation' : 'Skipped'}
+                    </span>
+                  </label>
+                ) : (
+                  <span style={{ fontSize: 11, color: 'var(--adm-ink-mute)' }}>n/a</span>
+                )}
+              </td>
+              <td style={td}>
                 <select value={m.status} onChange={(e) => update(m.user_id, { status: e.target.value as OrgMember['status'] })} style={sel}>
                   <option value="active">active</option>
                   <option value="suspended">suspended</option>
@@ -80,7 +112,8 @@ export function UsersTable({
               </td>
               <td style={td}>{m.last_active_at ? new Date(m.last_active_at).toLocaleDateString() : '—'}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </>

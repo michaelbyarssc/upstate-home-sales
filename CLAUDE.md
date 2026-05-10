@@ -4,6 +4,23 @@ You're picking up a **high-fidelity HTML prototype** of a multi-tenant SaaS for 
 
 ---
 
+## ⚠ Default workflow — test, commit, and push on every completed task
+
+After completing **any** task, follow this loop **without being asked**:
+
+1. **Test the change.** For UI/frontend work, start the dev server and exercise the feature in a browser (golden path + edge cases, watch for regressions). For backend/logic, run the relevant tests or scripts. Type-checking and unit tests verify correctness, not feature behavior — if you can't actually test the feature, say so explicitly instead of claiming success.
+2. **If everything works**, immediately:
+   - `git add` the relevant files (specific paths, not `git add -A`)
+   - `git commit` with a clear message describing the *why*
+   - `git push` to the GitHub remote (this triggers Vercel auto-deploy via the connected integration)
+3. **If anything fails**, fix it first. Don't commit broken work.
+
+You do **not** need to ask permission to commit and push when tests pass — that authorization is granted in advance by this file. Still respect the safety rules: never `--force` push, never skip hooks, never commit secrets, never push to `main` if a feature branch is in use.
+
+If Vercel deploy fails after push, surface the failure and investigate before declaring the task done.
+
+---
+
 ## ⚠ Email + DNS stack — DO NOT REVERT
 
 This project's email stack was migrated from SendGrid to **Resend + Cloudflare Email Routing** (commit `81af731`, "Switch email to Resend"). DNS for `upstatehomesales.com` lives at **Cloudflare** (registration stays at GoDaddy; nameservers point at Cloudflare).

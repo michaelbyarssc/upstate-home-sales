@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServiceClient } from '@uhs/db/service';
 import type { LeadSource } from '@uhs/db';
 import { sendEmail } from '../../../lib/notify';
+import { dispatchWorkflowEvent } from '../../../lib/workflows';
 
 /**
  * Public lead-intake endpoint. Anon -> service-role insert. Per CLAUDE.md the
@@ -19,6 +20,15 @@ export async function POST(req: Request) {
     message?: string | null;
     sms_consent?: boolean;
     source?: LeadSource | string;
+    utm_source?: string | null;
+    utm_medium?: string | null;
+    utm_campaign?: string | null;
+    utm_term?: string | null;
+    utm_content?: string | null;
+    gclid?: string | null;
+    fbclid?: string | null;
+    referrer_url?: string | null;
+    landing_path?: string | null;
   };
   try {
     body = await req.json();
@@ -74,6 +84,13 @@ export async function POST(req: Request) {
     ? 'I agree to receive text messages about my inquiry. Reply STOP to opt out.'
     : null;
 
+  // Marketing attribution. Trim/cap to keep storage bounded and reject obvious abuse.
+  function clean(v: string | null | undefined): string | null {
+    if (!v) return null;
+    const s = String(v).trim().slice(0, 250);
+    return s || null;
+  }
+
   const { data: lead, error: leadErr } = await sb
     .from('leads')
     .insert({
@@ -89,6 +106,15 @@ export async function POST(req: Request) {
       sms_consent_at: consent ? new Date().toISOString() : null,
       sms_consent_text: consentText,
       qualifier_payload: body.stock_no ? { stock_no: body.stock_no } : null,
+      utm_source: clean(body.utm_source),
+      utm_medium: clean(body.utm_medium),
+      utm_campaign: clean(body.utm_campaign),
+      utm_term: clean(body.utm_term),
+      utm_content: clean(body.utm_content),
+      gclid: clean(body.gclid),
+      fbclid: clean(body.fbclid),
+      referrer_url: clean(body.referrer_url),
+      landing_path: clean(body.landing_path),
     })
     .select('id, reply_token')
     .single();
@@ -113,7 +139,7 @@ export async function POST(req: Request) {
   // Notify dealer inbox of the new lead. Best-effort — failures don't block intake.
   const notifyTo = process.env.LEAD_NOTIFY_EMAIL;
   if (notifyTo) {
-    const adminBase = process.env.NEXT_PUBLIC_ADMIN_URL ?? 'https://admin.upstatehomesales.com';
+    const adminBase = process.env.NEXT_PUBLIC_ADMIN_URL ?? 'https://admin.upstatehomecenter.com';
     const inboxUrl = `${adminBase}/leads/${lead.id}`;
     const subjectLabel = source.replace('_', ' ');
     await sendEmail({
@@ -132,6 +158,14 @@ export async function POST(req: Request) {
       ].filter(Boolean).join('\n'),
     }).catch((e) => console.error('[lead-intake] notify failed:', e));
   }
+
+  // Fire workflow event so any matching org rules (auto-replies, drip enroll,
+  // assignment overrides) run. Best-effort — failures don't block intake.
+  await dispatchWorkflowEvent({
+    event: 'lead.created',
+    orgId,
+    payload: { ...lead, contact_name, email, phone: body.phone ?? null, source, home_id: homeId, utm_source: clean(body.utm_source), utm_campaign: clean(body.utm_campaign) },
+  }).catch((e) => console.error('[lead-intake] workflow dispatch failed:', e));
 
   return NextResponse.json({ ok: true, lead_id: lead.id });
 }

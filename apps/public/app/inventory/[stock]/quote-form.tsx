@@ -3,16 +3,21 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { formatCents } from '@uhs/db';
+import { getAttribution } from '../../../lib/attribution';
+import { formatCompactPrice, formatMonthly } from '../../../lib/finance';
 
 type Props = {
   homeId: string;
   homeName: string;
   stockNo: string;
-  listedPriceCents: number;
+  listedPriceCents: number | null;
   startingFrom: boolean;
+  pricesHidden?: boolean;
   beds: number | null;
   baths: number | null;
   sqft: number | null;
+  widthFt?: number | null;
+  lengthFt?: number | null;
   manufacturerName: string | null;
   modelName: string | null;
   heroUrl: string | null;
@@ -24,13 +29,17 @@ export function QuoteForm({
   stockNo,
   listedPriceCents,
   startingFrom,
+  pricesHidden = false,
   beds,
   baths,
   sqft,
+  widthFt = null,
+  lengthFt = null,
   manufacturerName,
   modelName,
   heroUrl,
 }: Props) {
+  const isHidden = pricesHidden || listedPriceCents == null;
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
@@ -66,6 +75,7 @@ export function QuoteForm({
         message: String(fd.get('message') ?? '').trim() || null,
         sms_consent: fd.get('sms_consent') === 'on',
         source: 'quote_form' as const,
+        ...(getAttribution() ?? {}),
       };
       if (!body.contact_name || !body.email) {
         throw new Error('Please include your name and email.');
@@ -102,26 +112,72 @@ export function QuoteForm({
 
   return (
     <>
-      <div className="quote-card">
-        <div className="price-block">
-          <div className="label">{startingFrom ? 'Starting price' : 'Listed price'}</div>
-          <div className="price">{formatCents(listedPriceCents)}</div>
-          <div className="caveat">
-            Includes home + standard delivery. Site prep, foundation, and utilities priced separately on the itemized quote.
+      <div className="summary-card">
+        <h3>{homeName}</h3>
+
+        {isHidden ? (
+          <div style={{ marginTop: 2, marginBottom: 4 }}>
+            <span style={{ font: '600 16px/1.3 var(--f-body)', color: 'var(--c-ink)' }}>
+              Contact for pricing
+            </span>
+            <p style={{ fontSize: 12, color: 'var(--c-ink-mute)', marginTop: 4, marginBottom: 0 }}>
+              Tap "Get a quote" below — we'll send a written number within one business day.
+            </p>
           </div>
-        </div>
+        ) : (
+          <>
+            <div style={{
+              display: 'flex', alignItems: 'baseline', gap: 8,
+              fontVariantNumeric: 'tabular-nums', marginTop: 2, marginBottom: 4,
+            }}>
+              <span style={{ font: '700 22px/1 var(--f-body)', color: 'var(--c-ink)' }}>
+                {startingFrom ? 'From ' : ''}{formatCompactPrice(listedPriceCents)}
+              </span>
+              <span style={{ color: 'var(--c-ink-mute)', fontSize: 13 }}>|</span>
+              <span style={{ font: '500 14px/1 var(--f-body)', color: 'var(--c-ink-mute)' }}>
+                {formatMonthly(listedPriceCents)}
+              </span>
+            </div>
+            <Link
+              href={`/financing?price=${Math.round((listedPriceCents ?? 0) / 100)}`}
+              style={{ fontSize: 12, color: 'var(--c-accent)', textDecorationColor: 'var(--c-accent)' }}
+            >
+              Run a full payment estimate →
+            </Link>
+          </>
+        )}
 
-        <div className="cta-row">
-          <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
-            Get an itemized quote
+        <ul className="bullets">
+          {beds != null && (
+            <li><span className="icon" aria-hidden>🛏</span>{beds} bedroom{beds === 1 ? '' : 's'}</li>
+          )}
+          {baths != null && (
+            <li><span className="icon" aria-hidden>🛁</span>{baths} bathroom{baths === 1 ? '' : 's'}</li>
+          )}
+          {sqft != null && (
+            <li><span className="icon" aria-hidden>↔</span>{sqft.toLocaleString()} sq. ft.</li>
+          )}
+          {widthFt && lengthFt && (
+            <li><span className="icon" aria-hidden>▭</span>{widthFt}' × {lengthFt}'</li>
+          )}
+          <li><span className="icon" aria-hidden>#</span>Stock {stockNo}</li>
+        </ul>
+
+        <div className="row">
+          <button type="button" className="btn-out" onClick={() => setOpen(true)}>
+            Get a quote
           </button>
-          <Link href="/contact" className="btn btn-secondary">Schedule a tour</Link>
+          <Link href="/contact" className="btn-out">
+            Schedule a tour
+          </Link>
         </div>
 
-        <div className="meta">
-          <div><strong>Stock #</strong> &nbsp; {stockNo}</div>
-          <div><strong>Available for</strong> &nbsp; Cash · Chattel · Land + Home</div>
-          <div><strong>Delivery est.</strong> &nbsp; 4–6 weeks from contract</div>
+        <a href="#design" className="btn-primary-full">
+          Design home
+        </a>
+
+        <div style={{ marginTop: 4, fontSize: 12, color: 'var(--c-ink-mute)', lineHeight: 1.5 }}>
+          Monthly est. assumes 10% down, 7% APR, 20-year chattel. Real rate set after pre-qual.
         </div>
       </div>
 
@@ -142,10 +198,13 @@ export function QuoteForm({
             <span className="eyebrow">You&rsquo;re requesting a quote for</span>
             <h3>{homeName}</h3>
             {specsLine && <div className="specs">{specsLine}</div>}
-            <div className="price">{formatCents(listedPriceCents)}</div>
+            <div className="price">
+              {isHidden ? 'Contact for pricing' : formatCents(listedPriceCents)}
+            </div>
             <div className="caveat">
-              {startingFrom ? 'Starting price. ' : ''}
-              Final quote will itemize delivery, site prep, and any options.
+              {isHidden
+                ? 'Final quote will itemize home, delivery, site prep, and any options.'
+                : `${startingFrom ? 'Starting price. ' : ''}Final quote will itemize delivery, site prep, and any options.`}
             </div>
             <div className="promise">
               <strong>Our quote promise:</strong>

@@ -1,9 +1,10 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { createClient } from '@uhs/db/server';
-import { ACTIVE_ORG_COOKIE, type Lot, type Org } from '@uhs/db';
+import { ACTIVE_ORG_COOKIE, type DeliveryZone, type Lot, type Org } from '@uhs/db';
 import { OrgSettingsForm } from './org-form';
 import { LotsManager } from './lots-manager';
+import { DeliveryZonesManager } from './delivery-zones-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +19,10 @@ export default async function SettingsPage() {
     );
   }
 
-  const [{ data: org }, { data: lots }] = await Promise.all([
+  const [{ data: org }, { data: lots }, { data: zones }] = await Promise.all([
     supabase.from('orgs').select('*').eq('id', orgId).maybeSingle(),
     supabase.from('lots').select('*').eq('org_id', orgId).is('deleted_at', null).order('name'),
+    supabase.from('delivery_zones').select('*').eq('org_id', orgId).order('kind').order('value'),
   ]);
 
   if (!org) {
@@ -38,6 +40,7 @@ export default async function SettingsPage() {
       <div style={{ display: 'grid', gap: 24, gridTemplateColumns: '1fr', maxWidth: 800 }}>
         <OrgSettingsForm org={org as Org} />
         <LotsManager orgId={orgId} initialLots={(lots ?? []) as Lot[]} />
+        <DeliveryZonesManager orgId={orgId} initialZones={(zones ?? []) as DeliveryZone[]} />
         <Link href="/audit" style={{ color: 'var(--adm-accent)', fontSize: 13 }}>
           View audit log →
         </Link>

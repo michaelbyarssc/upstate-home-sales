@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { getAttribution } from '../../lib/attribution';
 
 export function ContactForm() {
   const [submitting, setSubmitting] = useState(false);
@@ -20,6 +21,7 @@ export function ContactForm() {
         message: String(fd.get('message') ?? '').trim() || null,
         sms_consent: fd.get('sms_consent') === 'on',
         source: 'contact_form',
+        ...(getAttribution() ?? {}),
       };
       if (!body.contact_name || !body.email) throw new Error('Please include your name and email.');
       const res = await fetch('/api/leads', {

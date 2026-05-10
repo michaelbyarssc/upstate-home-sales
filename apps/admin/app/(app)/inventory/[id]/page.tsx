@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@uhs/db/server';
 import { HOME_PHOTO_BUCKET, type Home, type HomePhoto, type Lot, type Manufacturer } from '@uhs/db';
@@ -20,17 +21,42 @@ export default async function EditHomePage({ params }: { params: { id: string } 
 
   if (!home) notFound();
 
+  let modelName: string | null = null;
+  if (home.model_id) {
+    const { data: m } = await supabase
+      .from('home_models')
+      .select('name')
+      .eq('id', home.model_id)
+      .maybeSingle();
+    modelName = m?.name ?? null;
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const publicPhotoBaseUrl = `${url}/storage/v1/object/public/${HOME_PHOTO_BUCKET}`;
 
   return (
-    <HomeForm
-      mode="edit"
-      home={home as Home}
-      photos={(photos ?? []) as HomePhoto[]}
-      manufacturers={(manufacturers ?? []) as Manufacturer[]}
-      lots={(lots ?? []) as Lot[]}
-      publicPhotoBaseUrl={publicPhotoBaseUrl}
-    />
+    <>
+      {home.model_id && modelName && (
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          background: '#FAF4EB', border: '1px solid #d8c9b5',
+          padding: '6px 12px', borderRadius: 4, fontSize: 12,
+          color: 'var(--adm-ink-mute)', marginBottom: 12,
+        }}>
+          <span>From catalog:</span>
+          <Link href={`/catalog/${home.model_id}`} style={{ color: 'var(--adm-accent)', fontWeight: 500, textDecoration: 'none' }}>
+            {modelName}
+          </Link>
+        </div>
+      )}
+      <HomeForm
+        mode="edit"
+        home={home as Home}
+        photos={(photos ?? []) as HomePhoto[]}
+        manufacturers={(manufacturers ?? []) as Manufacturer[]}
+        lots={(lots ?? []) as Lot[]}
+        publicPhotoBaseUrl={publicPhotoBaseUrl}
+      />
+    </>
   );
 }
