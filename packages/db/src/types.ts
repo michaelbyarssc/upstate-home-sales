@@ -479,6 +479,94 @@ export interface WorkflowRun {
   created_at: string;
 }
 
+// ─── Property mapping (Phase E) ───────────────────────────────────────────
+
+/** GeoJSON Polygon shape returned by Regrid + stored in property_placements. */
+export interface ParcelGeoJson {
+  type: 'Polygon' | 'MultiPolygon';
+  coordinates: number[][][] | number[][][][];
+}
+
+export interface OrgSetbackRules {
+  org_id: string;
+  /** Distance in feet from the front lot line. */
+  front_ft: number;
+  /** Distance in feet from each side lot line. */
+  side_ft: number;
+  /** Distance in feet from the rear lot line. */
+  rear_ft: number;
+  /** Extra setback for road easements; defaults to 0. */
+  road_easement_ft: number;
+  updated_at: string;
+}
+
+export interface ParcelCacheEntry {
+  cache_key: string;
+  parcel_id: string;
+  address: string | null;
+  county: string | null;
+  centroid_lat: number;
+  centroid_lng: number;
+  geojson: ParcelGeoJson;
+  raw: Record<string, unknown> | null;
+  cached_at: string;
+}
+
+export interface PropertyPlacement {
+  id: string;
+  org_id: string;
+  home_id: string | null;
+  lead_id: string | null;
+  label: string | null;
+  search_query: string;
+  parcel_id: string | null;
+  parcel_geojson: ParcelGeoJson;
+  parcel_lat: number;
+  parcel_lng: number;
+  footprint_w_ft: number;
+  footprint_l_ft: number;
+  anchor_lat: number;
+  anchor_lng: number;
+  /** 0-359 degrees; 0 = home long-axis points north. */
+  orientation_deg: number;
+  address: string | null;
+  county: string | null;
+  share_token: string;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** What anon sees on the share page; strips internal columns + joins org branding. */
+export interface PublicPropertyPlacement {
+  share_token: string;
+  label: string | null;
+  address: string | null;
+  county: string | null;
+  parcel_geojson: ParcelGeoJson;
+  parcel_lat: number;
+  parcel_lng: number;
+  footprint_w_ft: number;
+  footprint_l_ft: number;
+  anchor_lat: number;
+  anchor_lng: number;
+  orientation_deg: number;
+  created_at: string;
+  org_name: string;
+  org_brand_color: string | null;
+  org_logo_url: string | null;
+  setback_front_ft: number;
+  setback_side_ft: number;
+  setback_rear_ft: number;
+  setback_road_easement_ft: number;
+  home_name: string | null;
+  home_stock_no: string | null;
+  home_beds: number | null;
+  home_baths: number | null;
+  home_sqft: number | null;
+}
+
 export interface TradeIn {
   id: string;
   org_id: string;

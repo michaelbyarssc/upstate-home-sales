@@ -1,10 +1,11 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { createClient } from '@uhs/db/server';
-import { ACTIVE_ORG_COOKIE, type DeliveryZone, type Lot, type Org } from '@uhs/db';
+import { ACTIVE_ORG_COOKIE, type DeliveryZone, type Lot, type Org, type OrgSetbackRules } from '@uhs/db';
 import { OrgSettingsForm } from './org-form';
 import { LotsManager } from './lots-manager';
 import { DeliveryZonesManager } from './delivery-zones-manager';
+import { SetbackForm } from './setback-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,10 +20,11 @@ export default async function SettingsPage() {
     );
   }
 
-  const [{ data: org }, { data: lots }, { data: zones }] = await Promise.all([
+  const [{ data: org }, { data: lots }, { data: zones }, { data: setback }] = await Promise.all([
     supabase.from('orgs').select('*').eq('id', orgId).maybeSingle(),
     supabase.from('lots').select('*').eq('org_id', orgId).is('deleted_at', null).order('name'),
     supabase.from('delivery_zones').select('*').eq('org_id', orgId).order('kind').order('value'),
+    supabase.from('org_setback_rules').select('*').eq('org_id', orgId).maybeSingle(),
   ]);
 
   if (!org) {
@@ -34,13 +36,14 @@ export default async function SettingsPage() {
       <div className="page-header">
         <div className="eyebrow">Workspace · Week 7</div>
         <h1>Settings</h1>
-        <p>Org branding, default markup %, SMS consent text, lots.</p>
+        <p>Org branding, default markup %, SMS consent text, lots, property setbacks.</p>
       </div>
 
       <div style={{ display: 'grid', gap: 24, gridTemplateColumns: '1fr', maxWidth: 800 }}>
         <OrgSettingsForm org={org as Org} />
         <LotsManager orgId={orgId} initialLots={(lots ?? []) as Lot[]} />
         <DeliveryZonesManager orgId={orgId} initialZones={(zones ?? []) as DeliveryZone[]} />
+        <SetbackForm orgId={orgId} initial={(setback as OrgSetbackRules | null) ?? null} />
         <Link href="/audit" style={{ color: 'var(--adm-accent)', fontSize: 13 }}>
           View audit log →
         </Link>

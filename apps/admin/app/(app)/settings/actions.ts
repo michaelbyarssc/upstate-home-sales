@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@uhs/db/server';
-import type { DeliveryZone, Lot, Org, ZoneKind } from '@uhs/db';
+import type { DeliveryZone, Lot, Org, OrgSetbackRules, ZoneKind } from '@uhs/db';
 
 export async function saveOrg(patch: {
   id: string;
@@ -25,6 +25,37 @@ export async function saveOrg(patch: {
     .eq('id', patch.id);
   if (error) throw new Error(error.message);
   revalidatePath('/settings');
+}
+
+// ─── Setback rules (Phase E) ──────────────────────────────────────────────
+
+export async function saveSetbackRules(patch: {
+  orgId: string;
+  front_ft: number;
+  side_ft: number;
+  rear_ft: number;
+  road_easement_ft: number;
+}): Promise<OrgSetbackRules> {
+  const supabase = createClient();
+  // Upsert: every org gets a row from the migration backfill, but defend
+  // against the case where a brand-new org doesn't yet have one.
+  const { data, error } = await supabase
+    .from('org_setback_rules')
+    .upsert(
+      {
+        org_id: patch.orgId,
+        front_ft: Math.max(0, Math.min(200, Math.round(patch.front_ft))),
+        side_ft: Math.max(0, Math.min(200, Math.round(patch.side_ft))),
+        rear_ft: Math.max(0, Math.min(200, Math.round(patch.rear_ft))),
+        road_easement_ft: Math.max(0, Math.min(200, Math.round(patch.road_easement_ft))),
+      },
+      { onConflict: 'org_id' },
+    )
+    .select('*')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Save failed');
+  revalidatePath('/settings');
+  return data as OrgSetbackRules;
 }
 
 export async function addLot(args: { orgId: string; name: string; address: string | null }): Promise<Lot> {
