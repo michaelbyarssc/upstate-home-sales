@@ -305,6 +305,31 @@ export interface HomeModelPhoto {
   created_at: string;
 }
 
+// ─── Public API + Marketplace (Phase I) ───────────────────────────────────
+
+export interface OrgApiKey {
+  id: string;
+  org_id: string;
+  key_hash: string;
+  name: string;
+  scopes: string[];
+  created_by: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+  revoked_by: string | null;
+}
+
+export interface MarketplaceView {
+  id: string;
+  home_id: string;
+  viewer_session_id: string | null;
+  viewer_ip_city: string | null;
+  viewer_ip_region: string | null;
+  viewer_ip_country: string | null;
+  occurred_at: string;
+}
+
 export interface Home {
   id: string;
   org_id: string;
@@ -336,6 +361,8 @@ export interface Home {
   on_lot_since: string | null;
   is_featured: boolean;
   hide_from_search: boolean;
+  /** Phase I — when true, this home shows on /marketplace. */
+  marketplace_opt_in: boolean;
   created_by: string | null;
   updated_by: string | null;
   deleted_at: string | null;

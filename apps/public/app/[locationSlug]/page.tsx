@@ -17,7 +17,7 @@ async function getLocation(slug: string): Promise<Location | null> {
   const reserved = new Set([
     'inventory', 'financing', 'about', 'contact', 'kiosk', 'place',
     'portal', 'q', 'trade-in', 'api', 'sitemap.xml', 'robots.txt',
-    '_next', 'favicon.ico',
+    '_next', 'favicon.ico', 'marketplace',
   ]);
   if (reserved.has(slug)) return null;
 

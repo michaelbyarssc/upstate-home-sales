@@ -413,10 +413,15 @@ export function HomeForm(props: Props) {
                 <span className="track" />
                 <span className="lbl">Include in featured rotation</span>
               </label>
-              <label className="toggle">
+              <label className="toggle" style={{ marginBottom: 10 }}>
                 <input type="checkbox" name="hide_from_search" defaultChecked={home?.hide_from_search ?? false} />
                 <span className="track" />
                 <span className="lbl">Hide from public search</span>
+              </label>
+              <label className="toggle">
+                <input type="checkbox" name="marketplace_opt_in" defaultChecked={home?.marketplace_opt_in ?? false} />
+                <span className="track" />
+                <span className="lbl">List on cross-dealer marketplace</span>
               </label>
             </div>
           </div>

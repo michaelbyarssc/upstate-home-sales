@@ -49,3 +49,21 @@ button { font-family: inherit; cursor: pointer; }
 .card {
   background: var(--adm-surface); border: 1px solid var(--adm-line); border-radius: var(--r-2);
 }
+
+/* Phase I — mobile responsive polish across admin screens. The desktop
+   layout still wins above 900px; below it we collapse multi-column rows
+   and surface horizontal-scroll affordances on data-dense panels. */
+@media (max-width: 900px) {
+  .field-row { flex-direction: column; }
+  .field-row > .field { flex: 1 1 100% !important; }
+  .page-header h1 { font-size: 22px; }
+  .placement-grid { grid-template-columns: 1fr !important; }
+  .nav { flex-wrap: wrap; gap: 4px; }
+  .nav a { padding: 6px 10px; font-size: 13px; }
+}
+@media (max-width: 640px) {
+  /* Tables become horizontally scrollable instead of breaking layout. */
+  table { display: block; overflow-x: auto; white-space: nowrap; }
+  /* Stacked button rows have a minimum tap target. */
+  button, .btn { min-height: 36px; }
+}

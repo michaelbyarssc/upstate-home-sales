@@ -71,6 +71,26 @@ export default async function SettingsPage() {
         <DeliveryZonesManager orgId={orgId} initialZones={(zones ?? []) as DeliveryZone[]} />
         <SetbackForm orgId={orgId} initial={(setback as OrgSetbackRules | null) ?? null} />
 
+        {/* API keys entry-point */}
+        <Link
+          href="/settings/api-keys"
+          style={{
+            display: 'block', padding: '14px 18px',
+            background: '#fff', border: '1px solid var(--adm-line, #e5dfd1)',
+            borderRadius: 6, textDecoration: 'none', color: 'var(--adm-ink)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 500, fontSize: 14 }}>API keys</div>
+              <div style={{ fontSize: 12, color: 'var(--adm-ink-mute)', marginTop: 4 }}>
+                Bearer tokens for the public read-only inventory API
+              </div>
+            </div>
+            <span style={{ color: 'var(--adm-accent)', fontSize: 13 }}>Manage →</span>
+          </div>
+        </Link>
+
         {/* AI settings entry-point */}
         <Link
           href="/settings/ai"
