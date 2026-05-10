@@ -1,6 +1,6 @@
 # UHS build status — handoff for next session
 
-Last updated: 2026-05-09
+Last updated: 2026-05-10
 
 This file is a self-contained snapshot of where the BuildTrove-parity build
 sits today. A fresh Claude Code session can read this + `CLAUDE.md` and
@@ -10,31 +10,22 @@ keep building without prior context.
 
 ## TL;DR
 
-- **Three feature branches are open as PRs against `main`** — none merged yet.
-- Phases **A (CRM finisher)**, **B (public site & catalog parity)**, and
-  **D (Customer Portal)** are built, lint/typecheck-clean, and have green
-  Vercel preview deploys.
-- Phases **C, E, F, G, H, I** are not started. The plan for each is in
-  `/Users/Michael/.claude/plans/i-need-you-to-cozy-noodle.md` (also
-  summarized below in case the plan file isn't available).
+- **All open PRs merged.** Phases **A (CRM finisher)**, **B (public site
+  & catalog parity)**, **D (Customer Portal)**, **E (Property Mapping)**,
+  and **E.2 (DIY parcel pipeline + LG tile overlay)** are live on `main`.
+- Phases **C, F, G, H, I** are not started. The plan for each is in
+  `/Users/Michael/.claude/plans/next-phases-per-the-synthetic-lampson.md`
+  (also summarized below).
 
 ---
 
-## Open PRs
+## Recently merged PRs (snapshot)
 
-| PR  | Branch                          | Title                                  | Status                |
-| --- | ------------------------------- | -------------------------------------- | --------------------- |
-| [#2](https://github.com/michaelbyarssc/upstate-home-sales/pull/2) | `phase-a-b-buildtrove-parity` | Phase A finisher + Phase B: BuildTrove parity | All checks green; awaiting merge |
-| [#3](https://github.com/michaelbyarssc/upstate-home-sales/pull/3) | `phase-d-customer-portal`     | Phase D: Customer Portal               | All checks green; awaiting merge. Branch is built on top of phase-a-b. |
-
-**Merge order matters**: PR #2 first, then PR #3 (otherwise you'll get
-merge conflicts, since #3 includes #2's commits as parent history).
-Alternatively, merge #3 alone — it will subsume #2 because it contains
-all of #2's commits.
-
-After merging, **delete the merged branches** to avoid confusion. Local
-branches can be removed with `git branch -D phase-a-b-buildtrove-parity
-phase-d-customer-portal`.
+| PR  | Title                                             | Merged       |
+| --- | ------------------------------------------------- | ------------ |
+| [#3](https://github.com/michaelbyarssc/upstate-home-sales/pull/3) | Phase A+B+D: BuildTrove parity, automations, customer portal | earlier      |
+| [#4](https://github.com/michaelbyarssc/upstate-home-sales/pull/4) | Phase E: property mapping with parcel + setback overlay      | 2026-05-10   |
+| [#6](https://github.com/michaelbyarssc/upstate-home-sales/pull/6) | Phase E.2: free DIY parcel pipeline + LG tile overlay        | 2026-05-10   |
 
 ---
 
@@ -131,9 +122,55 @@ Branded buyer-facing portal with email+password and magic-link auth.
 - Hero photo on home page
 - Loan calculator pills use brick brand color
 
+### Phase E — Property Mapping (done — PR #4)
+
+Salesperson searches a buyer's address, sees parcel polygon + setback
+no-build zone overlaid on Google Maps, drags/rotates a home footprint,
+saves it, and shares via token URL.
+
+- **Migration 0016** — `property_placements`, `org_setback_rules`
+  (with backfill for every existing org), `parcels_cache` (24h TTL),
+  `public_property_placements` view, audit trigger
+- **Provider-agnostic parcel client**
+  ([`apps/admin/lib/parcels/index.ts`](../apps/admin/lib/parcels/index.ts))
+  — selects via `PARCEL_PROVIDER` env: `mock` | `regrid` | `diy`
+- **Admin** `/admin/inventory/[id]/place` — search bar, Google Maps
+  base, parcel + setback overlays, draggable + rotatable footprint,
+  save/share/regenerate-token
+- **Public** `/place/[token]` — branded read-only share page,
+  mobile-friendly
+- **Setback rules form** added to `/admin/settings`
+- **"Place on lot" link** on inventory edit page
+
+### Phase E.2 — Free DIY parcel pipeline + LG tile overlay (done — PR #6)
+
+Replaces the $500/mo Regrid dependency with a free DIY provider using
+PostGIS + per-county SC GeoJSON imports.
+
+- **Migration 0017** — PostGIS extension, `parcels` table with
+  `geometry(MultiPolygon, 4326)` + GiST spatial index, `parcel_imports`
+  audit table, `lookup_parcel_by_point(lat, lng)` RPC,
+  `upsert_parcels_batch(p_rows jsonb)` RPC
+- **DIY provider** in the parcel client — geocodes address via Google
+  Maps Geocoding API (server-side key), then ST_Contains against loaded
+  county data. Falls back to regrid (if token) or mock when no county
+  match.
+- **County importer script**
+  ([`apps/admin/scripts/import-parcels.ts`](../apps/admin/scripts/import-parcels.ts))
+  — `pnpm --filter @uhs/admin import-parcels --file=<path> --county=<name>`.
+  Idempotent upsert. Logs to `parcel_imports`.
+- **Local Gradient tile overlay** on both admin /place and public
+  /place/[token] — blueprint-style raster tiles at zoom 12+, opacity
+  0.55 over satellite base. Driven by `NEXT_PUBLIC_LOCAL_GRADIENT_TILE_KEY`.
+
+**Pending sub-task:** load SC county GeoJSON files (downloaded from
+Local Gradient bulk export or county GIS portals) for the 10 highest
+MH-density counties: Lexington, Spartanburg, Anderson, York, Greenville,
+Pickens, Cherokee, Oconee, Aiken, Sumter.
+
 ---
 
-## Database state — all 15 migrations applied to remote Supabase
+## Database state — all 17 migrations applied to remote Supabase
 
 Project ref: **`ojtudvezjvrcdqgbrnyc`**. CLI is logged in with the
 project linked. To reapply or push new migrations:
@@ -163,6 +200,8 @@ Migration history:
 | 0013  | `delivery_zones.sql`                        | delivery_zones table                                                |
 | 0014  | `collections.sql`                           | home_collections, home_collection_members, public_collections view  |
 | 0015  | `customer_portal.sql`                       | buyers, buyer_lead_links, buyer_documents, buyer_suggested_homes, lead_milestones, buyer-documents bucket |
+| 0016  | `property_mapping.sql`                      | property_placements, org_setback_rules, parcels_cache, public_property_placements view, audit trigger |
+| 0017  | `parcels_diy.sql`                           | postgis extension, parcels (geom MultiPolygon + GiST), parcel_imports, lookup_parcel_by_point + upsert_parcels_batch RPCs |
 
 ---
 
@@ -193,10 +232,25 @@ Migration history:
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `LEAD_NOTIFY_EMAIL`,
   `EMAIL_INBOUND_DOMAIN`, `INBOUND_WEBHOOK_SECRET`
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`
+- **Phase E:** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (browser, both apps),
+  `GOOGLE_MAPS_GEOCODING_KEY` (server, admin), `PARCEL_PROVIDER=diy`
+  (admin), `NEXT_PUBLIC_LOCAL_GRADIENT_TILE_KEY` (both)
 
-### Env vars to set in Vercel (production)
+### Env vars set in Vercel
 
-- All of the above
+All of the above are wired across all 3 envs (Production / Preview /
+Development) on both `uhs-admin` and `uhs-public` projects, with two
+exceptions:
+
+- `SUPABASE_SERVICE_ROLE_KEY` is **Production-only on uhs-admin** by
+  design (preview deploys are broadly accessible; we don't expose the
+  RLS-bypass admin credential there). Server-side admin actions on
+  preview deploys will fail; auth + read-only flows work.
+- `RESEND_*` and `TWILIO_*` are Production-only on uhs-admin too.
+  Preview deploys can't send outbound email/SMS.
+
+Other env vars:
+
 - `CRON_SECRET` — required for `/api/cron/campaign-tick`. Pick any
   long random string, set it in the admin Vercel project settings.
 - `NEXT_PUBLIC_PUBLIC_URL=https://upstatehomecenter.com` (defaults to
@@ -207,30 +261,7 @@ Migration history:
 
 ## Phases not yet started
 
-In recommended order. Pick whichever you want next.
-
-### Phase E — Property Mapping (~2 weeks, smallest remaining)
-
-Address/APN search + parcel boundary visualization with home-footprint
-placement and setback overlay.
-
-**Gating decision**: pick a parcel-data API. Options:
-
-- **Regrid** — ~$500/mo for SC coverage. Full parcel polygons + owner
-  data. Most popular in the manufactured-home space.
-- **LightBox** — enterprise pricing.
-- **Estated** — cheaper but spotty coverage in rural SC.
-
-Ask the user before picking. Once decided, build:
-
-1. New table `property_placements` (org_id, lead_id?, parcel_id, lat,
-   lng, footprint_w_ft, footprint_l_ft, orientation_deg, share_token)
-2. Admin page `/admin/inventory/[id]/place` and public mirror
-   `/inventory/[stock]/place` — Mapbox/Leaflet base + parcel overlay +
-   draggable footprint with model dimensions
-3. Setback rules from org config (front/side/rear ft) → red zone overlay
-4. Save placements; share via token URL (mirror the quote-share pattern)
-5. Mobile read-only view
+In recommended order (E and E.2 are now done). Pick whichever you want next.
 
 ### Phase F — Multi-location & region pricing (~2 weeks)
 
