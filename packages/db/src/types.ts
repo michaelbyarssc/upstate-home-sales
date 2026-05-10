@@ -589,6 +589,69 @@ export interface Parcel {
   imported_at: string;
 }
 
+// ─── Marketing infra (Phase G) ────────────────────────────────────────────
+
+export type IntegrationKind = 'gmb' | 'meta' | 'ga4' | 'gtm';
+export type IntegrationStatus = 'connected' | 'disconnected' | 'error';
+
+export interface OrgIntegration {
+  id: string;
+  org_id: string;
+  kind: IntegrationKind;
+  /** Encrypted bytea — never accessed directly client-side. */
+  credentials_enc?: unknown;
+  /** Plain non-secret config: ga4_measurement_id, meta_pixel_id, gmb_account_id, etc. */
+  config: Record<string, unknown>;
+  status: IntegrationStatus;
+  status_detail: string | null;
+  connected_at: string;
+  last_sync_at: string | null;
+  created_by: string | null;
+  updated_at: string;
+}
+
+export interface GmbReview {
+  id: string;
+  org_id: string;
+  location_id: string | null;
+  gmb_review_id: string;
+  author_name: string | null;
+  author_photo_url: string | null;
+  rating: number;
+  comment: string | null;
+  reviewed_at: string;
+  replied_at: string | null;
+  replied_by: string | null;
+  reply_text: string | null;
+  imported_at: string;
+}
+
+export type VisitorEventKind =
+  | 'page_view'
+  | 'inventory_view'
+  | 'home_view'
+  | 'lead_submitted'
+  | 'quote_viewed'
+  | 'quote_signed';
+
+export interface VisitorEvent {
+  id: string;
+  org_id: string;
+  session_id: string;
+  event_type: VisitorEventKind;
+  home_id: string | null;
+  lead_id: string | null;
+  ip_city: string | null;
+  ip_region: string | null;
+  ip_country: string | null;
+  referrer_url: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  path: string | null;
+  occurred_at: string;
+}
+
 export interface ParcelImport {
   id: string;
   state: string;
