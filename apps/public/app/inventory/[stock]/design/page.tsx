@@ -53,17 +53,10 @@ export default async function DesignPage({ params }: { params: { stock: string }
     options = (opts ?? []) as unknown as Array<ModelOption & { values: ModelOptionValue[] }>;
   }
 
-  // Resolve a signed URL for the GLB if we have an asset; for v1 we render
-  // a placeholder cube with material swap when no asset exists.
-  let glbUrl: string | null = null;
-  if (asset) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    // Public bucket → directly construct URL. Asset bucket is private though,
-    // so for v1 we pass the path through and let the renderer fetch via a
-    // proxy route in a follow-up. Until then: attempt direct path which will
-    // 404 silently — the renderer falls back to placeholder geometry.
-    glbUrl = `${url}/storage/v1/object/public/model-3d-assets/${asset.glb_storage_path}`;
-  }
+  // GLB delivery: route through /api/3d-asset/[id] which 302-redirects to
+  // a 60-min signed URL. Keeps the model-3d-assets bucket private; the
+  // browser still downloads bytes straight from Supabase's CDN.
+  const glbUrl: string | null = asset ? `/api/3d-asset/${asset.id}` : null;
 
   return (
     <main className="design-shell">

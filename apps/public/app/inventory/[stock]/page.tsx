@@ -5,6 +5,7 @@ import { QuoteForm } from './quote-form';
 import { type PublicHome, type PublicHomePhoto } from '@uhs/db';
 import { absoluteUrl, homeProductSchema } from '../../../lib/seo';
 import { HomeCard } from '../../../components/HomeCard';
+import { VisitorTracker } from '../../../components/VisitorTracker';
 import { RecentlyViewedRecorder } from './recently-viewed';
 
 type Params = { stock: string };
@@ -90,6 +91,7 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
   return (
     <main className="section">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: productJsonLd }} />
+      <VisitorTracker eventType="home_view" homeId={h.id} />
       <div className="inner">
         <nav className="inv-breadcrumb" aria-label="Breadcrumb">
           <Link href="/">Home</Link>
