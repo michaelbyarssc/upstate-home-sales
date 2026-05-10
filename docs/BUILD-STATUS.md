@@ -10,12 +10,28 @@ keep building without prior context.
 
 ## TL;DR
 
-- **All open PRs merged.** Phases **A (CRM finisher)**, **B (public site
-  & catalog parity)**, **D (Customer Portal)**, **E (Property Mapping)**,
-  and **E.2 (DIY parcel pipeline + LG tile overlay)** are live on `main`.
-- Phases **C, F, G, H, I** are not started. The plan for each is in
-  `/Users/Michael/.claude/plans/next-phases-per-the-synthetic-lampson.md`
-  (also summarized below).
+**🎉 All planned phases (A–I + C) shipped to `main`.** The codebase is now
+at full BuildTrove feature parity.
+
+| Phase | Title | Status |
+| ----- | ----- | ------ |
+| A | CRM & comms parity | ✅ shipped |
+| B | Public site & catalog parity | ✅ shipped |
+| C | 3D Design Studio (renderer + configurator) | ✅ shipped (placeholder geom) |
+| D | Customer Portal | ✅ shipped |
+| E | Property Mapping | ✅ shipped |
+| E.2 | DIY parcel pipeline + Local Gradient tile overlay | ✅ shipped |
+| F | Multi-location & region pricing | ✅ shipped |
+| G | Marketing infra (GMB, FB Shop, GA4/Pixel/GTM, reports) | ✅ shipped |
+| H | AI chatbot + NL inventory search | ✅ shipped |
+| I | Public API + Marketplace + responsive polish | ✅ shipped |
+
+**Not yet wired** (require external work, none blocking dealer pilot):
+- Real photorealistic 3D GLB assets for Phase C (see `docs/3d-asset-spec.md`)
+- GMB OAuth flow (Phase G stub is in place; needs verified Google OAuth client)
+- Optional: SC county GeoJSON imports for the DIY parcel provider (Phase E.2)
+- Optional: GMB/Meta/GA4/GTM IDs entered by the dealer in `/admin/marketing/integrations`
+- Optional: `AI_GATEWAY_API_KEY` env var for the chatbot to function
 
 ---
 
@@ -26,6 +42,11 @@ keep building without prior context.
 | [#3](https://github.com/michaelbyarssc/upstate-home-sales/pull/3) | Phase A+B+D: BuildTrove parity, automations, customer portal | earlier      |
 | [#4](https://github.com/michaelbyarssc/upstate-home-sales/pull/4) | Phase E: property mapping with parcel + setback overlay      | 2026-05-10   |
 | [#6](https://github.com/michaelbyarssc/upstate-home-sales/pull/6) | Phase E.2: free DIY parcel pipeline + LG tile overlay        | 2026-05-10   |
+| [#7](https://github.com/michaelbyarssc/upstate-home-sales/pull/7) | Phase F: multi-location + region pricing                     | 2026-05-10   |
+| [#8](https://github.com/michaelbyarssc/upstate-home-sales/pull/8) | Phase G: marketing infra                                     | 2026-05-10   |
+| [#9](https://github.com/michaelbyarssc/upstate-home-sales/pull/9) | Phase H: AI chatbot + NL search                              | 2026-05-10   |
+| [#10](https://github.com/michaelbyarssc/upstate-home-sales/pull/10) | Phase I: public API + marketplace + responsive polish      | 2026-05-10   |
+| [#11](https://github.com/michaelbyarssc/upstate-home-sales/pull/11) | Phase C: 3D Design Studio                                  | 2026-05-10   |
 
 ---
 
@@ -202,6 +223,11 @@ Migration history:
 | 0015  | `customer_portal.sql`                       | buyers, buyer_lead_links, buyer_documents, buyer_suggested_homes, lead_milestones, buyer-documents bucket |
 | 0016  | `property_mapping.sql`                      | property_placements, org_setback_rules, parcels_cache, public_property_placements view, audit trigger |
 | 0017  | `parcels_diy.sql`                           | postgis extension, parcels (geom MultiPolygon + GiST), parcel_imports, lookup_parcel_by_point + upsert_parcels_batch RPCs |
+| 0018  | `locations.sql`                             | locations table (default-per-org backfill), lots.location_id, leads.assigned_location_id, home_region_pricing, region_kind enum, effective_price_for_home RPC |
+| 0019  | `marketing_infra.sql`                       | pgcrypto, org_integrations (encrypted creds), gmb_reviews, visitor_events, public_org_integrations view, integration/event enums |
+| 0020  | `ai.sql`                                    | orgs.ai_chat_enabled / ai_daily_token_cap / faq_markdown, chat_sessions, chat_messages, nl_search_queries, chat_role enum |
+| 0021  | `api_marketplace.sql`                       | org_api_keys, marketplace_views, homes.marketplace_opt_in, public_marketplace_homes view, validate_api_key RPC |
+| 0022  | `design_studio.sql`                         | orgs.design_price_display, model_3d_assets, model_options/values/compat, home_designs + selections, recompute_design_total trigger, model-3d-assets bucket |
 
 ---
 
@@ -231,6 +257,10 @@ Migration history:
 - `SUPABASE_SERVICE_ROLE_KEY` (admin only)
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `LEAD_NOTIFY_EMAIL`,
   `EMAIL_INBOUND_DOMAIN`, `INBOUND_WEBHOOK_SECRET`
+- **Phase H:** `AI_GATEWAY_API_KEY` (public app, for the chatbot via
+  Vercel AI Gateway). Optional: `AI_CHAT_MODEL` to override the default
+  `anthropic/claude-sonnet-4-6`. Without the gateway key, the chatbot
+  returns errors but the rest of the site works.
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`
 - **Phase E:** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (browser, both apps),
   `GOOGLE_MAPS_GEOCODING_KEY` (server, admin), `PARCEL_PROVIDER=diy`
@@ -259,9 +289,56 @@ Other env vars:
 
 ---
 
-## Phases not yet started
+## Remaining wire-up work (post-engineering)
 
-In recommended order (E and E.2 are now done). Pick whichever you want next.
+All planned engineering phases are merged. The remaining items below are
+external dependencies and follow-on UX touches — none block dealer pilot.
+
+### Per-dealer setup (do once)
+
+- **Google Maps:** Browser key (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`) +
+  server geocoding key (`GOOGLE_MAPS_GEOCODING_KEY`) — already wired in
+  Vercel for Upstate Home Sales as of 2026-05-10.
+- **Local Gradient tile key:** wired (Phase E.2).
+- **Google Business Profile:** complete the OAuth flow (stub at
+  `/api/cron/gmb-sync` — needs verified Google OAuth client ID/secret).
+- **GA4 / GTM / Meta Pixel IDs:** dealer pastes them in
+  `/admin/marketing/integrations` — auto-injected into public layout.
+- **AI chatbot:** dealer toggles `ai_chat_enabled` in
+  `/admin/settings/ai`. Requires `AI_GATEWAY_API_KEY` env on `uhs-public`.
+- **Public API keys:** dealer creates in `/admin/settings/api-keys`.
+
+### Optional content imports
+
+- **SC county GeoJSON imports:** for the free DIY parcel provider.
+  Run `pnpm --filter @uhs/admin import-parcels --file=<path> --county=<n>`
+  per county GeoJSON download (Local Gradient bulk or county GIS portal).
+- **3D GLB assets** for Design Studio: contract artists, license, or
+  vendor — see [`docs/3d-asset-spec.md`](./3d-asset-spec.md). The renderer
+  falls back to placeholder geometry until real assets land.
+
+### Engineering follow-ups (small, none blocking)
+
+- Phase G — GMB OAuth flow page + live Google Business Profile API call
+  inside the cron stub.
+- Phase G — Reply-to-review UI; geographic heat-map; client-side
+  visitor_events firing from public components.
+- Phase H — Wire NL search into public `/inventory` search bar; build
+  `/admin/reports/ai` dashboards.
+- Phase C — Admin option/value editor at `/admin/catalog/[id]/options`;
+  GLB upload UI; photo-fallback configurator for low-end mobile;
+  "Convert design to quote" button.
+- Pre-existing — Move Google Fonts to `next/font/google` (lint warning
+  in both apps' layouts; harmless).
+
+### Reference plan
+
+The original phase plan (with all gating decisions for each) lives at
+`/Users/Michael/.claude/plans/next-phases-per-the-synthetic-lampson.md`.
+
+---
+
+<!-- Phase summaries below kept for historical reference. -->
 
 ### Phase F — Multi-location & region pricing (~2 weeks)
 
