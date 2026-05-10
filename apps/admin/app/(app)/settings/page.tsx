@@ -20,11 +20,12 @@ export default async function SettingsPage() {
     );
   }
 
-  const [{ data: org }, { data: lots }, { data: zones }, { data: setback }] = await Promise.all([
+  const [{ data: org }, { data: lots }, { data: zones }, { data: setback }, { count: locationCount }] = await Promise.all([
     supabase.from('orgs').select('*').eq('id', orgId).maybeSingle(),
     supabase.from('lots').select('*').eq('org_id', orgId).is('deleted_at', null).order('name'),
     supabase.from('delivery_zones').select('*').eq('org_id', orgId).order('kind').order('value'),
     supabase.from('org_setback_rules').select('*').eq('org_id', orgId).maybeSingle(),
+    supabase.from('locations').select('id', { count: 'exact', head: true }).eq('org_id', orgId).is('deleted_at', null),
   ]);
 
   if (!org) {
@@ -36,11 +37,36 @@ export default async function SettingsPage() {
       <div className="page-header">
         <div className="eyebrow">Workspace · Week 7</div>
         <h1>Settings</h1>
-        <p>Org branding, default markup %, SMS consent text, lots, property setbacks.</p>
+        <p>Org branding, default markup %, SMS consent text, lots, property setbacks, locations.</p>
       </div>
 
       <div style={{ display: 'grid', gap: 24, gridTemplateColumns: '1fr', maxWidth: 800 }}>
         <OrgSettingsForm org={org as Org} />
+
+        {/* Multi-location entry point */}
+        <Link
+          href="/settings/locations"
+          style={{
+            display: 'block',
+            padding: '14px 18px',
+            background: '#fff',
+            border: '1px solid var(--adm-line, #e5dfd1)',
+            borderRadius: 6,
+            textDecoration: 'none',
+            color: 'var(--adm-ink)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 500, fontSize: 14 }}>Locations</div>
+              <div style={{ fontSize: 12, color: 'var(--adm-ink-mute)', marginTop: 4 }}>
+                {locationCount ?? 0} location{locationCount === 1 ? '' : 's'} · manage branding, hours, lead routing
+              </div>
+            </div>
+            <span style={{ color: 'var(--adm-accent)', fontSize: 13 }}>Manage →</span>
+          </div>
+        </Link>
+
         <LotsManager orgId={orgId} initialLots={(lots ?? []) as Lot[]} />
         <DeliveryZonesManager orgId={orgId} initialZones={(zones ?? []) as DeliveryZone[]} />
         <SetbackForm orgId={orgId} initial={(setback as OrgSetbackRules | null) ?? null} />

@@ -50,17 +50,30 @@ export default async function EditHomePage({ params }: { params: { id: string } 
             </Link>
           </div>
         ) : <span />}
-        <Link
-          href={`/inventory/${home.id}/place`}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: '#fff', border: '1px solid var(--adm-accent)',
-            color: 'var(--adm-accent)', padding: '6px 12px', borderRadius: 4,
-            fontSize: 12, fontWeight: 500, textDecoration: 'none',
-          }}
-        >
-          Place on lot →
-        </Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link
+            href={`/inventory/${home.id}/regional-pricing`}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: '#fff', border: '1px solid #C5B79F',
+              color: 'var(--adm-ink)', padding: '6px 12px', borderRadius: 4,
+              fontSize: 12, fontWeight: 500, textDecoration: 'none',
+            }}
+          >
+            Regional pricing →
+          </Link>
+          <Link
+            href={`/inventory/${home.id}/place`}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: '#fff', border: '1px solid var(--adm-accent)',
+              color: 'var(--adm-accent)', padding: '6px 12px', borderRadius: 4,
+              fontSize: 12, fontWeight: 500, textDecoration: 'none',
+            }}
+          >
+            Place on lot →
+          </Link>
+        </div>
       </div>
       <HomeForm
         mode="edit"
