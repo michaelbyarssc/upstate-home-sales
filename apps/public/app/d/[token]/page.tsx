@@ -73,12 +73,12 @@ export default async function DesignSharePage({ params }: { params: { token: str
             </ul>
           )}
 
-          <div style={{ marginTop: 'var(--s-6)', display: 'flex', gap: 12 }}>
+          <div style={{ marginTop: 'var(--s-6)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <Link href={`/inventory/${encodeURIComponent(d.home_stock_no)}/design`} className="btn btn-secondary">
               Edit this design
             </Link>
-            <Link href="/contact" className="btn btn-primary">
-              Get a quote
+            <Link href={`/contact?design=${encodeURIComponent(d.share_token)}`} className="btn btn-primary">
+              Get a quote based on this design
             </Link>
           </div>
         </div>

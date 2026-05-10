@@ -22,6 +22,7 @@ const VALID: ReadonlySet<VisitorEventKind> = new Set([
   'page_view',
   'inventory_view',
   'home_view',
+  'marketplace_view',
   'lead_submitted',
   'quote_viewed',
   'quote_signed',
@@ -83,6 +84,18 @@ export async function POST(req: Request) {
     ip_region: ipRegion,
     ip_country: ipCountry,
   });
+
+  // Cross-org attribution: marketplace impressions also land in marketplace_views
+  // so the listing dealer can see how many marketplace impressions hit their home.
+  if (eventType === 'marketplace_view' && body.home_id) {
+    void sb.from('marketplace_views').insert({
+      home_id: body.home_id,
+      viewer_session_id: sessionId,
+      viewer_ip_city: ipCity ? decodeURIComponent(ipCity) : null,
+      viewer_ip_region: ipRegion,
+      viewer_ip_country: ipCountry,
+    });
+  }
 
   return NextResponse.json({ ok: true }, { status: 200 });
 }
