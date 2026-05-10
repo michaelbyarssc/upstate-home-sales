@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@uhs/db/server';
 import { createServiceClient } from '@uhs/db/service';
-import type { LeadMessage, LeadStage, MessageChannel, MessageKind } from '@uhs/db';
+import type { LeadMessage, LeadStage, MessageChannel, MessageKind, MilestoneStatus } from '@uhs/db';
 import { sendEmail, sendSms } from '../../../../lib/notify';
 import { renderQuotePdf, type QuotePdfData } from '../../../../lib/quote-pdf';
 import { dispatchWorkflowEvent } from '../../../../lib/workflows';
@@ -266,4 +266,137 @@ export async function toggleLeadHot(leadId: string, isHot: boolean) {
   if (error || !data) throw new Error(error?.message ?? 'Update failed');
   revalidatePath(`/leads/${leadId}`);
   return data;
+}
+
+// ─── Customer portal integration (Phase D) ─────────────────────────────────
+
+/**
+ * Resolves the buyer linked to a lead, creating the link if a buyer with the
+ * lead's email already exists. Returns null if the lead has no email or no
+ * matching buyer (the buyer hasn't signed up yet).
+ */
+async function resolveBuyerForLead(leadId: string): Promise<string | null> {
+  const sb = createServiceClient();
+  const { data: lead } = await sb
+    .from('leads')
+    .select('id, org_id, email')
+    .eq('id', leadId)
+    .maybeSingle();
+  if (!lead) return null;
+
+  // Already linked?
+  const { data: existing } = await sb
+    .from('buyer_lead_links')
+    .select('buyer_id')
+    .eq('lead_id', leadId)
+    .maybeSingle();
+  if (existing) return existing.buyer_id;
+
+  // Find a buyer with this email and link.
+  if (!lead.email) return null;
+  const { data: buyer } = await sb
+    .from('buyers')
+    .select('id')
+    .eq('email', lead.email.toLowerCase())
+    .maybeSingle();
+  if (!buyer) return null;
+
+  await sb.from('buyer_lead_links').insert({
+    buyer_id: buyer.id,
+    lead_id: leadId,
+    org_id: lead.org_id,
+    status: 'active',
+  });
+  return buyer.id;
+}
+
+export async function suggestHomeForLead(args: {
+  leadId: string;
+  homeId: string;
+  note: string | null;
+}): Promise<{ ok: true; status: 'suggested' | 'queued' } | { ok: false; error: string }> {
+  const supabase = createClient();
+  const { data: lead, error: leadErr } = await supabase
+    .from('leads')
+    .select('id, org_id')
+    .eq('id', args.leadId)
+    .maybeSingle();
+  if (leadErr || !lead) return { ok: false, error: 'Lead not found' };
+
+  const buyerId = await resolveBuyerForLead(args.leadId);
+  if (!buyerId) {
+    return { ok: false, error: 'This buyer is not signed up for the portal yet. Invite them first.' };
+  }
+
+  const { error } = await supabase
+    .from('buyer_suggested_homes')
+    .upsert(
+      {
+        buyer_id: buyerId,
+        home_id: args.homeId,
+        org_id: lead.org_id,
+        note: args.note,
+      },
+      { onConflict: 'buyer_id,home_id' },
+    );
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return { ok: true, status: 'suggested' };
+}
+
+export async function createMilestone(args: {
+  leadId: string;
+  title: string;
+  body: string | null;
+  status: MilestoneStatus;
+  dueAt: string | null;
+}) {
+  const supabase = createClient();
+  const { data: lead } = await supabase
+    .from('leads')
+    .select('org_id')
+    .eq('id', args.leadId)
+    .maybeSingle();
+  if (!lead) throw new Error('Lead not found');
+
+  // Next sort_order
+  const { data: max } = await supabase
+    .from('lead_milestones')
+    .select('sort_order')
+    .eq('lead_id', args.leadId)
+    .order('sort_order', { ascending: false })
+    .limit(1);
+  const nextOrder = (max?.[0]?.sort_order ?? -1) + 1;
+
+  const { error } = await supabase.from('lead_milestones').insert({
+    lead_id: args.leadId,
+    org_id: lead.org_id,
+    title: args.title.trim() || 'Milestone',
+    body: args.body,
+    status: args.status,
+    sort_order: nextOrder,
+    due_at: args.dueAt,
+    completed_at: args.status === 'complete' ? new Date().toISOString() : null,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/leads/${args.leadId}`);
+}
+
+export async function updateMilestoneStatus(args: { id: string; leadId: string; status: MilestoneStatus }) {
+  const supabase = createClient();
+  const completedAt = args.status === 'complete' ? new Date().toISOString() : null;
+  const { error } = await supabase
+    .from('lead_milestones')
+    .update({ status: args.status, completed_at: completedAt })
+    .eq('id', args.id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/leads/${args.leadId}`);
+}
+
+export async function deleteMilestone(args: { id: string; leadId: string }) {
+  const supabase = createClient();
+  const { error } = await supabase.from('lead_milestones').delete().eq('id', args.id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/leads/${args.leadId}`);
 }

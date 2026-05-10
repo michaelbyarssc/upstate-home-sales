@@ -33,6 +33,73 @@ export interface OrgMember {
   created_at: string;
 }
 
+// ─── Customer portal (buyer side) ─────────────────────────────────────────
+export type BuyerDocKind = 'driver_license' | 'w2' | 'proof_of_income' | 'bank_statement' | 'other';
+export type MilestoneStatus = 'pending' | 'in_progress' | 'complete';
+export type BuyerSuggestedHomeState = 'unread' | 'saved' | 'dismissed';
+
+export interface Buyer {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  notify_email: boolean;
+  notify_sms: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BuyerLeadLink {
+  id: string;
+  buyer_id: string;
+  lead_id: string;
+  org_id: string;
+  status: 'invited' | 'active';
+  invited_by: string | null;
+  created_at: string;
+}
+
+export interface BuyerDocument {
+  id: string;
+  buyer_id: string;
+  lead_id: string | null;
+  org_id: string | null;
+  kind: BuyerDocKind;
+  storage_path: string;
+  original_name: string;
+  size_bytes: number;
+  content_type: string;
+  uploaded_at: string;
+}
+
+export interface BuyerSuggestedHome {
+  id: string;
+  buyer_id: string;
+  home_id: string;
+  org_id: string;
+  note: string | null;
+  suggested_by: string | null;
+  suggested_at: string;
+  buyer_state: BuyerSuggestedHomeState;
+}
+
+export interface LeadMilestone {
+  id: string;
+  lead_id: string;
+  org_id: string;
+  title: string;
+  body: string | null;
+  status: MilestoneStatus;
+  sort_order: number;
+  due_at: string | null;
+  completed_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const BUYER_DOCUMENTS_BUCKET = 'buyer-documents';
+
 export interface HomeCollection {
   id: string;
   org_id: string;
