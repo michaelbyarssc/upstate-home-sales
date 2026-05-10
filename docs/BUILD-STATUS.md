@@ -287,6 +287,28 @@ Other env vars:
   this if unset, but explicit is better)
 - `NEXT_PUBLIC_ADMIN_URL=https://admin.upstatehomecenter.com`
 
+### Monitoring (Sentry — optional)
+
+Sentry SDK scaffolded in both apps; **no-op when DSN is unset**. To enable:
+
+- `NEXT_PUBLIC_SENTRY_DSN` (both apps) — browser error reporting
+- `SENTRY_DSN` (both apps) — server-side error reporting
+- `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` (build env) — source-map upload at build time. Without `SENTRY_AUTH_TOKEN`, the build skips Sentry's webpack wrapper entirely.
+
+### E2E tests (Playwright)
+
+`pnpm test:e2e` runs the smoke suite at `tests/e2e/smoke.spec.ts` against
+`PLAYWRIGHT_BASE_URL` (default `https://upstatehomecenter.com`). Covers
+home / inventory / marketplace / location sub-site / Design Studio /
+financing / contact + the public API + token-share 404 pages. CI run is a
+follow-up — currently this is a manual command.
+
+### AI chatbot (Phase H — wired, awaits billing)
+
+- `AI_GATEWAY_API_KEY` is set on `uhs-public` for all 3 envs (created at vercel.com/<team>/~/ai-gateway).
+- `ai_chat_enabled` is **true** on the `uhs-spartanburg` org.
+- Chat endpoint streams successfully; LLM calls return `AI Gateway requires a valid credit card on file to service requests`. **Add a card at https://vercel.com/&lt;team&gt;/~/ai → modal=add-credit-card to unlock $5 free credit and start serving.**
+
 ---
 
 ## Remaining wire-up work (post-engineering)
