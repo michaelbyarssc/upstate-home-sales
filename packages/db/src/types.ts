@@ -20,6 +20,8 @@ export interface Org {
   ai_daily_token_cap: number;
   /** Phase H — markdown text appended to the chatbot's system prompt. */
   faq_markdown: string | null;
+  /** Phase C — design studio price display mode. */
+  design_price_display: DesignPriceDisplay;
   status: 'active' | 'suspended' | 'archived';
   created_at: string;
   updated_at: string;
@@ -143,6 +145,124 @@ export interface LeadMilestone {
 }
 
 export const BUYER_DOCUMENTS_BUCKET = 'buyer-documents';
+export const MODEL_3D_ASSETS_BUCKET = 'model-3d-assets';
+
+// ─── 3D Design Studio (Phase C) ───────────────────────────────────────────
+
+export type DesignPriceDisplay = 'monthly' | 'total' | 'hidden';
+export type OptionCategory = 'exterior' | 'kitchen' | 'bath' | 'flooring' | 'misc';
+
+export interface Model3dAsset {
+  id: string;
+  org_id: string;
+  home_model_id: string;
+  version: number;
+  glb_storage_path: string;
+  metadata: Record<string, unknown>;
+  /** Map slot_name → mesh name(s) inside the GLB. */
+  material_manifest: Record<string, string | string[]>;
+  uploaded_by: string | null;
+  uploaded_at: string;
+}
+
+export interface ModelOption {
+  id: string;
+  org_id: string;
+  home_model_id: string;
+  slot_name: string;
+  label: string;
+  category: OptionCategory | string;
+  sort_order: number;
+  required: boolean;
+  created_at: string;
+}
+
+export type OptionOverlay =
+  | { type: 'color'; color: string }
+  | { type: 'texture'; texture_url: string }
+  | { type: 'mesh'; mesh_name: string }
+  | { type?: undefined };
+
+export interface ModelOptionValue {
+  id: string;
+  org_id: string;
+  option_id: string;
+  value_name: string;
+  label: string;
+  overlay: OptionOverlay;
+  price_delta_cents: number;
+  is_default: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface ModelOptionCompat {
+  id: string;
+  org_id: string;
+  home_model_id: string;
+  rule_type: 'requires' | 'conflicts';
+  rule: {
+    trigger: { option_id: string; value_id: string };
+    target: { option_id: string; value_id: string };
+  };
+  notes: string | null;
+  created_at: string;
+}
+
+export interface HomeDesign {
+  id: string;
+  org_id: string;
+  home_id: string;
+  buyer_id: string | null;
+  lead_id: string | null;
+  base_price_cents: number;
+  total_price_cents: number;
+  share_token: string;
+  thumbnail_storage_path: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HomeDesignSelection {
+  id: string;
+  design_id: string;
+  org_id: string;
+  option_id: string;
+  value_id: string;
+  snapshot_price_delta_cents: number;
+  selected_at: string;
+}
+
+export interface PublicHomeDesign {
+  share_token: string;
+  home_id: string;
+  base_price_cents: number;
+  total_price_cents: number;
+  thumbnail_storage_path: string | null;
+  created_at: string;
+  home_name: string;
+  home_stock_no: string;
+  home_beds: number | null;
+  home_baths: number | null;
+  home_sqft: number | null;
+  org_name: string;
+  org_brand_color: string | null;
+  design_price_display: DesignPriceDisplay;
+}
+
+export interface PublicHomeDesignSelection {
+  share_token: string;
+  option_id: string;
+  value_id: string;
+  snapshot_price_delta_cents: number;
+  slot_name: string;
+  option_label: string;
+  value_name: string;
+  value_label: string;
+  overlay: OptionOverlay;
+}
 
 export interface HomeCollection {
   id: string;
