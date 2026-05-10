@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/campaign-tick",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 13 * * *"
     }
   ]
 }
