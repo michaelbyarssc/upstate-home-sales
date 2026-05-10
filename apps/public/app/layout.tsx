@@ -5,6 +5,7 @@ import { AttributionCapture } from './attribution-capture';
 import { CompareBar } from '../components/CompareBar';
 import { PixelInstaller } from '../components/PixelInstaller';
 import { AIChatWidget } from '../components/AIChatWidget';
+import { VisitorTracker } from '../components/VisitorTracker';
 import { createPublicClient } from '../lib/supabase';
 import type { OrgIntegration } from '@uhs/db';
 
@@ -80,6 +81,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           metaPixelId={pixels.meta}
         />
         <AttributionCapture />
+        <VisitorTracker />
         <SiteHeader />
         {children}
         <SiteFooter />
