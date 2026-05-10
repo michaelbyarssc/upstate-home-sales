@@ -23,6 +23,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@googlemaps/js-api-loader':
+        specifier: ^1.16.8
+        version: 1.16.10
       '@react-pdf/renderer':
         specifier: ^4.5.1
         version: 4.5.1(react@18.3.1)
@@ -48,6 +51,9 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
     devDependencies:
+      '@types/google.maps':
+        specifier: ^3.58.1
+        version: 3.64.0
       '@types/node':
         specifier: ^20.16.5
         version: 20.19.39
@@ -69,6 +75,9 @@ importers:
 
   apps/public:
     dependencies:
+      '@googlemaps/js-api-loader':
+        specifier: ^1.16.8
+        version: 1.16.10
       '@supabase/ssr':
         specifier: ^0.5.1
         version: 0.5.2(@supabase/supabase-js@2.105.3)
@@ -91,6 +100,9 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
     devDependencies:
+      '@types/google.maps':
+        specifier: ^3.58.1
+        version: 3.64.0
       '@types/node':
         specifier: ^20.16.5
         version: 20.19.39
@@ -160,6 +172,9 @@ packages:
   '@eslint/js@8.57.1':
     resolution: {integrity: sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+
+  '@googlemaps/js-api-loader@1.16.10':
+    resolution: {integrity: sha512-c2erv2k7P2ilYzMmtYcMgAR21AULosQuUHJbStnrvRk2dG93k5cqptDrh9A8p+ZNlyhiqEOgHW7N9PAizdUM7Q==}
 
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
@@ -394,6 +409,9 @@ packages:
 
   '@types/cookie@0.6.0':
     resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
+
+  '@types/google.maps@3.64.0':
+    resolution: {integrity: sha512-dN0H6tB4lgLQLovcbPXFYYOEV41TpyyJghzb5jrzjB96FZmjeOghevVdC+BMGd6YqyCqXaggyEtqRXLRjzCBZA==}
 
   '@types/json5@0.0.29':
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
@@ -1927,6 +1945,8 @@ snapshots:
 
   '@eslint/js@8.57.1': {}
 
+  '@googlemaps/js-api-loader@1.16.10': {}
+
   '@humanwhocodes/config-array@0.13.0':
     dependencies:
       '@humanwhocodes/object-schema': 2.0.3
@@ -2198,6 +2218,8 @@ snapshots:
     optional: true
 
   '@types/cookie@0.6.0': {}
+
+  '@types/google.maps@3.64.0': {}
 
   '@types/json5@0.0.29': {}
 
