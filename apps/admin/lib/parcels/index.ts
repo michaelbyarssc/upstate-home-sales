@@ -151,12 +151,93 @@ interface RegridFeatureCollection {
   }>;
 }
 
+// ─── DIY provider: geocode + PostGIS point-in-polygon ──────────────────────
+
+/** Geocode an address string to lat/lng using Google Maps Geocoding API.
+ *  Reuses GOOGLE_MAPS_API_KEY (server-side) — set this separately from
+ *  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY because the public key is referrer-locked
+ *  to the browser and won't work from a server function. */
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  const key = process.env.GOOGLE_MAPS_GEOCODING_KEY ?? process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) {
+    // No server-side key — fall through. Caller will degrade to mock.
+    return null;
+  }
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&components=country:US|administrative_area:SC&key=${encodeURIComponent(key)}`;
+  const res = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!res.ok) return null;
+  const body = (await res.json()) as {
+    status?: string;
+    results?: Array<{ geometry?: { location?: { lat: number; lng: number } } }>;
+  };
+  const loc = body.results?.[0]?.geometry?.location;
+  if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') return null;
+  return { lat: loc.lat, lng: loc.lng };
+}
+
+/** DIY provider: geocode the address, then run point-in-polygon against
+ *  the imported county parcels via the lookup_parcel_by_point RPC. */
+async function fetchDiy(args: ParcelLookupArgs): Promise<ParcelLookup | null> {
+  // APN lookups bypass geocoding — go straight to the parcels table by id.
+  if (args.apn) {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('parcels')
+      .select('parcel_id, county, address, centroid_lat, centroid_lng')
+      .eq('parcel_id', args.apn)
+      .limit(1)
+      .maybeSingle();
+    if (!data) return null;
+    // No polygon yet — caller would need to fetch separately. The RPC below
+    // is the standard path. APN-only lookup is a v2 enhancement.
+    return {
+      parcel_id: data.parcel_id,
+      address: data.address,
+      county: data.county,
+      centroid_lat: data.centroid_lat,
+      centroid_lng: data.centroid_lng,
+      // Empty geometry — mark this lookup as incomplete.
+      geojson: { type: 'Polygon', coordinates: [] },
+      cached: false,
+      mock: false,
+    };
+  }
+
+  // Address path: geocode → spatial query.
+  const geocoded = await geocodeAddress(args.query);
+  if (!geocoded) return null;
+
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc('lookup_parcel_by_point', {
+    p_lat: geocoded.lat,
+    p_lng: geocoded.lng,
+  });
+  if (error || !data || (Array.isArray(data) && data.length === 0)) {
+    // No parcel covers this point — likely the county isn't imported yet.
+    return null;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+
+  return {
+    parcel_id: row.parcel_id,
+    address: row.address ?? args.query,
+    county: row.county,
+    centroid_lat: row.centroid_lat,
+    centroid_lng: row.centroid_lng,
+    geojson: row.geojson as ParcelGeoJson,
+    cached: false,
+    mock: false,
+  };
+}
+
 /** Resolve which provider to use, given env config + available credentials.
  *  Logic:
  *    - Explicit PARCEL_PROVIDER env wins.
  *    - 'regrid' selected only when REGRID_API_TOKEN is also set; else falls to mock.
- *    - 'diy' is currently a stub that falls back to mock (Phase E.2).
- *    - Default = 'regrid' if token set, else 'mock'.
+ *    - 'diy' uses our Supabase PostGIS `parcels` table (Phase E.2). If a county
+ *      isn't loaded, falls through to regrid (if token) or mock.
+ *    - Default = 'diy' (always available — empty county = mock fallback).
  */
 type Provider = 'mock' | 'regrid' | 'diy';
 function resolveProvider(): Provider {
@@ -164,9 +245,9 @@ function resolveProvider(): Provider {
   const hasRegridToken = !!process.env.REGRID_API_TOKEN;
   if (explicit === 'mock') return 'mock';
   if (explicit === 'regrid') return hasRegridToken ? 'regrid' : 'mock';
-  if (explicit === 'diy') return 'diy'; // Stub — falls back to mock inside the dispatcher.
-  // No explicit choice: prefer regrid if a token is configured, else mock.
-  return hasRegridToken ? 'regrid' : 'mock';
+  if (explicit === 'diy') return 'diy';
+  // No explicit choice: prefer DIY (free), fall back inside the dispatcher.
+  return 'diy';
 }
 
 /** Public entry point. Cache-first; falls back to the configured provider;
@@ -198,17 +279,29 @@ export async function lookupParcel(args: ParcelLookupArgs): Promise<ParcelLookup
     }
   }
 
-  // 2. Dispatch to the chosen provider.
+  // 2. Dispatch to the chosen provider with graceful fallback.
+  //    DIY can return null when the county isn't imported yet; in that case
+  //    we fall through to regrid (if available) or mock so the UI never
+  //    leaves the user staring at a "no parcel found" error in dev.
   const provider = resolveProvider();
-  let result: ParcelLookup | null;
-  if (provider === 'regrid') {
-    // Token presence already validated in resolveProvider.
+  let result: ParcelLookup | null = null;
+
+  if (provider === 'diy') {
+    result = await fetchDiy(args);
+    if (!result) {
+      // DIY missed (no county data, no geocoder key, or no match).
+      // Try regrid if configured.
+      if (process.env.REGRID_API_TOKEN) {
+        result = await fetchRegrid(args, process.env.REGRID_API_TOKEN);
+      }
+    }
+  } else if (provider === 'regrid') {
     result = await fetchRegrid(args, process.env.REGRID_API_TOKEN!);
-  } else if (provider === 'diy') {
-    // Phase E.2 stub: not yet implemented. Fall through to mock so the UI
-    // still works end-to-end while the DIY county pipeline is being built.
-    result = mockParcel(args);
-  } else {
+  }
+
+  // Final fallback: mock. Always returns something so the UI flow can be
+  // walked end-to-end even with zero credentials configured.
+  if (!result) {
     result = mockParcel(args);
   }
   if (!result) return null;

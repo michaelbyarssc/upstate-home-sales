@@ -86,12 +86,21 @@ function setbackPolygon(
   return out;
 }
 
+/** Local Gradient raster tile URL (blueprint style, 512px). Returns null
+ *  when no key is configured so the overlay simply isn't added. */
+function localGradientTileUrl(key: string | null): string | null {
+  if (!key) return null;
+  return `https://frontend-jypnlxgeua-uc.a.run.app/styles/blueprint/512/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}`;
+}
+
 export function PlacementViewer({
   placement,
   googleMapsApiKey,
+  localGradientTileKey,
 }: {
   placement: PublicPropertyPlacement;
   googleMapsApiKey: string | null;
+  localGradientTileKey: string | null;
 }) {
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -116,6 +125,25 @@ export function PlacementViewer({
           streetViewControl: false,
           gestureHandling: 'cooperative',
         });
+
+        // Parcel-boundary tile overlay (Local Gradient blueprint style).
+        const tileBaseUrl = localGradientTileUrl(localGradientTileKey);
+        if (tileBaseUrl) {
+          map.overlayMapTypes.push(
+            new google.maps.ImageMapType({
+              name: 'Parcel boundaries',
+              tileSize: new google.maps.Size(512, 512),
+              opacity: 0.55,
+              maxZoom: 22,
+              minZoom: 12,
+              getTileUrl: (coord, zoom) =>
+                tileBaseUrl
+                  .replace('{z}', String(zoom))
+                  .replace('{x}', String(coord.x))
+                  .replace('{y}', String(coord.y)),
+            }),
+          );
+        }
 
         // Parcel polygon.
         const parcelRings = geojsonToLatLngs(placement.parcel_geojson);
@@ -188,7 +216,7 @@ export function PlacementViewer({
     return () => {
       cancelled = true;
     };
-  }, [googleMapsApiKey, placement]);
+  }, [googleMapsApiKey, localGradientTileKey, placement]);
 
   if (!googleMapsApiKey) {
     return (

@@ -15,8 +15,20 @@ type Props = {
   existing: PropertyPlacement | null;
   setbacks: OrgSetbackRules;
   googleMapsApiKey: string | null;
+  /** Local Gradient parcel-boundary tile-server key. When set, we overlay
+   *  parcel boundaries from LG on top of Google Maps so the salesperson sees
+   *  every neighboring parcel, not just the one they searched. */
+  localGradientTileKey: string | null;
   publicBaseUrl: string;
 };
+
+/** Local Gradient raster tile URL for the blueprint style. Returns null if
+ *  no key is configured (the overlay simply isn't added in that case). */
+function localGradientTileUrl(key: string | null): string | null {
+  if (!key) return null;
+  // {z}/{x}/{y} placeholders are replaced by Google Maps' ImageMapType getTileUrl.
+  return `https://frontend-jypnlxgeua-uc.a.run.app/styles/blueprint/512/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}`;
+}
 
 type FootprintState = {
   centerLat: number;
@@ -125,7 +137,14 @@ function geojsonToLatLngs(g: ParcelGeoJson): google.maps.LatLngLiteral[][] {
   );
 }
 
-export function PlacementEditor({ home, existing, setbacks, googleMapsApiKey, publicBaseUrl }: Props) {
+export function PlacementEditor({
+  home,
+  existing,
+  setbacks,
+  googleMapsApiKey,
+  localGradientTileKey,
+  publicBaseUrl,
+}: Props) {
   const [searchInput, setSearchInput] = useState('');
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
@@ -183,7 +202,7 @@ export function PlacementEditor({ home, existing, setbacks, googleMapsApiKey, pu
       const initialCenter = parcel
         ? { lat: parcel.centerLat, lng: parcel.centerLng }
         : { lat: 33.9815, lng: -81.2362 }; // Lexington, SC
-      mapRef.current = new google.maps.Map(mapDivRef.current, {
+      const map = new google.maps.Map(mapDivRef.current, {
         center: initialCenter,
         zoom: parcel ? 19 : 13,
         mapTypeId: google.maps.MapTypeId.HYBRID,
@@ -194,13 +213,35 @@ export function PlacementEditor({ home, existing, setbacks, googleMapsApiKey, pu
         fullscreenControl: true,
         streetViewControl: false,
       });
+      mapRef.current = map;
+
+      // Local Gradient parcel-boundary tile overlay (raster PNG, 512px).
+      // Sits on top of the satellite/hybrid base; alpha-blended so the
+      // base layer still shows through.
+      const tileBaseUrl = localGradientTileUrl(localGradientTileKey);
+      if (tileBaseUrl) {
+        const lgOverlay = new google.maps.ImageMapType({
+          name: 'Parcel boundaries',
+          tileSize: new google.maps.Size(512, 512),
+          opacity: 0.55,
+          maxZoom: 22,
+          minZoom: 12,
+          getTileUrl: (coord, zoom) =>
+            tileBaseUrl
+              .replace('{z}', String(zoom))
+              .replace('{x}', String(coord.x))
+              .replace('{y}', String(coord.y)),
+        });
+        map.overlayMapTypes.push(lgOverlay);
+      }
+
       setMapReady(true);
     }).catch((err) => {
       console.error('Google Maps load failed', err);
       setMsg({ kind: 'error', text: 'Google Maps failed to load. Check your API key.' });
     });
     return () => { cancelled = true; };
-  }, [googleMapsApiKey, parcel]);
+  }, [googleMapsApiKey, localGradientTileKey, parcel]);
 
   // ─── Parcel polygon ────────────────────────────────────────────────────
   useEffect(() => {
