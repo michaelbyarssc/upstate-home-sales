@@ -15,6 +15,16 @@ export default function ReportsIndexPage() {
           title="Lead sources"
           desc="UTM and channel breakdown. Find your highest-converting campaigns."
         />
+        <ReportCard
+          href="/reports/visitors"
+          title="Visitor geography"
+          desc="Where your public-site traffic comes from, grouped by city + region."
+        />
+        <ReportCard
+          href="/reports/ai"
+          title="AI activity"
+          desc="Chatbot conversations + natural-language inventory searches, with token usage."
+        />
       </div>
     </>
   );

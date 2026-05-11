@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { createClient } from '@uhs/db/server';
 import { ACTIVE_ORG_COOKIE, type GmbReview } from '@uhs/db';
+import { ReplyForm } from './reply-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,15 +51,11 @@ export default async function ReviewsPage() {
                       {r.comment}
                     </p>
                   )}
-                  {r.reply_text ? (
-                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#FAF4EB', borderRadius: 4, fontSize: 12 }}>
-                      <strong>Your reply</strong> ({r.replied_at ? new Date(r.replied_at).toLocaleDateString() : ''}): {r.reply_text}
-                    </div>
-                  ) : (
-                    <div style={{ marginTop: 8, fontSize: 12, color: 'var(--adm-ink-mute)', fontStyle: 'italic' }}>
-                      No reply yet. Reply via Google Business Profile (in-app reply UI lands in a follow-up).
-                    </div>
-                  )}
+                  <ReplyForm
+                    reviewId={r.id}
+                    initialReplyText={r.reply_text}
+                    initialRepliedAt={r.replied_at}
+                  />
                 </li>
               ))}
             </ul>
