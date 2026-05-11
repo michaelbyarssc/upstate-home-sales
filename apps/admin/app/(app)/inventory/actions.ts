@@ -22,7 +22,9 @@ type HomeFields = {
   base_price_cents: number;
   markup_pct: number;
   addons_cents: number;
+  addons_markup_pct: number;
   setup_cents: number;
+  setup_markup_pct: number;
   include_setup_in_price: boolean;
   starting_from: boolean;
   headline: string | null;
@@ -87,7 +89,9 @@ function readFields(fd: FormData): HomeFields {
     base_price_cents: parseDollarsToCents(fd.get('base_price_dollars')),
     markup_pct: Number(parseFloatOrNull(fd.get('markup_pct')) ?? 0),
     addons_cents: parseDollarsToCents(fd.get('addons_dollars')),
+    addons_markup_pct: Number(parseFloatOrNull(fd.get('addons_markup_pct')) ?? 0),
     setup_cents: parseDollarsToCents(fd.get('setup_dollars')),
+    setup_markup_pct: Number(parseFloatOrNull(fd.get('setup_markup_pct')) ?? 0),
     include_setup_in_price: parseChecked(fd, 'include_setup_in_price'),
     starting_from: parseChecked(fd, 'starting_from'),
     headline: parseStr(fd.get('headline')),

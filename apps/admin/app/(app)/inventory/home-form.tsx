@@ -33,7 +33,9 @@ export function HomeForm(props: Props) {
   const [base, setBase] = useState((home?.base_price_cents ?? 0) / 100);
   const [markup, setMarkup] = useState(Number(home?.markup_pct ?? 0));
   const [addons, setAddons] = useState((home?.addons_cents ?? 0) / 100);
+  const [addonsMarkup, setAddonsMarkup] = useState(Number(home?.addons_markup_pct ?? 0));
   const [setup, setSetup] = useState((home?.setup_cents ?? 0) / 100);
+  const [setupMarkup, setSetupMarkup] = useState(Number(home?.setup_markup_pct ?? 0));
   const [includeSetup, setIncludeSetup] = useState(home?.include_setup_in_price ?? true);
   const [name, setName] = useState(home?.name ?? '');
   const [mfrId, setMfrId] = useState(home?.manufacturer_id ?? '');
@@ -43,9 +45,16 @@ export function HomeForm(props: Props) {
 
   const baseCents = Math.round(base * 100);
   const markupAmtCents = Math.round((baseCents * markup) / 100);
-  const setupCents = Math.round(setup * 100);
   const addonsCents = Math.round(addons * 100);
-  const totalCents = baseCents + markupAmtCents + addonsCents + (includeSetup ? setupCents : 0);
+  const addonsMarkupAmtCents = Math.round((addonsCents * addonsMarkup) / 100);
+  const setupCents = Math.round(setup * 100);
+  const setupMarkupAmtCents = Math.round((setupCents * setupMarkup) / 100);
+  const totalCents =
+    baseCents +
+    markupAmtCents +
+    addonsCents +
+    addonsMarkupAmtCents +
+    (includeSetup ? setupCents + setupMarkupAmtCents : 0);
 
   const mfrName = manufacturers.find((m) => m.id === mfrId)?.name ?? null;
   const heroPath = photos[0]?.storage_path
@@ -267,8 +276,19 @@ export function HomeForm(props: Props) {
                     <input className="input" name="addons_dollars" type="number" min={0} step={1}
                       value={addons} onChange={(e) => setAddons(Number(e.target.value || 0))} />
                   </div>
-                  <div className="help">Skirting, deck, A/C upgrade, etc. Added after markup.</div>
+                  <div className="help">Skirting, deck, A/C upgrade, etc. Your cost.</div>
                 </div>
+                <div className="field">
+                  <label className="label">Add-ons markup %</label>
+                  <div className="input-suffix">
+                    <input className="input" name="addons_markup_pct" type="number" step={0.5} min={0} max={200}
+                      value={addonsMarkup} onChange={(e) => setAddonsMarkup(Number(e.target.value || 0))} />
+                    <span className="sx">%</span>
+                  </div>
+                  <div className="help">Markup applied on top of add-on cost.</div>
+                </div>
+              </div>
+              <div className="field-row">
                 <div className="field">
                   <label className="label">Setup &amp; delivery <span className="opt">(optional)</span></label>
                   <div className="input-prefix">
@@ -276,7 +296,16 @@ export function HomeForm(props: Props) {
                     <input className="input" name="setup_dollars" type="number" min={0} step={1}
                       value={setup} onChange={(e) => setSetup(Number(e.target.value || 0))} />
                   </div>
-                  <div className="help">Bundled into final price unless toggled below.</div>
+                  <div className="help">Your cost. Bundled into final price unless toggled below.</div>
+                </div>
+                <div className="field">
+                  <label className="label">Setup markup %</label>
+                  <div className="input-suffix">
+                    <input className="input" name="setup_markup_pct" type="number" step={0.5} min={0} max={200}
+                      value={setupMarkup} onChange={(e) => setSetupMarkup(Number(e.target.value || 0))} />
+                    <span className="sx">%</span>
+                  </div>
+                  <div className="help">Markup applied on top of setup &amp; delivery cost.</div>
                 </div>
               </div>
               <div className="field-row" style={{ marginTop: 6 }}>
@@ -296,7 +325,9 @@ export function HomeForm(props: Props) {
                 <div className="row"><span className="lbl">Base</span><span>{formatCents(baseCents)}</span></div>
                 <div className="row"><span className="lbl">+ Markup ({markup}%)</span><span>{formatCents(markupAmtCents)}</span></div>
                 <div className="row"><span className="lbl">+ Add-ons</span><span>{formatCents(addonsCents)}</span></div>
+                <div className="row"><span className="lbl">+ Add-ons markup ({addonsMarkup}%)</span><span>{formatCents(addonsMarkupAmtCents)}</span></div>
                 <div className="row"><span className="lbl">+ Setup &amp; delivery {includeSetup ? '' : '(excluded)'}</span><span>{includeSetup ? formatCents(setupCents) : '—'}</span></div>
+                <div className="row"><span className="lbl">+ Setup markup ({setupMarkup}%) {includeSetup ? '' : '(excluded)'}</span><span>{includeSetup ? formatCents(setupMarkupAmtCents) : '—'}</span></div>
                 <div className="row total"><span>Listed price (public)</span><span>{formatCents(totalCents)}</span></div>
               </div>
               <div className="help" style={{ marginTop: 8 }}>
