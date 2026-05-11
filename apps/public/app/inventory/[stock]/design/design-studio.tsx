@@ -1,10 +1,7 @@
 'use client';
 
-import { Suspense, useMemo, useState, useTransition } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
-import { OrbitControls, Environment, Html } from '@react-three/drei';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import * as THREE from 'three';
+import { useEffect, useMemo, useState, useTransition } from 'react';
+import dynamic from 'next/dynamic';
 import {
   formatCents,
   type ModelOption,
@@ -12,6 +9,30 @@ import {
   type OptionOverlay,
 } from '@uhs/db';
 import { saveDesign } from './actions';
+import { PhotoMode } from './photo-mode';
+
+// Lazy-load the 3D canvas — heavy R3F + three modules only land in the
+// chunk when the user is actually in 3D mode. Low-end mobiles never pay
+// the download cost.
+const Design3dCanvas = dynamic(() => import('./design-canvas-3d'), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        background: '#1a1a1a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 13,
+      }}
+    >
+      Loading 3D scene…
+    </div>
+  ),
+});
 
 type Props = {
   homeId: string;
@@ -21,101 +42,39 @@ type Props = {
   glbUrl: string | null;
   materialManifest: Record<string, string | string[]>;
   options: Array<ModelOption & { values: ModelOptionValue[] }>;
+  heroPhotoUrl: string | null;
 };
 
-type SelectionMap = Record<string, string>; // option_id → value_id
+type SelectionMap = Record<string, string>;
+type Mode = '3d' | 'photo';
 
 /**
- * Phase C — Design Studio.
+ * Decide which mode to default into based on the device's capability:
+ *   - No WebGL2 → photo
+ *   - save-data hint set → photo (respect the user's data preference)
+ *   - viewport < 768 AND deviceMemory < 4 → photo (heuristic for low-end phones)
+ *   - otherwise → 3D
  *
- * Renders a 3D preview of the selected home + a side panel of customizable
- * options. Material swaps apply in real time without re-loading the scene.
- *
- * Architecture:
- *   - When `glbUrl` resolves, we load the asset via GLTFLoader and walk its
- *     scene graph; the materialManifest tells us which mesh corresponds to
- *     each option slot, and we override material color when a value is picked.
- *   - When `glbUrl` is null (no asset uploaded yet), we render a placeholder
- *     cube + ground so the dealer can still demo the configurator end-to-end.
- *   - Save flow: serialize selections → /api/designs (server action) →
- *     returns share token → buyer can revisit at /d/<token>.
+ * We can't read these on the server, so we render in 3D and downgrade on
+ * mount if the heuristic says so. The downgrade is instant — the dynamic
+ * `Design3dCanvas` import is skipped if we flip before it actually loads.
  */
-
-function PlaceholderHome({ slotColors }: { slotColors: Record<string, string> }) {
-  // Hand-built placeholder shape: a simple house silhouette so the renderer
-  // and material-swap pipeline can be exercised without a real GLB.
-  // Slot names match the conventional siding/trim/roof names in the spec.
-  const sidingColor = slotColors['siding_main'] ?? '#cbb89a';
-  const trimColor = slotColors['trim_main'] ?? '#ffffff';
-  const roofColor = slotColors['roof_main'] ?? '#5a3b2c';
-
-  return (
-    <group position={[0, 0, 0]}>
-      {/* Body */}
-      <mesh position={[0, 1, 0]} castShadow receiveShadow>
-        <boxGeometry args={[6, 2, 3]} />
-        <meshStandardMaterial color={sidingColor} />
-      </mesh>
-      {/* Trim band */}
-      <mesh position={[0, 2.05, 0]} castShadow>
-        <boxGeometry args={[6.02, 0.1, 3.02]} />
-        <meshStandardMaterial color={trimColor} />
-      </mesh>
-      {/* Roof — a flattened pyramid */}
-      <mesh position={[0, 2.7, 0]} castShadow rotation={[0, Math.PI / 4, 0]}>
-        <coneGeometry args={[3.6, 1.2, 4]} />
-        <meshStandardMaterial color={roofColor} />
-      </mesh>
-      {/* Door */}
-      <mesh position={[0, 0.7, 1.51]}>
-        <boxGeometry args={[0.7, 1.4, 0.05]} />
-        <meshStandardMaterial color={trimColor} />
-      </mesh>
-      {/* Ground */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[40, 40]} />
-        <meshStandardMaterial color="#e8e2d5" />
-      </mesh>
-    </group>
-  );
-}
-
-function GlbHome({ url, slotColors, manifest }: {
-  url: string;
-  slotColors: Record<string, string>;
-  manifest: Record<string, string | string[]>;
-}) {
-  // Loads the asset via Three's GLTFLoader. Walks the scene graph and
-  // overrides material color on meshes named in materialManifest when a
-  // matching slot has a color overlay applied.
-  const gltf = useLoader(GLTFLoader, url);
-
-  // Memoize the modified scene per render of slotColors.
-  const scene = useMemo(() => {
-    const cloned = gltf.scene.clone(true);
-    cloned.traverse((obj) => {
-      const isMesh = (o: unknown): o is THREE.Mesh =>
-        (o as THREE.Mesh).isMesh === true;
-      if (!isMesh(obj)) return;
-      // Find which slot this mesh belongs to.
-      for (const [slot, meshNames] of Object.entries(manifest)) {
-        const names = Array.isArray(meshNames) ? meshNames : [meshNames];
-        if (!names.includes(obj.name)) continue;
-        const color = slotColors[slot];
-        if (!color) continue;
-        // Clone material so we don't mutate shared instances.
-        const m = Array.isArray(obj.material) ? obj.material[0] : obj.material;
-        if (m && 'color' in m) {
-          const cloned = (m as THREE.MeshStandardMaterial).clone();
-          cloned.color = new THREE.Color(color);
-          obj.material = cloned;
-        }
-      }
-    });
-    return cloned;
-  }, [gltf, slotColors, manifest]);
-
-  return <primitive object={scene} />;
+function detectPreferredMode(): Mode {
+  if (typeof window === 'undefined') return '3d';
+  try {
+    const canvas = document.createElement('canvas');
+    if (!canvas.getContext('webgl2')) return 'photo';
+  } catch {
+    return 'photo';
+  }
+  const conn = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+  if (conn?.saveData === true) return 'photo';
+  if (conn?.effectiveType && /^(slow-2g|2g)$/i.test(conn.effectiveType)) return 'photo';
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  if (window.innerWidth < 768 && typeof memory === 'number' && memory < 4) return 'photo';
+  return '3d';
 }
 
 export function DesignStudio({
@@ -126,8 +85,19 @@ export function DesignStudio({
   glbUrl,
   materialManifest,
   options,
+  heroPhotoUrl,
 }: Props) {
-  // Initial selections: each option's default value (or the first value).
+  // Default to 3D for SSR, then immediately re-check on mount. The brief
+  // hydration mismatch is fine — the 3D canvas chunk won't actually start
+  // downloading until React's effects flush, and our effect runs first.
+  const [mode, setMode] = useState<Mode>('3d');
+  const [autoDecided, setAutoDecided] = useState(false);
+  useEffect(() => {
+    if (autoDecided) return;
+    setMode(detectPreferredMode());
+    setAutoDecided(true);
+  }, [autoDecided]);
+
   const initialSelections: SelectionMap = useMemo(() => {
     const out: SelectionMap = {};
     for (const opt of options) {
@@ -138,7 +108,6 @@ export function DesignStudio({
   }, [options]);
   const [selections, setSelections] = useState<SelectionMap>(initialSelections);
 
-  // Slot → color overlay map for the renderer.
   const slotColors = useMemo(() => {
     const out: Record<string, string> = {};
     for (const opt of options) {
@@ -152,8 +121,6 @@ export function DesignStudio({
     return out;
   }, [selections, options]);
 
-  // Real-time price recompute (mirrors the server-side trigger so the UI
-  // doesn't lag the DB roundtrip).
   const totalCents = useMemo(() => {
     if (baseListedPriceCents == null) return null;
     let sum = baseListedPriceCents;
@@ -170,7 +137,6 @@ export function DesignStudio({
     setSelections((prev) => ({ ...prev, [optionId]: valueId }));
   }
 
-  // Group options by category for the side panel.
   const byCategory = useMemo(() => {
     const map = new Map<string, typeof options>();
     for (const o of options) {
@@ -181,7 +147,6 @@ export function DesignStudio({
     return Array.from(map.entries());
   }, [options]);
 
-  // Save flow.
   const [pending, startTransition] = useTransition();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -217,34 +182,66 @@ export function DesignStudio({
 
   return (
     <div className="design-grid">
-      {/* Renderer */}
-      <div className="design-canvas">
-        <Canvas shadows camera={{ position: [8, 5, 8], fov: 38 }}>
-          <Suspense fallback={
-            <Html center>
-              <div style={{ color: '#fff', fontSize: 13 }}>Loading scene…</div>
-            </Html>
-          }>
-            <ambientLight intensity={0.6} />
-            <directionalLight position={[5, 10, 5]} intensity={1.1} castShadow />
-            {glbUrl ? (
-              <GlbHome url={glbUrl} slotColors={slotColors} manifest={materialManifest} />
-            ) : (
-              <PlaceholderHome slotColors={slotColors} />
-            )}
-            <Environment preset="sunset" />
-            <OrbitControls makeDefault enableDamping target={[0, 1, 0]} maxPolarAngle={Math.PI / 2.2} />
-          </Suspense>
-        </Canvas>
+      <div className="design-canvas" style={{ position: 'relative' }}>
+        {mode === '3d' ? (
+          <Design3dCanvas
+            glbUrl={glbUrl}
+            slotColors={slotColors}
+            materialManifest={materialManifest}
+          />
+        ) : (
+          <PhotoMode
+            heroPhotoUrl={heroPhotoUrl}
+            homeName={homeName}
+            slotColors={slotColors}
+            options={options}
+            selections={selections}
+          />
+        )}
 
-        {!glbUrl && (
+        {!glbUrl && mode === '3d' && (
           <div className="design-placeholder-tag">
             Demo mode — no 3D asset uploaded for this model yet. Material swaps still work on the placeholder.
           </div>
         )}
+
+        {/* Mode toggle */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            display: 'inline-flex',
+            background: 'rgba(20, 20, 20, 0.78)',
+            borderRadius: 999,
+            padding: 4,
+            backdropFilter: 'blur(4px)',
+            zIndex: 5,
+          }}
+        >
+          {(['3d', 'photo'] as Mode[]).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              aria-pressed={mode === m}
+              style={{
+                background: mode === m ? '#fff' : 'transparent',
+                color: mode === m ? '#1a1a1a' : '#fff',
+                border: 'none',
+                padding: '6px 14px',
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              {m === '3d' ? '3D' : 'Photo'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Sidebar */}
       <aside className="design-sidebar">
         <div className="design-price-block">
           <div className="design-price-label">Total</div>

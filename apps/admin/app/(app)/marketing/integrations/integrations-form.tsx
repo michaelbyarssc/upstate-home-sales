@@ -130,22 +130,47 @@ export function IntegrationsForm({ initialByKind }: Props) {
       <section className="card">
         <div className="card-head">
           <h3>Google Business Profile (GMB)</h3>
-          <div className="sub">Account ID for posting + review-sync. The OAuth flow itself runs at <code>/marketing/integrations/gmb/connect</code>.</div>
+          <div className="sub">OAuth-based — review syncing + reply publishing. Manual <code>account_id</code> override below.</div>
         </div>
-        <form className="card-body" onSubmit={(e) => { e.preventDefault(); save('gmb', { account_id: gmbAcct.trim() }); }}>
-          <Field label="GMB Account ID" value={gmbAcct} onChange={setGmbAcct} placeholder="123456789" help="Find in Business Profile API console." />
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 10 }}>
-            {initialByKind.gmb && (
-              <button type="button" onClick={() => disconnect('gmb')} disabled={pending}
-                style={{ background: 'transparent', border: '1px solid #a53a2c', color: '#a53a2c', padding: '6px 12px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}>
-                Disconnect
-              </button>
-            )}
-            <button type="submit" disabled={pending} style={{ background: 'var(--adm-accent)', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, fontSize: 13, cursor: 'pointer' }}>
-              Save
-            </button>
+        <div className="card-body">
+          <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 13, color: 'var(--adm-ink-mute)' }}>
+              {initialByKind.gmb?.status === 'connected'
+                ? <>✓ Connected. Reviews + replies sync daily via <code>/api/cron/gmb-sync</code>.</>
+                : <>Not connected. Authorize via Google&rsquo;s consent screen.</>}
+            </div>
+            <a
+              href="/marketing/integrations/gmb/connect"
+              className="btn"
+              style={{
+                background: initialByKind.gmb?.status === 'connected' ? 'var(--adm-bg)' : 'var(--adm-accent)',
+                color: initialByKind.gmb?.status === 'connected' ? 'var(--adm-ink)' : '#fff',
+                border: initialByKind.gmb?.status === 'connected' ? '1px solid var(--adm-line)' : 'none',
+                padding: '8px 14px',
+                borderRadius: 6,
+                fontSize: 13,
+                textDecoration: 'none',
+              }}
+            >
+              {initialByKind.gmb?.status === 'connected' ? 'Manage connection' : 'Connect with Google'}
+            </a>
           </div>
-        </form>
+
+          <form onSubmit={(e) => { e.preventDefault(); save('gmb', { account_id: gmbAcct.trim() }); }}>
+            <Field label="GMB Account ID (override)" value={gmbAcct} onChange={setGmbAcct} placeholder="123456789" help="Optional. Auto-detected during OAuth — only set this if you manage multiple accounts." />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 10 }}>
+              {initialByKind.gmb && (
+                <button type="button" onClick={() => disconnect('gmb')} disabled={pending}
+                  style={{ background: 'transparent', border: '1px solid #a53a2c', color: '#a53a2c', padding: '6px 12px', borderRadius: 4, fontSize: 12, cursor: 'pointer' }}>
+                  Disconnect
+                </button>
+              )}
+              <button type="submit" disabled={pending} style={{ background: 'var(--adm-accent)', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, fontSize: 13, cursor: 'pointer' }}>
+                Save override
+              </button>
+            </div>
+          </form>
+        </div>
       </section>
 
       {msg && (

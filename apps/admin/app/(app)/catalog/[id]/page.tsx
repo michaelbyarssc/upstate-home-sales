@@ -27,7 +27,18 @@ export default async function EditModelPage({ params }: { params: { id: string }
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12, gap: 8 }}>
+        <Link
+          href={`/catalog/${params.id}/3d-asset`}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: '#fff', border: '1px solid var(--adm-accent)',
+            color: 'var(--adm-accent)', padding: '6px 12px', borderRadius: 4,
+            fontSize: 12, fontWeight: 500, textDecoration: 'none',
+          }}
+        >
+          3D asset →
+        </Link>
         <Link
           href={`/catalog/${params.id}/options`}
           style={{
