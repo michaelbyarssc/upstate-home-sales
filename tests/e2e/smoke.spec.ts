@@ -43,10 +43,12 @@ test.describe('public site smoke', () => {
     await page.goto('/inventory');
     // Inventory page uses breadcrumb + h2 sections (no h1).
     await expect(page.getByRole('heading', { name: /Our homes/i })).toBeVisible();
-    // Filter form should be present.
-    await expect(page.getByRole('button', { name: 'Filter' })).toBeVisible();
-    // Smart-search button (Phase H follow-up) should render.
-    await expect(page.getByRole('button', { name: /Smart search/i })).toBeVisible();
+    // SmartSearchBar (PR #22 — replaces the old separate "Smart search" button)
+    // renders the input + a submit button that flips between "Filter" and
+    // "✨ Smart filter" depending on whether the query looks like natural
+    // language. Default state with empty input → "Filter".
+    await expect(page.getByPlaceholder(/Search — try/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /Filter/i })).toBeVisible();
     expect(errors).toEqual([]);
   });
 
