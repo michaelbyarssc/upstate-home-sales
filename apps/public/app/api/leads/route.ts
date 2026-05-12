@@ -28,6 +28,8 @@ export async function POST(req: Request) {
     zip?: string;
     /** Phase F: explicit location targeting from a sub-site form. */
     location_slug?: string;
+    /** Phase C: the home_design this lead came from, when /contact?design=… is used. */
+    source_design_id?: string | null;
     message?: string | null;
     sms_consent?: boolean;
     source?: LeadSource | string;
@@ -188,6 +190,7 @@ export async function POST(req: Request) {
       fbclid: clean(body.fbclid),
       referrer_url: clean(body.referrer_url),
       landing_path: clean(body.landing_path),
+      source_design_id: body.source_design_id || null,
     })
     .select('id, reply_token')
     .single();

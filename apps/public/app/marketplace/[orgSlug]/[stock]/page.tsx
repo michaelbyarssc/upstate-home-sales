@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createPublicClient, publicPhotoUrl } from '../../../../lib/supabase';
 import { formatCents } from '@uhs/db';
+import { VisitorTracker } from '../../../../components/VisitorTracker';
 
 export const revalidate = 120;
 
@@ -35,6 +36,9 @@ export default async function MarketplaceDetailPage({ params }: { params: Params
 
   return (
     <main className="section">
+      {/* Phase G — funnel; Phase I — cross-org marketplace attribution. */}
+      <VisitorTracker eventType="home_view" homeId={home.id} />
+      <VisitorTracker eventType="marketplace_view" homeId={home.id} />
       <div className="inner">
         <Link href="/marketplace" style={{ fontSize: 12, color: 'var(--c-ink-mute)' }}>
           ← All marketplace homes

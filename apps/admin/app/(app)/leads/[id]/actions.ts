@@ -400,3 +400,77 @@ export async function deleteMilestone(args: { id: string; leadId: string }) {
   if (error) throw new Error(error.message);
   revalidatePath(`/leads/${args.leadId}`);
 }
+
+/**
+ * PR 1.2 — Send a magic-link invite so a lead can sign in to /portal without
+ * a password. Uses Supabase Admin's generateLink so we control the email
+ * channel (Resend) rather than relying on Supabase's built-in mailer.
+ */
+export async function inviteBuyerToPortal(args: { leadId: string }):
+  Promise<{ ok: true } | { ok: false; error: string }> {
+  const sb = createServiceClient();
+  const { data: lead } = await sb
+    .from('leads')
+    .select('id, email, contact_name, reply_token, org_id, orgs(name)')
+    .eq('id', args.leadId)
+    .maybeSingle();
+  if (!lead) return { ok: false, error: 'Lead not found.' };
+  if (!lead.email) return { ok: false, error: 'Lead has no email on file.' };
+
+  const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com';
+  const redirectTo = `${publicBase}/portal/auth/callback?next=${encodeURIComponent('/portal')}`;
+
+  const { data: linkRes, error: linkErr } = await sb.auth.admin.generateLink({
+    type: 'magiclink',
+    email: lead.email,
+    options: { redirectTo },
+  });
+
+  const actionLink = linkRes?.properties?.action_link;
+  if (linkErr || !actionLink) {
+    return { ok: false, error: linkErr?.message ?? 'Magic-link generation failed.' };
+  }
+
+  const orgRel = (lead as unknown as { orgs: { name: string } | { name: string }[] | null }).orgs;
+  const orgName =
+    (Array.isArray(orgRel) ? orgRel[0]?.name : orgRel?.name) ?? 'Upstate Home Sales';
+
+  const buyerName = lead.contact_name?.trim() || 'there';
+  const emailResult = await sendEmail({
+    to: lead.email,
+    subject: `Your ${orgName} buyer portal is ready`,
+    replyToToken: lead.reply_token,
+    text: [
+      `Hi ${buyerName},`,
+      '',
+      `${orgName} set you up with a buyer portal. From there you'll see homes we've shortlisted, upload documents securely, and track your milestones.`,
+      '',
+      `Open your portal: ${actionLink}`,
+      '',
+      `This link signs you in automatically. If you didn't expect this email, just ignore it.`,
+      '',
+      `— ${orgName}`,
+    ].join('\n'),
+  });
+
+  if (!emailResult.ok && !emailResult.skipped) {
+    return { ok: false, error: emailResult.error ?? 'Email send failed.' };
+  }
+
+  // Drop a system note on the timeline so the rep can see the invite went out.
+  const noteSuffix = emailResult.skipped ? ' (Resend not configured — link in server logs)' : '';
+  await sb.from('lead_messages').insert({
+    lead_id: lead.id,
+    org_id: lead.org_id,
+    kind: 'system',
+    channel: null,
+    body: `Buyer portal invite sent to ${lead.email}${noteSuffix}`,
+  });
+
+  if (emailResult.skipped) {
+    console.warn('[invite-buyer] magic link (Resend skipped):', actionLink);
+  }
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return { ok: true };
+}

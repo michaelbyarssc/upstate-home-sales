@@ -823,6 +823,7 @@ export type VisitorEventKind =
   | 'page_view'
   | 'inventory_view'
   | 'home_view'
+  | 'marketplace_view'
   | 'lead_submitted'
   | 'quote_viewed'
   | 'quote_signed';

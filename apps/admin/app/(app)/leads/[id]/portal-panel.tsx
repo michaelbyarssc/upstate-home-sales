@@ -5,6 +5,7 @@ import type { LeadMilestone, MilestoneStatus } from '@uhs/db';
 import {
   createMilestone,
   deleteMilestone,
+  inviteBuyerToPortal,
   suggestHomeForLead,
   updateMilestoneStatus,
 } from './actions';
@@ -49,6 +50,10 @@ export function BuyerPortalPanel({
   const [msStatus, setMsStatus] = useState<MilestoneStatus>('pending');
   const [msDue, setMsDue] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // Invite form state
+  const [inviting, setInviting] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
 
   async function onSuggest(e: React.FormEvent) {
     e.preventDefault();
@@ -131,6 +136,23 @@ export function BuyerPortalPanel({
     });
   }
 
+  async function onInvite() {
+    setErr(null);
+    setInviting(true);
+    try {
+      const r = await inviteBuyerToPortal({ leadId });
+      if (!r.ok) {
+        setErr(r.error);
+        return;
+      }
+      setInviteSent(true);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Invite failed');
+    } finally {
+      setInviting(false);
+    }
+  }
+
   return (
     <section style={{
       marginTop: 24,
@@ -145,9 +167,31 @@ export function BuyerPortalPanel({
           <div style={{ fontSize: 13, color: 'var(--adm-ink-mute)', marginTop: 4 }}>
             {buyerLinked
               ? <>Linked to <strong>{buyerName ?? 'buyer'}</strong>. They see suggestions and milestones in <code>/portal</code>.</>
-              : 'Not linked yet. The buyer needs to sign up at /portal/signup with the same email as this lead, then the link is automatic.'}
+              : inviteSent
+                ? <>Invite sent. The buyer will be linked automatically when they follow the magic link.</>
+                : 'Not linked yet. Send a magic-link invite, or wait for the buyer to sign up at /portal/signup with this lead’s email.'}
           </div>
         </div>
+        {!buyerLinked && (
+          <button
+            type="button"
+            onClick={onInvite}
+            disabled={inviting || inviteSent}
+            style={{
+              background: inviteSent ? 'var(--adm-bg)' : 'var(--adm-accent)',
+              color: inviteSent ? 'var(--adm-ink-mute)' : '#fff',
+              border: 'none',
+              padding: '7px 12px',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: inviting || inviteSent ? 'default' : 'pointer',
+              opacity: inviting ? 0.6 : 1,
+            }}
+          >
+            {inviteSent ? 'Invite sent' : inviting ? 'Sending…' : 'Invite to portal'}
+          </button>
+        )}
       </header>
 
       {err && <div style={{ background: '#fee', color: '#a00', padding: 10, borderRadius: 6, fontSize: 13, marginBottom: 12 }}>{err}</div>}
