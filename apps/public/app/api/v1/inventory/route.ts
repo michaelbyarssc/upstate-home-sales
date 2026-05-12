@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@uhs/db/service';
 import { authenticateApiKey, hasScope } from '../../../../lib/api-auth';
+import { enforceRateLimit, rateLimitHeaders } from '../../../../lib/rate-limit';
 
 /**
  * Phase I — public read-only inventory API.
@@ -12,9 +13,9 @@ import { authenticateApiKey, hasScope } from '../../../../lib/api-auth';
  * public_homes (base_price_cents and markup_pct stripped; listed_price_cents
  * null when prices_hidden=true).
  *
- * Rate-limit + per-key quota enforcement is handled by Vercel's built-in
- * limits for v1; a stricter Redis-backed limiter lands when the dealer
- * upgrades to Pro.
+ * Per-key rate limiting (PR 3.4) runs after auth — see lib/rate-limit.ts.
+ * When KV_REST_API_URL is unset the limiter no-ops so local dev keeps
+ * working without Upstash provisioned.
  */
 
 export const runtime = 'nodejs';
@@ -28,6 +29,14 @@ export async function GET(req: NextRequest) {
   }
   if (!hasScope(authed, 'read:inventory')) {
     return NextResponse.json({ error: 'Insufficient scope' }, { status: 403 });
+  }
+
+  const rl = await enforceRateLimit(authed.keyHash, authed.rateLimitPerMinute);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded', limit: rl.limit, retry_after_seconds: Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000)) },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
   }
 
   const url = new URL(req.url);
@@ -56,6 +65,7 @@ export async function GET(req: NextRequest) {
   }, {
     headers: {
       'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      ...rateLimitHeaders(rl),
     },
   });
 }

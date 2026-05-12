@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createPublicClient } from '../../../../lib/supabase';
+import { createPublicClient, publicPhotoUrl } from '../../../../lib/supabase';
 import type { Home, ModelOption, ModelOptionValue, Model3dAsset } from '@uhs/db';
 import { DesignStudio } from './design-studio';
 import './design.css';
@@ -58,6 +58,16 @@ export default async function DesignPage({ params }: { params: { stock: string }
   // browser still downloads bytes straight from Supabase's CDN.
   const glbUrl: string | null = asset ? `/api/3d-asset/${asset.id}` : null;
 
+  // Primary photo for the photo-mode fallback (low-end mobile).
+  const { data: heroPhoto } = await sb
+    .from('public_home_photos')
+    .select('storage_path')
+    .eq('home_id', home.id)
+    .order('sort_order')
+    .limit(1)
+    .maybeSingle();
+  const heroPhotoUrl = heroPhoto?.storage_path ? publicPhotoUrl(heroPhoto.storage_path) : null;
+
   return (
     <main className="design-shell">
       <header className="design-topbar">
@@ -75,6 +85,7 @@ export default async function DesignPage({ params }: { params: { stock: string }
         glbUrl={glbUrl}
         materialManifest={asset?.material_manifest ?? {}}
         options={options}
+        heroPhotoUrl={heroPhotoUrl}
       />
     </main>
   );
