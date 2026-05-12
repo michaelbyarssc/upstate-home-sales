@@ -24,7 +24,15 @@ const where = whereClause && whereClause.trim() ? whereClause : '1=1';
 async function fetchJson(url) {
   const r = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!r.ok) throw new Error(`HTTP ${r.status} ${url}`);
-  return r.json();
+  const j = await r.json();
+  // ArcGIS sometimes returns 200 OK with a body like
+  //   {"error":{"code":400,"message":"Failed to execute query.","details":[]}}
+  // when resultRecordCount exceeds a server-side limit or another constraint
+  // fails. Promote that to a throw so the retry/bisect logic kicks in.
+  if (j && typeof j === 'object' && j.error && j.error.code) {
+    throw new Error(`ArcGIS error ${j.error.code}: ${j.error.message ?? ''}`);
+  }
+  return j;
 }
 
 async function main() {
@@ -67,16 +75,18 @@ async function main() {
         }
       }
       if (!page) {
-        // Bisect the bad page: try halves with smaller batches; record any
-        // unrecoverable sub-pages but keep going so the final file is valid.
-        const subSize = Math.max(50, Math.floor(pageSize / 4));
+        // Bisect — sweep the failed page in 100-record chunks. Some ArcGIS
+        // endpoints (e.g. SCDOT Allendale) cap at ~100/page; bigger requests
+        // 200 with an `error` body. 100 covers every cap we've seen.
         let subRecovered = 0;
+        const subSize = 100;
         for (let sub = 0; sub < pageSize; sub += subSize) {
+          const want = Math.min(subSize, pageSize - sub);
           const subUrl =
             `${layerUrl}/query?where=${encodeURIComponent(where)}` +
             `&outFields=*&outSR=4326` +
             `&resultOffset=${offset + sub}` +
-            `&resultRecordCount=${subSize}` +
+            `&resultRecordCount=${want}` +
             `&returnGeometry=true&f=geojson`;
           try {
             const subPage = await fetchJson(subUrl);
@@ -88,7 +98,7 @@ async function main() {
               subRecovered++;
             }
           } catch {
-            // Drop this sub-page; bad feature lives in here.
+            // Even at 100/page this slice failed; drop it. Rare.
           }
         }
         skippedPages++;

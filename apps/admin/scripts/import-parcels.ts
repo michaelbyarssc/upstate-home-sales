@@ -92,13 +92,26 @@ function pickStr(props: Record<string, unknown>, keys: string[]): string | null 
   return null;
 }
 
-/** Convert a Polygon to a MultiPolygon (Postgres column type). */
+/** Drop Z (and M) dimensions from a coordinate tuple. ArcGIS layers sometimes
+ *  return 3D coords ([x,y,z]) but our parcels.geom column is geometry(MultiPolygon, 4326) — 2D only. */
+function flatten2d(c: number[]): number[] {
+  return c.length > 2 ? [c[0]!, c[1]!] : c;
+}
+function flattenRing(r: number[][]): number[][] { return r.map(flatten2d); }
+function flattenPolygon(rings: number[][][]): number[][][] { return rings.map(flattenRing); }
+
+/** Convert a Polygon to a MultiPolygon (Postgres column type) AND strip Z. */
 function ensureMulti(geom: GeoJsonFeature['geometry']): GeoJsonFeature['geometry'] {
   if (!geom) return geom;
-  if (geom.type === 'MultiPolygon') return geom;
+  if (geom.type === 'MultiPolygon') {
+    return {
+      type: 'MultiPolygon',
+      coordinates: (geom.coordinates as number[][][][]).map(flattenPolygon),
+    };
+  }
   return {
     type: 'MultiPolygon',
-    coordinates: [geom.coordinates as number[][][]],
+    coordinates: [flattenPolygon(geom.coordinates as number[][][])],
   };
 }
 
