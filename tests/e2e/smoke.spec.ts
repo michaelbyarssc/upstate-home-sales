@@ -69,13 +69,21 @@ test.describe('public site smoke', () => {
 
   test('design studio loads with placeholder geometry', async ({ page }) => {
     const errors = attachConsoleAssertions(page);
-    // Pick a stock number known to exist in seed data.
-    await page.goto('/inventory/UH-1434-AS/design');
+    // Discover an actual published stock_no from /inventory rather than
+    // hard-coding seed data (the original UH-1434-AS demo was deleted).
+    await page.goto('/inventory');
+    const firstLink = await page
+      .locator('a[href^="/inventory/"][href*="-"]')
+      .first()
+      .getAttribute('href');
+    expect(firstLink, 'expected at least one home card on /inventory').toBeTruthy();
+    await page.goto(`${firstLink!}/design`);
     // Wait for canvas to mount (Three.js takes a moment).
     await expect(page.locator('canvas')).toBeVisible({ timeout: 15_000 });
     // Side panel total should render.
     await expect(page.getByText('Total')).toBeVisible();
     // Don't assert empty errors — Three.js sometimes warns about WebGL extensions.
+    void errors;
   });
 
   test('financing calculator loads', async ({ page }) => {
