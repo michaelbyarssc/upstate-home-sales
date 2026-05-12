@@ -41,6 +41,12 @@ coverage/
 .claude/
 .vercel
 
+# Parcel-import bulk data (county GeoJSON dumps + jq chunk outputs).
+# Helper scripts in data/ stay tracked; the geojson bulk doesn't.
+data/*.geojson
+data/nc/
+data/chunks-*/
+
 # Playwright
 test-results/
 playwright-report/
