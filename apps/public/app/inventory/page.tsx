@@ -5,7 +5,7 @@ import type { PublicHome } from '@uhs/db';
 import { absoluteUrl, itemListSchema } from '../../lib/seo';
 import { DeliveryZoneCheck } from '../../components/DeliveryZoneCheck';
 import { VisitorTracker } from '../../components/VisitorTracker';
-import { SmartSearchButton } from '../../components/SmartSearchButton';
+import { SmartSearchBar } from '../../components/SmartSearchBar';
 
 export const metadata = { title: 'Inventory' };
 export const revalidate = 120;
@@ -129,9 +129,7 @@ export default async function InventoryListPage({ searchParams }: { searchParams
             <option value="100-200">$100k – $200k</option>
             <option value="o200">$200k+</option>
           </select>
-          <input type="text" name="q" placeholder="Search — try '3 bed double under 80k'" defaultValue={q ?? ''} />
-          <button type="submit" className="btn btn-primary btn-sm">Filter</button>
-          <SmartSearchButton />
+          <SmartSearchBar defaultValue={q ?? ''} />
           {(type || mfr || q || price) && (
             <Link href="/inventory" className="btn btn-ghost btn-sm">Clear</Link>
           )}
