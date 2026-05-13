@@ -87,7 +87,7 @@ export function SiteFooter() {
         <div className="uhs-footer-bottom">
           <span>© {new Date().getFullYear()} Upstate Home Sales</span>
           <span className="spacer" />
-          <span>Manufactured Home Dealer license # MDL.35984</span>
+          <span>Home Dealer License # MDL.35984</span>
         </div>
       </div>
     </footer>
