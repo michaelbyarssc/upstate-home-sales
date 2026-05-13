@@ -3,15 +3,16 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { createClient } from '@uhs/db/browser';
-import { formatCents, type Lead, type LeadMessage, type LeadStage, type MessageChannel, type MessageKind } from '@uhs/db';
+import { formatCents, type Lead, type LeadMessage, type LeadStage, type LineItem, type MessageChannel, type MessageKind } from '@uhs/db';
 import {
   postMessage,
   updateLeadStage,
   updateLeadAssignee,
   toggleLeadHot,
-  createQuote,
 } from './actions';
 import { enrollLeadInCampaign } from '../../automations/campaigns/actions';
+import { QuoteFormModal } from './quote-form-modal';
+import { InvoiceFormModal } from './invoice-form-modal';
 
 type EnrollmentRow = {
   id: string;
@@ -28,13 +29,14 @@ type Props = {
   members: Array<{ user_id: string; role: string }>;
   campaigns: Array<{ id: string; name: string; channel: string; status: string }>;
   initialEnrollments: EnrollmentRow[];
+  defaultLineItems: LineItem[];
 };
 
 type ComposeKind = 'email' | 'sms' | 'note' | 'call';
 
 const STAGES: LeadStage[] = ['new', 'in_progress', 'quoted', 'won', 'lost'];
 
-export function LeadDetailClient({ lead: initialLead, initialMessages, members, campaigns, initialEnrollments }: Props) {
+export function LeadDetailClient({ lead: initialLead, initialMessages, members, campaigns, initialEnrollments, defaultLineItems }: Props) {
   const [lead, setLead] = useState(initialLead);
   const [messages, setMessages] = useState<LeadMessage[]>(initialMessages);
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>(initialEnrollments);
@@ -42,6 +44,8 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   const [compose, setCompose] = useState<ComposeKind>('email');
   const [body, setBody] = useState('');
   const [err, setErr] = useState<string | null>(null);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [, startTransition] = useTransition();
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -143,20 +147,23 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
     }
   }
 
-  async function handleCreateQuote() {
-    if (!lead.home_id) return;
-    try {
-      const q = await createQuote({ leadId: lead.id, orgId: lead.org_id, homeId: lead.home_id });
-      const publicBase = window.location.origin.replace(':3001', ':3000');
-      const url = `${publicBase}/q/${q.public_token}`;
-      // Best-effort copy to clipboard
-      try { await navigator.clipboard.writeText(url); } catch {}
-      setLead((l) => ({ ...l, stage: 'quoted' }));
-      setErr(null);
-      alert(`Quote created and link copied:\n${url}`);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Quote failed');
-    }
+  function handleQuoteCreated(token: string) {
+    const publicBase = window.location.origin.replace(':3001', ':3000');
+    const url = `${publicBase}/q/${token}`;
+    try { navigator.clipboard.writeText(url); } catch {}
+    setLead((l) => ({ ...l, stage: 'quoted' }));
+    setShowQuoteModal(false);
+    setErr(null);
+    alert(`Quote created and link copied:\n${url}`);
+  }
+
+  function handleInvoiceCreated(token: string, invoiceNumber: number) {
+    const publicBase = window.location.origin.replace(':3001', ':3000');
+    const url = `${publicBase}/inv/${token}`;
+    try { navigator.clipboard.writeText(url); } catch {}
+    setShowInvoiceModal(false);
+    setErr(null);
+    alert(`Invoice #${invoiceNumber} created and link copied:\n${url}`);
   }
 
   async function handleHotToggle() {
@@ -207,17 +214,30 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
               {lead.is_hot ? 'Marked hot' : 'Mark hot'}
             </button>
             {lead.home_id && (
-              <button
-                type="button"
-                onClick={handleCreateQuote}
-                style={{
-                  background: 'var(--adm-accent)', color: '#fff',
-                  border: 'none', padding: '7px 14px', borderRadius: 6,
-                  cursor: 'pointer', fontSize: 13, fontWeight: 500,
-                }}
-              >
-                + Create quote
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowQuoteModal(true)}
+                  style={{
+                    background: 'var(--adm-accent)', color: '#fff',
+                    border: 'none', padding: '7px 14px', borderRadius: 6,
+                    cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                  }}
+                >
+                  + Quote
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInvoiceModal(true)}
+                  style={{
+                    background: '#0f1c29', color: '#fff',
+                    border: 'none', padding: '7px 14px', borderRadius: 6,
+                    cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                  }}
+                >
+                  + Invoice
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -370,6 +390,30 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
           </aside>
         </div>
       </div>
+
+      {showQuoteModal && lead.home_id && lead.homes && (
+        <QuoteFormModal
+          leadId={lead.id}
+          orgId={lead.org_id}
+          homeId={lead.home_id}
+          homeName={lead.homes.name}
+          defaultLineItems={defaultLineItems}
+          onClose={() => setShowQuoteModal(false)}
+          onCreated={handleQuoteCreated}
+        />
+      )}
+
+      {showInvoiceModal && lead.home_id && lead.homes && (
+        <InvoiceFormModal
+          leadId={lead.id}
+          orgId={lead.org_id}
+          homeId={lead.home_id}
+          homeName={lead.homes.name}
+          defaultLineItems={defaultLineItems}
+          onClose={() => setShowInvoiceModal(false)}
+          onCreated={handleInvoiceCreated}
+        />
+      )}
     </div>
   );
 }

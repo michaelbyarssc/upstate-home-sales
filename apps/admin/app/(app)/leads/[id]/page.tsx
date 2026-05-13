@@ -4,6 +4,7 @@ import { createClient } from '@uhs/db/server';
 import type { Lead, LeadMessage, LeadMilestone } from '@uhs/db';
 import { LeadDetailClient } from './detail-client';
 import { BuyerPortalPanel } from './portal-panel';
+import { buildDefaultLineItems } from '../../../../lib/default-line-items';
 import '../leads.css';
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
@@ -12,7 +13,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   const [{ data: lead }, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }] = await Promise.all([
     supabase
       .from('leads')
-      .select('*, homes(name, stock_no, listed_price_cents)')
+      .select('*, homes(name, stock_no, listed_price_cents, setup_cents, setup_markup_pct, include_setup_in_price, addons_cents, addons_markup_pct)')
       .eq('id', params.id)
       .maybeSingle(),
     supabase
@@ -66,6 +67,12 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
 
   if (!lead) notFound();
 
+  // Build default line items from home pricing for the quote/invoice modals.
+  const homeRel = Array.isArray(lead.homes) ? lead.homes[0] : lead.homes;
+  const defaultLineItems = homeRel
+    ? buildDefaultLineItems(homeRel as any)
+    : [];
+
   return (
     <>
       <div style={{ marginBottom: 14 }}>
@@ -79,6 +86,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         members={(members ?? []) as Array<{ user_id: string; role: string }>}
         campaigns={(campaigns ?? []) as Array<{ id: string; name: string; channel: string; status: string }>}
         initialEnrollments={(enrollments ?? []) as Array<{ id: string; campaign_id: string; status: string; current_step: number; next_send_at: string | null; campaigns?: { name: string; channel: string } | { name: string; channel: string }[] | null }>}
+        defaultLineItems={defaultLineItems}
       />
 
       <BuyerPortalPanel

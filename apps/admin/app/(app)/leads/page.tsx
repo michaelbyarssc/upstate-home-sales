@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { createClient } from '@uhs/db/server';
-import type { LeadStage } from '@uhs/db';
+import { ACTIVE_ORG_COOKIE, type LeadStage } from '@uhs/db';
 import { LeadsRealtime } from './leads-realtime';
+import { NewLeadButton } from './new-lead-button';
 import './leads.css';
 
 type SearchParams = { stage?: string; q?: string };
@@ -17,6 +19,7 @@ const TABS: Array<{ key: 'open' | LeadStage; label: string }> = [
 
 export default async function LeadsPage({ searchParams }: { searchParams: SearchParams }) {
   const supabase = createClient();
+  const activeOrgId = cookies().get(ACTIVE_ORG_COOKIE)?.value ?? '';
   const stage = (searchParams.stage as LeadStage | 'open' | undefined) ?? 'open';
 
   // Lazy maintenance: flag any 'quoted' lead untouched for 48h+ as hot. Cheap
@@ -38,10 +41,17 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
   if (stage === 'open') query = query.in('stage', ['new', 'in_progress', 'quoted'] as LeadStage[]);
   else query = query.eq('stage', stage);
 
-  const [{ data: rows }, { data: counts }] = await Promise.all([
+  const [{ data: rows }, { data: counts }, { data: homesRaw }] = await Promise.all([
     query,
     supabase.from('leads').select('stage'),
+    supabase
+      .from('homes')
+      .select('id, name, stock_no')
+      .eq('status', 'published')
+      .is('deleted_at', null)
+      .order('name'),
   ]);
+  const homes = (homesRaw ?? []) as Array<{ id: string; name: string; stock_no: string }>;
 
   const tally: Record<string, number> = {};
   (counts ?? []).forEach((r: { stage: LeadStage }) => {
@@ -51,14 +61,17 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
 
   return (
     <>
-      <div className="page-header">
-        <div className="eyebrow">Workspace · Week 4</div>
-        <h1>Leads</h1>
-        <p>
-          {tally.open ?? 0} open · realtime — new leads appear without refresh.
-          {' · '}
-          <Link href="/leads/kanban" style={{ color: 'var(--adm-accent)' }}>Pipeline view →</Link>
-        </p>
+      <div className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <div className="eyebrow">Workspace</div>
+          <h1>Leads</h1>
+          <p>
+            {tally.open ?? 0} open · realtime — new leads appear without refresh.
+            {' · '}
+            <Link href="/leads/kanban" style={{ color: 'var(--adm-accent)' }}>Pipeline view →</Link>
+          </p>
+        </div>
+        <NewLeadButton orgId={activeOrgId} homes={homes} />
       </div>
 
       <div className="leads-grid full">

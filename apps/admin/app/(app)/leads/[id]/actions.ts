@@ -3,9 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@uhs/db/server';
 import { createServiceClient } from '@uhs/db/service';
-import type { LeadMessage, LeadStage, MessageChannel, MessageKind, MilestoneStatus } from '@uhs/db';
+import type { LeadMessage, LeadStage, LineItem, MessageChannel, MessageKind, MilestoneStatus, PaymentMethod } from '@uhs/db';
 import { sendEmail, sendSms } from '../../../../lib/notify';
 import { renderQuotePdf, type QuotePdfData } from '../../../../lib/quote-pdf';
+import { renderInvoicePdf, type InvoicePdfData } from '../../../../lib/invoice-pdf';
 import { dispatchWorkflowEvent } from '../../../../lib/workflows';
 
 export async function postMessage(
@@ -117,20 +118,22 @@ export async function createQuote(args: {
   orgId: string;
   homeId: string;
   validDays?: number;
+  lineItems: LineItem[];
+  notes: string[];
+  sendEmail?: boolean;
 }): Promise<{ public_token: string; expires_at: string; listed_price_cents: number }> {
   const supabase = createClient();
+  const shouldEmail = args.sendEmail ?? true;
 
-  // Snapshot listed_price_cents from the home AT THIS MOMENT, plus full
-  // home + lead + org context for the PDF and the customer email.
   const [{ data: home, error: hErr }, { data: lead }, { data: org }] = await Promise.all([
     supabase
       .from('homes')
-      .select('id, name, stock_no, beds, baths, sqft, headline, description, listed_price_cents')
+      .select('id, name, stock_no, beds, baths, sqft, headline, description, listed_price_cents, model_number, manufacturer, home_type')
       .eq('id', args.homeId)
       .maybeSingle(),
     supabase
       .from('leads')
-      .select('contact_name, email, reply_token')
+      .select('contact_name, email, phone, reply_token')
       .eq('id', args.leadId)
       .maybeSingle(),
     supabase
@@ -141,6 +144,8 @@ export async function createQuote(args: {
   ]);
   if (hErr || !home) throw new Error(hErr?.message ?? 'Home not found');
 
+  // Total = sum of priced line items
+  const totalCents = args.lineItems.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
   const expires = new Date(Date.now() + (args.validDays ?? 14) * 86_400_000).toISOString();
 
   const { data: quote, error } = await supabase
@@ -149,7 +154,9 @@ export async function createQuote(args: {
       org_id: args.orgId,
       lead_id: args.leadId,
       home_id: args.homeId,
-      listed_price_cents: home.listed_price_cents,
+      listed_price_cents: totalCents,
+      addons_jsonb: args.lineItems,
+      notes_jsonb: args.notes,
       expires_at: expires,
     })
     .select('id, public_token, expires_at, listed_price_cents, created_at')
@@ -162,29 +169,34 @@ export async function createQuote(args: {
   const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com';
   const publicUrl = `${publicBase}/q/${quote.public_token}`;
 
-  // Render PDF, upload to Storage, persist the path. Best-effort: a PDF
-  // failure shouldn't block the quote creation — the public URL still works.
+  // Render PDF, upload to Storage, persist the path.
   let signedPdfUrl: string | null = null;
   try {
     const pdfData: QuotePdfData = {
       orgName: org?.name ?? 'Upstate Home Sales',
       brandColor: org?.brand_color ?? null,
       homeName: home.name,
+      modelNumber: (home as any).model_number ?? null,
+      manufacturer: (home as any).manufacturer ?? null,
       stockNo: home.stock_no,
       beds: home.beds ?? null,
       baths: home.baths ?? null,
       sqft: home.sqft ?? null,
+      homeType: (home as any).home_type ?? null,
       headline: home.headline ?? null,
       description: home.description ?? null,
-      listedPriceCents: quote.listed_price_cents,
+      customerName: lead?.contact_name ?? null,
+      customerPhone: lead?.phone ?? null,
+      customerEmail: lead?.email ?? null,
+      lineItems: args.lineItems,
+      totalCents,
+      notes: args.notes,
       expiresAt: quote.expires_at,
       createdAt: quote.created_at,
       publicUrl,
     };
     const buf = await renderQuotePdf(pdfData);
     const path = `${args.orgId}/${quote.id}.pdf`;
-    // Service client bypasses RLS — upload happens under a server action so
-    // the user's session-bound client lacks insert privs on storage.objects.
     const svc = createServiceClient();
     const { error: upErr } = await svc.storage
       .from('quote-pdfs')
@@ -194,7 +206,7 @@ export async function createQuote(args: {
 
     const { data: signed, error: signErr } = await svc.storage
       .from('quote-pdfs')
-      .createSignedUrl(path, 60 * 60 * 24 * 7); // 7-day expiry per handoff §07
+      .createSignedUrl(path, 60 * 60 * 24 * 7);
     if (!signErr && signed?.signedUrl) signedPdfUrl = signed.signedUrl;
   } catch (e) {
     console.error('[quote] PDF generation/upload failed:', e);
@@ -209,8 +221,8 @@ export async function createQuote(args: {
     body: `Quote created · ${publicUrl} · expires ${new Date(quote.expires_at).toLocaleDateString()}`,
   });
 
-  // Email the customer if we have an address.
-  if (lead?.email) {
+  // Email the customer if requested and we have an address.
+  if (shouldEmail && lead?.email) {
     const lines = [
       `Hi ${lead.contact_name},`,
       '',
@@ -253,6 +265,210 @@ export async function createQuote(args: {
     expires_at: quote.expires_at,
     listed_price_cents: quote.listed_price_cents,
   };
+}
+
+// ─── Invoice creation ─────────────────────────────────────────────────────
+
+export async function createInvoice(args: {
+  leadId: string;
+  orgId: string;
+  homeId: string;
+  quoteId?: string;
+  lineItems: LineItem[];
+  notes: string[];
+  paymentTerms: string;
+  paymentInstructions: string | null;
+  dueAt: string | null;
+  sendEmail?: boolean;
+}): Promise<{ public_token: string; invoice_number: number; listed_price_cents: number }> {
+  const supabase = createClient();
+  const shouldEmail = args.sendEmail ?? true;
+
+  const [{ data: home, error: hErr }, { data: lead }, { data: org }] = await Promise.all([
+    supabase
+      .from('homes')
+      .select('id, name, stock_no')
+      .eq('id', args.homeId)
+      .maybeSingle(),
+    supabase
+      .from('leads')
+      .select('contact_name, email, phone, reply_token')
+      .eq('id', args.leadId)
+      .maybeSingle(),
+    supabase
+      .from('orgs')
+      .select('name, brand_color')
+      .eq('id', args.orgId)
+      .maybeSingle(),
+  ]);
+  if (hErr || !home) throw new Error(hErr?.message ?? 'Home not found');
+
+  const totalCents = args.lineItems.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
+
+  // Get next invoice number
+  const { data: nextNumResult } = await supabase.rpc('next_invoice_number', { p_org_id: args.orgId });
+  const invoiceNumber = (nextNumResult as number) ?? 1;
+
+  const { data: invoice, error } = await supabase
+    .from('invoices')
+    .insert({
+      org_id: args.orgId,
+      lead_id: args.leadId,
+      home_id: args.homeId,
+      quote_id: args.quoteId ?? null,
+      invoice_number: invoiceNumber,
+      listed_price_cents: totalCents,
+      line_items_jsonb: args.lineItems,
+      notes_jsonb: args.notes,
+      payment_terms: args.paymentTerms,
+      payment_instructions: args.paymentInstructions,
+      due_at: args.dueAt ? new Date(args.dueAt).toISOString() : null,
+    })
+    .select('id, public_token, invoice_number, listed_price_cents, created_at')
+    .single();
+  if (error || !invoice) throw new Error(error?.message ?? 'Invoice insert failed');
+
+  const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com';
+  const publicUrl = `${publicBase}/inv/${invoice.public_token}`;
+
+  // Render PDF and upload
+  let signedPdfUrl: string | null = null;
+  try {
+    const pdfData: InvoicePdfData = {
+      orgName: org?.name ?? 'Upstate Home Sales',
+      brandColor: org?.brand_color ?? null,
+      invoiceNumber: invoice.invoice_number,
+      homeName: home.name,
+      stockNo: home.stock_no,
+      customerName: lead?.contact_name ?? null,
+      customerPhone: lead?.phone ?? null,
+      customerEmail: lead?.email ?? null,
+      lineItems: args.lineItems,
+      totalCents,
+      paidCents: 0,
+      balanceCents: totalCents,
+      payments: [],
+      notes: args.notes,
+      paymentTerms: args.paymentTerms,
+      paymentInstructions: args.paymentInstructions,
+      dueAt: args.dueAt,
+      createdAt: invoice.created_at,
+      publicUrl,
+    };
+    const buf = await renderInvoicePdf(pdfData);
+    const path = `${args.orgId}/inv-${invoice.id}.pdf`;
+    const svc = createServiceClient();
+    const { error: upErr } = await svc.storage
+      .from('quote-pdfs')
+      .upload(path, buf, { contentType: 'application/pdf', upsert: true });
+    if (upErr) throw upErr;
+    await supabase.from('invoices').update({ pdf_storage_path: path }).eq('id', invoice.id);
+
+    const { data: signed, error: signErr } = await svc.storage
+      .from('quote-pdfs')
+      .createSignedUrl(path, 60 * 60 * 24 * 7);
+    if (!signErr && signed?.signedUrl) signedPdfUrl = signed.signedUrl;
+  } catch (e) {
+    console.error('[invoice] PDF generation/upload failed:', e);
+  }
+
+  // Timeline message
+  await supabase.from('lead_messages').insert({
+    lead_id: args.leadId,
+    org_id: args.orgId,
+    kind: 'system',
+    channel: null,
+    body: `Invoice #${invoice.invoice_number} created · ${publicUrl}`,
+  });
+
+  // Email
+  if (shouldEmail && lead?.email) {
+    const lines = [
+      `Hi ${lead.contact_name},`,
+      '',
+      `Here's your invoice (#${invoice.invoice_number}) for ${home.name} (${home.stock_no}).`,
+      '',
+      `View online: ${publicUrl}`,
+    ];
+    if (signedPdfUrl) {
+      lines.push(`Download PDF (good for 7 days): ${signedPdfUrl}`);
+    }
+    lines.push(
+      '',
+      "Reply to this email with any questions — we'll get back to you the same business day.",
+      '',
+      '— Upstate Home Sales',
+    );
+    await sendEmail({
+      to: lead.email,
+      subject: `Invoice #${invoice.invoice_number} for ${home.name}`,
+      replyToToken: lead.reply_token,
+      text: lines.join('\n'),
+    }).catch((e) => console.error('[invoice] customer email failed:', e));
+  }
+
+  await dispatchWorkflowEvent({
+    event: 'invoice.sent',
+    orgId: args.orgId,
+    payload: {
+      invoice_id: invoice.id,
+      invoice_number: invoice.invoice_number,
+      lead_id: args.leadId,
+      home_id: args.homeId,
+      listed_price_cents: invoice.listed_price_cents,
+      public_token: invoice.public_token,
+    },
+  }).catch((e) => console.error('[invoice] workflow dispatch failed:', e));
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return {
+    public_token: invoice.public_token,
+    invoice_number: invoice.invoice_number,
+    listed_price_cents: invoice.listed_price_cents,
+  };
+}
+
+// ─── Payment recording ───────────────────────────────────────────────────
+
+export async function recordPayment(args: {
+  invoiceId: string;
+  orgId: string;
+  leadId: string;
+  amountCents: number;
+  method: PaymentMethod;
+  reference: string | null;
+  note: string | null;
+}) {
+  const supabase = createClient();
+  const { data: userRes } = await supabase.auth.getUser();
+  const uid = userRes.user?.id ?? null;
+
+  const { data: payment, error } = await supabase
+    .from('invoice_payments')
+    .insert({
+      invoice_id: args.invoiceId,
+      org_id: args.orgId,
+      amount_cents: args.amountCents,
+      method: args.method,
+      reference: args.reference,
+      note: args.note,
+      recorded_by: uid,
+    })
+    .select('*')
+    .single();
+  if (error || !payment) throw new Error(error?.message ?? 'Payment insert failed');
+
+  const fmtAmt = (args.amountCents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  await supabase.from('lead_messages').insert({
+    lead_id: args.leadId,
+    org_id: args.orgId,
+    kind: 'system',
+    channel: null,
+    body: `Payment recorded: ${fmtAmt} (${args.method}${args.reference ? ` — ${args.reference}` : ''})`,
+  });
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return payment;
 }
 
 export async function toggleLeadHot(leadId: string, isHot: boolean) {

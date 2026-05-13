@@ -231,3 +231,72 @@
 }
 .lead-claim-btn:hover { background: var(--adm-accent); color: #fff; }
 .lead-claim-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ─── Modal ──────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 28, 41, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: #fff;
+  border-radius: var(--r-2);
+  width: 520px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--adm-line);
+}
+.modal-header h3 { margin: 0; font: 500 18px/1 var(--f-display); }
+.modal-close {
+  background: none; border: none; font-size: 22px; color: var(--adm-ink-mute);
+  cursor: pointer; padding: 4px 8px; line-height: 1;
+}
+.modal-close:hover { color: var(--adm-ink); }
+.modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 16px 24px; border-top: 1px solid var(--adm-line);
+}
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field-label {
+  font: 500 12px/1 var(--f-body);
+  color: var(--adm-ink-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.field input,
+.field select,
+.field textarea {
+  padding: 8px 10px;
+  font: 400 14px/1.4 var(--f-body);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--r-1);
+  background: #fff;
+  color: var(--adm-ink);
+}
+.field textarea { resize: vertical; }
+.btn-primary {
+  background: var(--adm-accent); color: #fff; border: none;
+  padding: 9px 18px; border-radius: 6px; font: 500 13px/1 var(--f-body);
+  cursor: pointer;
+}
+.btn-primary:hover { background: #a44524; }
+.btn-primary:disabled { opacity: 0.5; cursor: default; }
+.btn-secondary {
+  background: #fff; color: var(--adm-ink); border: 1px solid var(--adm-line);
+  padding: 9px 18px; border-radius: 6px; font: 500 13px/1 var(--f-body);
+  cursor: pointer;
+}
+.btn-secondary:hover { background: var(--c-bg); }

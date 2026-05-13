@@ -25,7 +25,7 @@ export default async function QuotePage({ params }: { params: Params }) {
   const [{ data: q }, { data: sig }] = await Promise.all([
     sb
       .from('public_quotes')
-      .select('public_token, listed_price_cents, expires_at, created_at, home_id, home_name, stock_no, beds, baths, sqft, headline, description, org_name, brand_color')
+      .select('public_token, listed_price_cents, addons_jsonb, notes_jsonb, expires_at, created_at, home_id, home_name, stock_no, beds, baths, sqft, headline, description, org_name, brand_color')
       .eq('public_token', params.token)
       .maybeSingle(),
     sb
@@ -50,6 +50,8 @@ export default async function QuotePage({ params }: { params: Params }) {
   const expires = new Date(q.expires_at);
   const created = new Date(q.created_at);
   const daysLeft = Math.max(0, Math.ceil((expires.getTime() - Date.now()) / 86_400_000));
+  const lineItems = (q.addons_jsonb as Array<{ description: string; amount_cents: number | null }> | null) ?? [];
+  const notes = (q.notes_jsonb as string[] | null) ?? [];
 
   return (
     <main className="section">
@@ -77,18 +79,36 @@ export default async function QuotePage({ params }: { params: Params }) {
           </header>
 
           <section style={{ padding: 'var(--s-10) var(--s-8)' }}>
+            {/* Line items table */}
+            {lineItems.length > 0 && (
+              <div style={{ marginBottom: 'var(--s-6)' }}>
+                <div className="eyebrow" style={{ marginBottom: 12 }}>Pricing</div>
+                {lineItems.map((item, i) => (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '10px 12px',
+                    background: i % 2 === 0 ? 'var(--c-bg)' : 'transparent',
+                    borderRadius: 4,
+                  }}>
+                    <span style={{ fontSize: 14 }}>{item.description}</span>
+                    <span style={{ fontSize: 14, fontVariantNumeric: 'tabular-nums', color: item.amount_cents != null ? 'var(--c-ink)' : 'var(--c-ink-mute)' }}>
+                      {item.amount_cents != null ? formatCents(item.amount_cents) : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-              padding: 'var(--s-5) 0', borderBottom: '1px solid var(--c-line)',
+              padding: 'var(--s-5) var(--s-4)',
+              background: '#f6efe6', borderRadius: 'var(--r-2)',
               fontVariantNumeric: 'tabular-nums',
             }}>
               <div>
                 <div className="eyebrow" style={{ marginBottom: 6 }}>Quoted price</div>
-                <div style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-display-m)' }}>
+                <div style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-display-m)', color: '#b9532a' }}>
                   {formatCents(q.listed_price_cents)}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--c-ink-mute)', marginTop: 4 }}>
-                  Includes setup, delivery, and add-ons as itemized.
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -99,6 +119,16 @@ export default async function QuotePage({ params }: { params: Params }) {
                 </div>
               </div>
             </div>
+
+            {/* Notes */}
+            {notes.length > 0 && (
+              <div style={{ marginTop: 'var(--s-6)' }}>
+                <div className="eyebrow" style={{ marginBottom: 8 }}>Notes</div>
+                <ul style={{ paddingLeft: 20, color: 'var(--c-ink-soft)', lineHeight: 1.8, margin: 0 }}>
+                  {notes.map((n, i) => <li key={i}>{n}</li>)}
+                </ul>
+              </div>
+            )}
 
             <div style={{ marginTop: 'var(--s-8)' }}>
               <h3 style={{ marginBottom: 'var(--s-3)' }}>About this home</h3>

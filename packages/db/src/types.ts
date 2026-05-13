@@ -619,6 +619,11 @@ export interface LeadMessage {
   sent_at: string;
 }
 
+export interface LineItem {
+  description: string;
+  amount_cents: number | null;
+}
+
 export interface Quote {
   id: string;
   org_id: string;
@@ -627,10 +632,46 @@ export interface Quote {
   listed_price_cents: number;
   addons_jsonb: unknown;
   financing_jsonb: unknown;
+  notes_jsonb: unknown;
   pdf_storage_path: string | null;
   public_token: string;
   expires_at: string;
   created_by: string | null;
+  created_at: string;
+}
+
+export type PaymentMethod = 'check' | 'wire' | 'cash' | 'financing' | 'other';
+
+export interface Invoice {
+  id: string;
+  org_id: string;
+  lead_id: string;
+  home_id: string;
+  quote_id: string | null;
+  invoice_number: number;
+  listed_price_cents: number;
+  line_items_jsonb: LineItem[];
+  notes_jsonb: string[] | null;
+  payment_terms: string;
+  payment_instructions: string | null;
+  pdf_storage_path: string | null;
+  public_token: string;
+  due_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoicePayment {
+  id: string;
+  invoice_id: string;
+  org_id: string;
+  amount_cents: number;
+  method: PaymentMethod;
+  reference: string | null;
+  note: string | null;
+  recorded_by: string | null;
+  paid_at: string;
   created_at: string;
 }
 
@@ -694,6 +735,7 @@ export type WorkflowEvent =
   | 'lead.stage.changed'
   | 'quote.sent'
   | 'quote.signed'
+  | 'invoice.sent'
   | 'lead.message.received';
 
 export type WorkflowAction =
