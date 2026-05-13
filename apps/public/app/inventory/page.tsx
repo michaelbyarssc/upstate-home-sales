@@ -15,9 +15,9 @@ type SearchParams = { type?: string; mfr?: string; q?: string; price?: string };
 
 const SQFT_BANDS: Array<{ label: string; min: number; max: number | null }> = [
   { label: '1,800+ sq. ft.', min: 1800, max: null },
-  { label: '400 - 750 sq. ft.', min: 0, max: 750 },
   { label: '1,200 - 1,800 sq. ft.', min: 1200, max: 1800 },
   { label: '750 - 1,200 sq. ft.', min: 750, max: 1200 },
+  { label: '750 sq. ft. and below', min: 0, max: 750 },
 ];
 
 export default async function InventoryListPage({ searchParams }: { searchParams: SearchParams }) {
