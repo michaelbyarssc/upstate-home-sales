@@ -10,7 +10,7 @@ import '../leads.css';
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const [{ data: lead }, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }] = await Promise.all([
+  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }] = await Promise.all([
     supabase
       .from('leads')
       .select('*, homes(name, stock_no, listed_price_cents, setup_cents, setup_markup_pct, include_setup_in_price, addons_cents, addons_markup_pct, addons_jsonb)')
@@ -65,6 +65,10 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     suggestionsCountFinal = count ?? 0;
   }
 
+  if (leadRes.error) {
+    console.error('[lead-detail] query error:', leadRes.error.message);
+  }
+  const lead = leadRes.data;
   if (!lead) notFound();
 
   // Build default line items from home pricing for the quote/invoice modals.

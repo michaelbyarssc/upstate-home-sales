@@ -1,16 +1,24 @@
 -- ============================================================================
--- 0010_addons_setup_markup.sql
+-- 0027_addons_setup_markup.sql
 -- Per-line markup percentages for add-ons and setup/delivery.
 -- Previously, markup_pct only applied to base_price_cents. Now the dealer can
 -- mark up each of (base, addons, setup) independently.
+--
+-- NOTE: This was originally 0010_addons_setup_markup.sql but had a naming
+-- conflict with 0010_home_models.sql and was never applied to remote.
 -- ============================================================================
 
+-- 1. Add the new markup columns
 alter table public.homes
-  add column addons_markup_pct numeric(5,2) not null default 0,
-  add column setup_markup_pct  numeric(5,2) not null default 0;
+  add column if not exists addons_markup_pct numeric(5,2) not null default 0,
+  add column if not exists setup_markup_pct  numeric(5,2) not null default 0;
 
--- Recompute the generated column with the new formula. Postgres requires a
--- drop+add for generated-column expressions.
+-- 2. Drop views that depend on listed_price_cents
+drop view if exists public.public_marketplace_homes;
+drop view if exists public.public_home_photos;
+drop view if exists public.public_homes;
+
+-- 3. Recompute the generated column with the new formula
 alter table public.homes drop column listed_price_cents;
 
 alter table public.homes
@@ -23,8 +31,97 @@ alter table public.homes
        end)
   ) stored;
 
--- Extend the pricing role gate to the new fields so only owner/manager can
--- change them. (Same shape as the existing trigger in 0004_inventory.sql.)
+-- 4. Recreate public_homes view (from 0012_pricing_visibility.sql)
+create view public.public_homes as
+select
+  h.id,
+  h.org_id,
+  h.lot_id,
+  h.stock_no,
+  h.name,
+  h.manufacturer_id,
+  h.model,
+  h.type,
+  h.beds,
+  h.baths,
+  h.sqft,
+  h.width_ft,
+  h.length_ft,
+  h.year_built,
+  h.construction,
+  case when o.prices_hidden then null else h.listed_price_cents end as listed_price_cents,
+  o.prices_hidden,
+  h.starting_from,
+  h.headline,
+  h.description,
+  h.on_lot_since,
+  h.is_featured,
+  h.created_at
+from public.homes h
+join public.orgs o on o.id = h.org_id
+where h.status = 'published'
+  and h.deleted_at is null
+  and h.hide_from_search = false;
+
+grant select on public.public_homes to anon, authenticated;
+
+-- 5. Recreate public_home_photos view (from 0012_pricing_visibility.sql)
+create view public.public_home_photos as
+select
+  p.id,
+  p.home_id,
+  p.storage_path,
+  p.sort_order,
+  p.alt_text,
+  p.width,
+  p.height
+from public.home_photos p
+join public.homes h on h.id = p.home_id
+where h.status = 'published'
+  and h.deleted_at is null
+  and h.hide_from_search = false;
+
+grant select on public.public_home_photos to anon, authenticated;
+
+-- 6. Recreate public_marketplace_homes view (from 0021_api_marketplace.sql)
+create view public.public_marketplace_homes as
+select
+  h.id,
+  h.org_id,
+  h.stock_no,
+  h.name,
+  h.model,
+  h.type,
+  h.beds,
+  h.baths,
+  h.sqft,
+  h.width_ft,
+  h.length_ft,
+  h.year_built,
+  h.construction,
+  case when o.prices_hidden then null else h.listed_price_cents end as listed_price_cents,
+  o.prices_hidden,
+  h.starting_from,
+  h.headline,
+  h.description,
+  h.on_lot_since,
+  h.is_featured,
+  h.created_at,
+  o.slug         as org_slug,
+  o.name         as org_name,
+  o.logo_url     as org_logo_url,
+  o.brand_color  as org_brand_color
+from public.homes h
+join public.orgs o on o.id = h.org_id
+where h.status = 'published'
+  and h.deleted_at is null
+  and h.hide_from_search = false
+  and h.marketplace_opt_in = true
+  and o.status = 'active';
+
+grant select on public.public_marketplace_homes to anon, authenticated;
+
+-- 7. Update the pricing role gate trigger
 create or replace function public.tg_homes_pricing_role()
 returns trigger language plpgsql as $$
 begin
@@ -46,7 +143,7 @@ begin
 end;
 $$;
 
--- Extend the audit trigger to record the new fields on price changes.
+-- 8. Update the audit trigger
 create or replace function public.tg_homes_audit()
 returns trigger language plpgsql as $$
 begin
