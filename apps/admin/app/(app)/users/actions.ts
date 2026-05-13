@@ -99,6 +99,20 @@ export async function sendPasswordReset(userId: string): Promise<{ ok: true }> {
 }
 
 /**
+ * Directly set a user's password via admin API.
+ */
+export async function setUserPassword(userId: string, password: string): Promise<{ ok: true }> {
+  if (!password || password.length < 8) throw new Error('Password must be at least 8 characters');
+
+  const sb = createServiceClient();
+  const { error } = await sb.auth.admin.updateUserById(userId, { password });
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/users');
+  return { ok: true };
+}
+
+/**
  * Invite a user to the active org.
  * - If a user with that email already exists in auth.users, link them as
  *   an active member (no email sent).

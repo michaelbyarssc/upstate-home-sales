@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import type { Lot, OrgMember, Role } from '@uhs/db';
-import { updateMember, updateUserProfile, sendPasswordReset } from './actions';
+import { updateMember, updateUserProfile, sendPasswordReset, setUserPassword } from './actions';
 
 const ROLES: Role[] = ['owner', 'manager', 'sales', 'service', 'readonly'];
 
@@ -12,6 +12,7 @@ type EditingUser = {
   userId: string;
   fullName: string;
   email: string;
+  newPassword: string;
 };
 
 export function UsersTable({
@@ -48,6 +49,7 @@ export function UsersTable({
       userId,
       fullName: p?.name ?? '',
       email: p?.email ?? '',
+      newPassword: '',
     });
     setErr(null);
     setInfo(null);
@@ -62,13 +64,16 @@ export function UsersTable({
         fullName: editing.fullName,
         email: editing.email,
       });
+      if (editing.newPassword) {
+        await setUserPassword(editing.userId, editing.newPassword);
+      }
       // Update local profiles display
       profiles[editing.userId] = {
         name: editing.fullName || null,
         email: editing.email || null,
       };
       setEditing(null);
-      setInfo('User updated.');
+      setInfo(editing.newPassword ? 'User updated and password changed.' : 'User updated.');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Update failed');
     }
@@ -121,6 +126,18 @@ export function UsersTable({
                   onChange={(e) => setEditing({ ...editing, email: e.target.value })}
                   placeholder="user@example.com"
                 />
+              </label>
+              <label className="field">
+                <span className="field-label">New Password</span>
+                <input
+                  type="password"
+                  value={editing.newPassword}
+                  onChange={(e) => setEditing({ ...editing, newPassword: e.target.value })}
+                  placeholder="Leave blank to keep current"
+                  minLength={8}
+                  autoComplete="new-password"
+                />
+                <span style={{ fontSize: 11, color: 'var(--adm-ink-mute)', marginTop: 2 }}>Min 8 characters. Leave blank to keep current password.</span>
               </label>
             </div>
             <div className="modal-footer">
