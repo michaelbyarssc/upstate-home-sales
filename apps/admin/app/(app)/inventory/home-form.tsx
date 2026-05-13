@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, type FormEvent } from 'react';
 import Link from 'next/link';
-import { formatCents, type Home, type HomePhoto, type Lot, type Manufacturer } from '@uhs/db';
+import { formatCents, type Home, type HomeAddon, type HomePhoto, type Lot, type Manufacturer } from '@uhs/db';
 import { uploadPhotos } from './photo-upload';
 import { createHome, updateHome, archiveHome, deletePhoto } from './actions';
 
@@ -32,8 +32,9 @@ export function HomeForm(props: Props) {
   // Live-calc state — drives both the readout and the public preview card.
   const [base, setBase] = useState((home?.base_price_cents ?? 0) / 100);
   const [markup, setMarkup] = useState(Number(home?.markup_pct ?? 0));
-  const [addons, setAddons] = useState((home?.addons_cents ?? 0) / 100);
-  const [addonsMarkup, setAddonsMarkup] = useState(Number(home?.addons_markup_pct ?? 0));
+  const [addonItems, setAddonItems] = useState<HomeAddon[]>(
+    (home?.addons_jsonb as HomeAddon[] | null) ?? []
+  );
   const [setup, setSetup] = useState((home?.setup_cents ?? 0) / 100);
   const [setupMarkup, setSetupMarkup] = useState(Number(home?.setup_markup_pct ?? 0));
   const [includeSetup, setIncludeSetup] = useState(home?.include_setup_in_price ?? true);
@@ -45,15 +46,19 @@ export function HomeForm(props: Props) {
 
   const baseCents = Math.round(base * 100);
   const markupAmtCents = Math.round((baseCents * markup) / 100);
-  const addonsCents = Math.round(addons * 100);
-  const addonsMarkupAmtCents = Math.round((addonsCents * addonsMarkup) / 100);
+  // Compute per-item addon totals (each with its own markup)
+  const addonsMarkedUpCents = addonItems.reduce((sum, a) => {
+    const cost = Math.round(a.cost_cents);
+    return sum + cost + Math.round((cost * (a.markup_pct ?? 0)) / 100);
+  }, 0);
+  const addonsCostCents = addonItems.reduce((sum, a) => sum + Math.round(a.cost_cents), 0);
+  const addonsMarkupTotalCents = addonsMarkedUpCents - addonsCostCents;
   const setupCents = Math.round(setup * 100);
   const setupMarkupAmtCents = Math.round((setupCents * setupMarkup) / 100);
   const totalCents =
     baseCents +
     markupAmtCents +
-    addonsCents +
-    addonsMarkupAmtCents +
+    addonsMarkedUpCents +
     (includeSetup ? setupCents + setupMarkupAmtCents : 0);
 
   const mfrName = manufacturers.find((m) => m.id === mfrId)?.name ?? null;
@@ -268,25 +273,81 @@ export function HomeForm(props: Props) {
                   <div className="help">Applied on top of base. Default set in <Link href="/settings" style={{ color: 'var(--adm-accent)' }}>org settings</Link>.</div>
                 </div>
               </div>
-              <div className="field-row">
-                <div className="field">
-                  <label className="label">Add-ons / upgrades <span className="opt">(optional)</span></label>
-                  <div className="input-prefix">
-                    <span className="px">$</span>
-                    <input className="input" name="addons_dollars" type="number" min={0} step={1}
-                      value={addons} onChange={(e) => setAddons(Number(e.target.value || 0))} />
+              {/* Itemized add-ons */}
+              <input type="hidden" name="addons_jsonb" value={JSON.stringify(addonItems)} />
+              <div className="field">
+                <label className="label">Add-ons / upgrades <span className="opt">(optional)</span></label>
+                <div className="help" style={{ marginBottom: 8 }}>Each add-on has its own cost and markup %. Add as many as needed.</div>
+                {addonItems.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                    <input
+                      className="input"
+                      placeholder="Description"
+                      style={{ flex: 2 }}
+                      value={item.description}
+                      onChange={(e) => {
+                        const next = addonItems.map((a, j) =>
+                          j === i ? { description: e.target.value, cost_cents: a.cost_cents, markup_pct: a.markup_pct } : a
+                        );
+                        setAddonItems(next);
+                      }}
+                    />
+                    <div className="input-prefix" style={{ flex: 1 }}>
+                      <span className="px">$</span>
+                      <input
+                        className="input"
+                        type="number"
+                        min={0}
+                        step={1}
+                        placeholder="Cost"
+                        value={Math.round(item.cost_cents / 100) || ''}
+                        onChange={(e) => {
+                          const next = addonItems.map((a, j) =>
+                            j === i ? { description: a.description, cost_cents: Math.round(Number(e.target.value || 0) * 100), markup_pct: a.markup_pct } : a
+                          );
+                          setAddonItems(next);
+                        }}
+                      />
+                    </div>
+                    <div className="input-suffix" style={{ flex: 0, minWidth: 80 }}>
+                      <input
+                        className="input"
+                        type="number"
+                        step={0.5}
+                        min={0}
+                        max={200}
+                        placeholder="0"
+                        style={{ width: 60 }}
+                        value={item.markup_pct || ''}
+                        onChange={(e) => {
+                          const next = addonItems.map((a, j) =>
+                            j === i ? { description: a.description, cost_cents: a.cost_cents, markup_pct: Number(e.target.value || 0) } : a
+                          );
+                          setAddonItems(next);
+                        }}
+                      />
+                      <span className="sx">%</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAddonItems(addonItems.filter((_, j) => j !== i))}
+                      style={{
+                        background: 'none', border: 'none', color: '#a53a2c',
+                        cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '4px 6px',
+                      }}
+                      aria-label="Remove add-on"
+                    >×</button>
                   </div>
-                  <div className="help">Skirting, deck, A/C upgrade, etc. Your cost.</div>
-                </div>
-                <div className="field">
-                  <label className="label">Add-ons markup %</label>
-                  <div className="input-suffix">
-                    <input className="input" name="addons_markup_pct" type="number" step={0.5} min={0} max={200}
-                      value={addonsMarkup} onChange={(e) => setAddonsMarkup(Number(e.target.value || 0))} />
-                    <span className="sx">%</span>
-                  </div>
-                  <div className="help">Markup applied on top of add-on cost.</div>
-                </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setAddonItems([...addonItems, { description: '', cost_cents: 0, markup_pct: 0 }])}
+                  style={{
+                    background: 'none', border: '1px dashed var(--adm-line, #ccc)',
+                    borderRadius: 6, padding: '6px 14px', fontSize: 13, cursor: 'pointer',
+                    color: 'var(--adm-accent)', fontWeight: 500, marginTop: 4,
+                  }}
+                >+ Add item</button>
               </div>
               <div className="field-row">
                 <div className="field">
@@ -324,8 +385,8 @@ export function HomeForm(props: Props) {
               <div className="calc-readout" style={{ marginTop: 14 }}>
                 <div className="row"><span className="lbl">Base</span><span>{formatCents(baseCents)}</span></div>
                 <div className="row"><span className="lbl">+ Markup ({markup}%)</span><span>{formatCents(markupAmtCents)}</span></div>
-                <div className="row"><span className="lbl">+ Add-ons</span><span>{formatCents(addonsCents)}</span></div>
-                <div className="row"><span className="lbl">+ Add-ons markup ({addonsMarkup}%)</span><span>{formatCents(addonsMarkupAmtCents)}</span></div>
+                <div className="row"><span className="lbl">+ Add-ons ({addonItems.length} items)</span><span>{formatCents(addonsCostCents)}</span></div>
+                <div className="row"><span className="lbl">+ Add-ons markup</span><span>{formatCents(addonsMarkupTotalCents)}</span></div>
                 <div className="row"><span className="lbl">+ Setup &amp; delivery {includeSetup ? '' : '(excluded)'}</span><span>{includeSetup ? formatCents(setupCents) : '—'}</span></div>
                 <div className="row"><span className="lbl">+ Setup markup ({setupMarkup}%) {includeSetup ? '' : '(excluded)'}</span><span>{includeSetup ? formatCents(setupMarkupAmtCents) : '—'}</span></div>
                 <div className="row total"><span>Listed price (public)</span><span>{formatCents(totalCents)}</span></div>

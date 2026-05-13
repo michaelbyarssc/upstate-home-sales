@@ -154,7 +154,7 @@ export function InvoiceFormModal({
               ))}
               <button type="button" onClick={addItem}
                 style={{ background: 'none', border: '1px dashed var(--adm-line)', padding: '6px 12px', fontSize: 12, color: 'var(--adm-accent)', cursor: 'pointer', borderRadius: 'var(--r-1)', width: '100%' }}>
-                + Add line item
+                + Add option
               </button>
             </div>
 

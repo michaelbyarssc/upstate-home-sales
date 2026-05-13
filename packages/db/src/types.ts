@@ -471,6 +471,7 @@ export interface Home {
   markup_pct: number;
   addons_cents: number;
   addons_markup_pct: number;
+  addons_jsonb: HomeAddon[] | null;
   setup_cents: number;
   setup_markup_pct: number;
   include_setup_in_price: boolean;
@@ -617,6 +618,12 @@ export interface LeadMessage {
   attachments: unknown;
   external_id: string | null;
   sent_at: string;
+}
+
+export interface HomeAddon {
+  description: string;
+  cost_cents: number;
+  markup_pct: number;
 }
 
 export interface LineItem {

@@ -1,4 +1,4 @@
-import type { LineItem } from '@uhs/db';
+import type { HomeAddon, LineItem } from '@uhs/db';
 
 type HomeForLineItems = {
   name: string;
@@ -9,13 +9,15 @@ type HomeForLineItems = {
   include_setup_in_price: boolean | null;
   addons_cents: number | null;
   addons_markup_pct: number | null;
+  addons_jsonb: HomeAddon[] | unknown;
 };
 
 /**
  * Build a default set of line items from a home's pricing fields.
  * The listed_price_cents is a generated column that already includes
  * base + markup + addons + setup. We present it as a single turn-key
- * line item, with standard inclusions listed without prices.
+ * line item, with add-ons and standard inclusions listed without prices
+ * (prices are hidden from the customer — only the total is shown).
  */
 export function buildDefaultLineItems(home: HomeForLineItems): LineItem[] {
   const items: LineItem[] = [
@@ -24,6 +26,14 @@ export function buildDefaultLineItems(home: HomeForLineItems): LineItem[] {
       amount_cents: home.listed_price_cents,
     },
   ];
+
+  // Pull itemized add-ons from the home — listed without prices
+  const addons = Array.isArray(home.addons_jsonb) ? (home.addons_jsonb as HomeAddon[]) : [];
+  for (const addon of addons) {
+    if (addon.description?.trim()) {
+      items.push({ description: addon.description, amount_cents: null });
+    }
+  }
 
   // Standard inclusions — listed but not individually priced
   const inclusions = [

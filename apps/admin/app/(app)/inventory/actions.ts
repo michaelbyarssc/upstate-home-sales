@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createClient } from '@uhs/db/server';
-import { ACTIVE_ORG_COOKIE, type HomeStatus, type HomeType } from '@uhs/db';
+import { ACTIVE_ORG_COOKIE, type HomeAddon, type HomeStatus, type HomeType } from '@uhs/db';
 
 type HomeFields = {
   stock_no: string;
@@ -23,6 +23,7 @@ type HomeFields = {
   markup_pct: number;
   addons_cents: number;
   addons_markup_pct: number;
+  addons_jsonb: HomeAddon[];
   setup_cents: number;
   setup_markup_pct: number;
   include_setup_in_price: boolean;
@@ -72,6 +73,31 @@ function parseChecked(fd: FormData, name: string): boolean {
   return fd.get(name) === 'on' || fd.get(name) === 'true';
 }
 
+function parseAddons(fd: FormData): { addons_jsonb: HomeAddon[]; addons_cents: number; addons_markup_pct: number } {
+  const raw = fd.get('addons_jsonb');
+  let items: HomeAddon[] = [];
+  if (raw) {
+    try {
+      const parsed = JSON.parse(String(raw));
+      if (Array.isArray(parsed)) {
+        items = parsed
+          .filter((a: any) => a.description?.trim() || a.cost_cents > 0)
+          .map((a: any) => ({
+            description: String(a.description ?? '').trim(),
+            cost_cents: Math.round(Number(a.cost_cents) || 0),
+            markup_pct: Number(a.markup_pct) || 0,
+          }));
+      }
+    } catch {}
+  }
+  // Compute the fully marked-up total, store as addons_cents with 0 markup_pct
+  // so the generated listed_price_cents column stays correct.
+  const markedUpTotal = items.reduce((sum, a) => {
+    return sum + a.cost_cents + Math.round((a.cost_cents * a.markup_pct) / 100);
+  }, 0);
+  return { addons_jsonb: items, addons_cents: markedUpTotal, addons_markup_pct: 0 };
+}
+
 function readFields(fd: FormData): HomeFields {
   return {
     stock_no: String(fd.get('stock_no') ?? '').trim(),
@@ -88,8 +114,7 @@ function readFields(fd: FormData): HomeFields {
     construction: parseStr(fd.get('construction')),
     base_price_cents: parseDollarsToCents(fd.get('base_price_dollars')),
     markup_pct: Number(parseFloatOrNull(fd.get('markup_pct')) ?? 0),
-    addons_cents: parseDollarsToCents(fd.get('addons_dollars')),
-    addons_markup_pct: Number(parseFloatOrNull(fd.get('addons_markup_pct')) ?? 0),
+    ...parseAddons(fd),
     setup_cents: parseDollarsToCents(fd.get('setup_dollars')),
     setup_markup_pct: Number(parseFloatOrNull(fd.get('setup_markup_pct')) ?? 0),
     include_setup_in_price: parseChecked(fd, 'include_setup_in_price'),

@@ -204,7 +204,7 @@ export function QuoteFormModal({
                   width: '100%',
                 }}
               >
-                + Add line item
+                + Add option
               </button>
             </div>
 
