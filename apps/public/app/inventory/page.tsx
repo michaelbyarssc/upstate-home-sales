@@ -6,6 +6,7 @@ import { absoluteUrl, itemListSchema } from '../../lib/seo';
 import { DeliveryZoneCheck } from '../../components/DeliveryZoneCheck';
 import { VisitorTracker } from '../../components/VisitorTracker';
 import { SmartSearchBar } from '../../components/SmartSearchBar';
+import { InventoryFilters } from '../../components/InventoryFilters';
 
 export const metadata = { title: 'Inventory' };
 export const revalidate = 120;
@@ -111,24 +112,12 @@ export default async function InventoryListPage({ searchParams }: { searchParams
         )}
 
         <form className="filter-bar" method="GET" action="/inventory">
-          <select name="type" defaultValue={type ?? ''}>
-            <option value="">All types</option>
-            <option value="single">Single-wide</option>
-            <option value="double">Double-wide</option>
-            <option value="modular">Modular</option>
-          </select>
-          <select name="mfr" defaultValue={mfr ?? ''}>
-            <option value="">All manufacturers</option>
-            {(manufacturers ?? []).map((m: { id: string; slug: string; name: string }) => (
-              <option key={m.id} value={m.slug}>{m.name}</option>
-            ))}
-          </select>
-          <select name="price" defaultValue={price ?? ''}>
-            <option value="">Any price</option>
-            <option value="u100">Under $100k</option>
-            <option value="100-200">$100k – $200k</option>
-            <option value="o200">$200k+</option>
-          </select>
+          <InventoryFilters
+            type={type}
+            mfr={mfr}
+            price={price}
+            manufacturers={(manufacturers ?? []) as Array<{ id: string; slug: string; name: string }>}
+          />
           <SmartSearchBar defaultValue={q ?? ''} />
           {(type || mfr || q || price) && (
             <Link href="/inventory" className="btn btn-ghost btn-sm">Clear</Link>
