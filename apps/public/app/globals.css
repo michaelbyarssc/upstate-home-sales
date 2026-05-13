@@ -569,3 +569,66 @@
 .filter-bar input[type="text"] { flex: 1; min-width: 200px; }
 .filter-bar .results { margin-left: auto; color: var(--c-ink-mute); font-size: 13px; }
 .filter-bar .results strong { color: var(--c-ink); }
+
+/* ── Photo lightbox ──────────────────────────────────────── */
+.lightbox-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.92);
+  display: flex; align-items: center; justify-content: center;
+  animation: lb-fade-in .2s ease;
+}
+@keyframes lb-fade-in { from { opacity: 0 } to { opacity: 1 } }
+
+.lightbox-content {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; height: 100%;
+  padding: 48px 60px 80px;
+}
+.lightbox-img {
+  max-width: 100%; max-height: calc(100vh - 180px);
+  object-fit: contain; border-radius: var(--r-2);
+  user-select: none;
+}
+.lightbox-close {
+  position: absolute; top: 12px; right: 16px;
+  background: none; border: none; color: #fff;
+  font-size: 32px; cursor: pointer; padding: 4px 10px;
+  line-height: 1; opacity: .7; transition: opacity .15s;
+}
+.lightbox-close:hover { opacity: 1; }
+
+.lightbox-prev, .lightbox-next {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.12); border: none; color: #fff;
+  font-size: 36px; cursor: pointer; padding: 8px 14px;
+  border-radius: var(--r-2); opacity: .7; transition: opacity .15s;
+}
+.lightbox-prev:hover, .lightbox-next:hover { opacity: 1; background: rgba(255,255,255,.2); }
+.lightbox-prev { left: 12px; }
+.lightbox-next { right: 12px; }
+
+.lightbox-counter {
+  color: rgba(255,255,255,.7); font: 500 13px/1 var(--f-body);
+  margin-top: 12px;
+}
+.lightbox-strip {
+  display: flex; gap: 6px; margin-top: 12px;
+  overflow-x: auto; max-width: 90vw; padding: 4px 0;
+}
+.lightbox-thumb {
+  flex-shrink: 0; width: 56px; height: 42px;
+  background-size: cover; background-position: center;
+  border: 2px solid transparent; border-radius: 4px;
+  cursor: pointer; padding: 0; opacity: .5;
+  transition: opacity .15s, border-color .15s;
+}
+.lightbox-thumb:hover { opacity: .8; }
+.lightbox-thumb.active { opacity: 1; border-color: #fff; }
+
+@media (max-width: 640px) {
+  .lightbox-content { padding: 40px 8px 72px; }
+  .lightbox-prev, .lightbox-next { font-size: 28px; padding: 6px 10px; }
+  .lightbox-prev { left: 4px; }
+  .lightbox-next { right: 4px; }
+}

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createPublicClient, publicPhotoUrl } from '../../../lib/supabase';
 import { QuoteForm } from './quote-form';
+import { Gallery } from './gallery';
 import { type PublicHome, type PublicHomePhoto } from '@uhs/db';
 import { absoluteUrl, homeProductSchema } from '../../../lib/seo';
 import { HomeCard } from '../../../components/HomeCard';
@@ -45,12 +46,12 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
     .eq('home_id', h.id)
     .order('sort_order');
   const allPhotos = (photos ?? []) as PublicHomePhoto[];
-  const heroPrimary = allPhotos[0];
-  const heroSecondary = allPhotos[1];
-  const restPhotos = allPhotos.slice(2);
-
-  const heroUrl = heroPrimary ? publicPhotoUrl(heroPrimary.storage_path) : null;
-  const heroSecondaryUrl = heroSecondary ? publicPhotoUrl(heroSecondary.storage_path) : null;
+  const galleryPhotos = allPhotos.map((p) => ({
+    id: p.id,
+    url: publicPhotoUrl(p.storage_path),
+    alt: p.alt_text ?? h.name,
+  }));
+  const heroUrl = galleryPhotos[0]?.url ?? null;
 
   // ─── Smart recommendations ──────────────────────────────────────────────
   // Score nearby homes by manufacturer match → type match → price-band match.
@@ -109,35 +110,10 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
           <span className="current">{h.name}</span>
         </nav>
 
-        <div className="detail-gallery">
-          <div
-            className="pane"
-            style={heroUrl ? { backgroundImage: `url(${heroUrl})` } : undefined}
-          >
-            <button type="button" className="expand" aria-label="Expand photo">⤢</button>
-          </div>
-          <div
-            className="pane"
-            style={heroSecondaryUrl ? { backgroundImage: `url(${heroSecondaryUrl})` } : undefined}
-          >
-            {heroSecondaryUrl && <button type="button" className="expand" aria-label="Expand photo">⤢</button>}
-          </div>
-        </div>
+        <Gallery photos={galleryPhotos} />
 
         <div className="detail-grid">
           <div>
-            {restPhotos.length > 0 && (
-              <div className="gallery-thumbs" style={{ marginBottom: 'var(--s-8)' }}>
-                {restPhotos.slice(0, 8).map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    style={{ backgroundImage: `url(${publicPhotoUrl(p.storage_path)})` }}
-                    aria-label={p.alt_text ?? 'Photo'}
-                  />
-                ))}
-              </div>
-            )}
 
             <div>
               <div className="eyebrow">{h.manufacturers?.name ?? 'Manufactured Home'}{h.model ? ` · ${h.model}` : ''}</div>
