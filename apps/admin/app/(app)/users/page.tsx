@@ -37,7 +37,7 @@ export default async function UsersPage() {
       />
 
       <div style={{ marginTop: 32 }}>
-        <h3 style={{ marginBottom: 12 }}>Invite a user</h3>
+        <h3 style={{ marginBottom: 12 }}>Add a user</h3>
         <InviteForm orgId={orgId} lots={(lots ?? []) as Pick<Lot, 'id' | 'name'>[]} />
       </div>
     </>

@@ -2,11 +2,17 @@
 
 import { useState, useTransition } from 'react';
 import type { Lot, OrgMember, Role } from '@uhs/db';
-import { updateMember } from './actions';
+import { updateMember, updateUserProfile, sendPasswordReset } from './actions';
 
 const ROLES: Role[] = ['owner', 'manager', 'sales', 'service', 'readonly'];
 
 export type MemberProfile = { email: string | null; name: string | null };
+
+type EditingUser = {
+  userId: string;
+  fullName: string;
+  email: string;
+};
 
 export function UsersTable({
   members,
@@ -20,6 +26,10 @@ export function UsersTable({
   const [rows, setRows] = useState(members);
   const [, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [editing, setEditing] = useState<EditingUser | null>(null);
+  const [editPending, setEditPending] = useState(false);
+  const [resetPending, setResetPending] = useState<string | null>(null);
 
   function update(userId: string, patch: Partial<Pick<OrgMember, 'role' | 'status' | 'scoped_lots' | 'in_rotation'>>) {
     setRows((prev) => prev.map((m) => (m.user_id === userId ? { ...m, ...patch } : m)));
@@ -32,9 +42,102 @@ export function UsersTable({
     });
   }
 
+  function startEdit(userId: string) {
+    const p = profiles[userId];
+    setEditing({
+      userId,
+      fullName: p?.name ?? '',
+      email: p?.email ?? '',
+    });
+    setErr(null);
+    setInfo(null);
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    setEditPending(true);
+    setErr(null);
+    try {
+      await updateUserProfile(editing.userId, {
+        fullName: editing.fullName,
+        email: editing.email,
+      });
+      // Update local profiles display
+      profiles[editing.userId] = {
+        name: editing.fullName || null,
+        email: editing.email || null,
+      };
+      setEditing(null);
+      setInfo('User updated.');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Update failed');
+    }
+    setEditPending(false);
+  }
+
+  async function handleReset(userId: string) {
+    setResetPending(userId);
+    setErr(null);
+    setInfo(null);
+    try {
+      await sendPasswordReset(userId);
+      const p = profiles[userId];
+      setInfo(`Password reset email sent to ${p?.email ?? 'user'}.`);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Reset failed');
+    }
+    setResetPending(null);
+  }
+
   return (
     <>
       {err && <div style={{ background: '#faf0ee', border: '1px solid #e0c0bc', color: '#a53a2c', padding: 10, borderRadius: 4, marginBottom: 12 }}>{err}</div>}
+      {info && <div style={{ background: '#e6efe2', border: '1px solid #c0d8b8', color: '#4a6b3f', padding: 10, borderRadius: 4, marginBottom: 12 }}>{info}</div>}
+
+      {/* Edit modal */}
+      {editing && (
+        <div className="modal-overlay" onClick={() => setEditing(null)}>
+          <div className="modal-content" style={{ width: 420 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Edit User</h3>
+              <button type="button" className="modal-close" onClick={() => setEditing(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <label className="field">
+                <span className="field-label">Full Name</span>
+                <input
+                  type="text"
+                  value={editing.fullName}
+                  onChange={(e) => setEditing({ ...editing, fullName: e.target.value })}
+                  placeholder="Full name"
+                  autoFocus
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Email</span>
+                <input
+                  type="email"
+                  value={editing.email}
+                  onChange={(e) => setEditing({ ...editing, email: e.target.value })}
+                  placeholder="user@example.com"
+                />
+              </label>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn-secondary" onClick={() => setEditing(null)}>Cancel</button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={editPending}
+                onClick={saveEdit}
+              >
+                {editPending ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <table style={{
         width: '100%', background: '#fff', borderCollapse: 'collapse',
         border: '1px solid var(--adm-line)', borderRadius: 8, overflow: 'hidden', fontSize: 13,
@@ -47,11 +150,12 @@ export function UsersTable({
             <th style={th} title="Round-robin lead assignment">Lead rotation</th>
             <th style={th}>Status</th>
             <th style={th}>Last active</th>
+            <th style={th}>Actions</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && (
-            <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--adm-ink-mute)' }}>No members yet.</td></tr>
+            <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--adm-ink-mute)' }}>No members yet.</td></tr>
           )}
           {rows.map((m) => {
             const p = profiles[m.user_id];
@@ -111,6 +215,25 @@ export function UsersTable({
                 </select>
               </td>
               <td style={td}>{m.last_active_at ? new Date(m.last_active_at).toLocaleDateString() : '—'}</td>
+              <td style={td}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(m.user_id)}
+                    style={actionBtn}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleReset(m.user_id)}
+                    disabled={resetPending === m.user_id}
+                    style={{ ...actionBtn, opacity: resetPending === m.user_id ? 0.6 : 1 }}
+                  >
+                    {resetPending === m.user_id ? 'Sending…' : 'Reset PW'}
+                  </button>
+                </div>
+              </td>
             </tr>
             );
           })}
@@ -133,4 +256,13 @@ const td: React.CSSProperties = { padding: '12px 14px', borderBottom: '1px solid
 const sel: React.CSSProperties = {
   padding: '6px 10px', fontSize: 13, border: '1px solid var(--adm-line)',
   borderRadius: 4, background: '#fff',
+};
+const actionBtn: React.CSSProperties = {
+  background: 'none',
+  border: '1px solid var(--adm-line)',
+  padding: '4px 10px',
+  borderRadius: 4,
+  fontSize: 12,
+  cursor: 'pointer',
+  color: 'var(--adm-ink)',
 };

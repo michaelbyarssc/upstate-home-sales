@@ -16,6 +16,89 @@ export async function updateMember(
 }
 
 /**
+ * Create a new user with email + password and add them to the org.
+ */
+export async function createUser(args: {
+  orgId: string;
+  email: string;
+  password: string;
+  fullName: string;
+  role: Role;
+  scopedLot: string | null;
+}): Promise<{ ok: true }> {
+  if (!args.email) throw new Error('Email is required');
+  if (!args.password || args.password.length < 8) throw new Error('Password must be at least 8 characters');
+  if (!args.fullName.trim()) throw new Error('Name is required');
+
+  const sb = createServiceClient();
+  const { data, error } = await sb.auth.admin.createUser({
+    email: args.email,
+    password: args.password,
+    email_confirm: true,
+    user_metadata: { full_name: args.fullName.trim() },
+  });
+  if (error || !data?.user) throw new Error(error?.message ?? 'User creation failed');
+
+  const scoped_lots = args.scopedLot ? [args.scopedLot] : null;
+  const { error: memberErr } = await sb
+    .from('org_members')
+    .insert({
+      user_id: data.user.id,
+      org_id: args.orgId,
+      role: args.role,
+      scoped_lots,
+      status: 'active',
+      invited_at: new Date().toISOString(),
+    });
+  if (memberErr) throw new Error(memberErr.message);
+
+  revalidatePath('/users');
+  return { ok: true };
+}
+
+/**
+ * Update a user's profile (name, email) via admin API.
+ */
+export async function updateUserProfile(
+  userId: string,
+  patch: { fullName?: string; email?: string },
+): Promise<{ ok: true }> {
+  const sb = createServiceClient();
+  const updates: Record<string, unknown> = {};
+  if (patch.email) updates.email = patch.email;
+  if (patch.fullName !== undefined) {
+    updates.user_metadata = { full_name: patch.fullName.trim() };
+  }
+  if (Object.keys(updates).length === 0) throw new Error('Nothing to update');
+
+  const { error } = await sb.auth.admin.updateUserById(userId, updates);
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/users');
+  return { ok: true };
+}
+
+/**
+ * Send a password reset email to a user.
+ */
+export async function sendPasswordReset(userId: string): Promise<{ ok: true }> {
+  const sb = createServiceClient();
+  const { data: userData, error: fetchErr } = await sb.auth.admin.getUserById(userId);
+  if (fetchErr || !userData?.user?.email) throw new Error('Could not find user email');
+
+  const redirectTo = `${process.env.NEXT_PUBLIC_ADMIN_URL ?? 'http://localhost:3001'}/login`;
+  const { error } = await sb.auth.admin.generateLink({
+    type: 'recovery',
+    email: userData.user.email,
+    options: { redirectTo },
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/users');
+  return { ok: true };
+}
+
+/**
  * Invite a user to the active org.
  * - If a user with that email already exists in auth.users, link them as
  *   an active member (no email sent).
