@@ -190,3 +190,25 @@ export async function deletePhoto(photoId: string, homeId: string) {
   if (error) throw new Error(error.message);
   revalidatePath(`/inventory/${homeId}`);
 }
+
+export async function reorderPhotos(homeId: string, orderedIds: string[]) {
+  const supabase = createClient();
+  const { data: existing, error: fetchErr } = await supabase
+    .from('home_photos')
+    .select('id')
+    .eq('home_id', homeId);
+  if (fetchErr) throw new Error(fetchErr.message);
+
+  const validIds = new Set((existing ?? []).map((p) => p.id));
+  if (orderedIds.length !== validIds.size || orderedIds.some((id) => !validIds.has(id))) {
+    throw new Error('Photo set mismatch');
+  }
+
+  await Promise.all(
+    orderedIds.map((id, idx) =>
+      supabase.from('home_photos').update({ sort_order: idx }).eq('id', id),
+    ),
+  );
+
+  revalidatePath(`/inventory/${homeId}`);
+}
