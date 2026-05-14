@@ -48,6 +48,7 @@ export function QuoteFormModal({
   const [sendEmail, setSendEmail] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const total = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
@@ -101,18 +102,23 @@ export function QuoteFormModal({
         lineItems: validItems,
         notes: notes.filter((n) => n.trim()),
       });
-      // Convert base64 to Blob URL (browsers block data: URLs in window.open)
+      // Convert base64 to Blob URL and show inline
       const raw = atob(b64);
       const bytes = new Uint8Array(raw.length);
       for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
       const blob = new Blob([bytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(blob));
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Preview failed');
     } finally {
       setIsPreviewing(false);
     }
+  }
+
+  function closePreview() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -142,6 +148,51 @@ export function QuoteFormModal({
     });
   }
 
+  // ── Preview view ──────────────────────────────────────────────────────────
+  if (previewUrl) {
+    return (
+      <div className="modal-overlay" onClick={closePreview}>
+        <div
+          className="modal-content"
+          style={{ width: 960, maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="modal-header">
+            <h3>Preview Quote — {homeName}</h3>
+            <button type="button" className="modal-close" onClick={closePreview}>
+              ×
+            </button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <iframe
+              src={previewUrl}
+              style={{ width: '100%', height: '70vh', border: 'none' }}
+              title="Quote PDF preview"
+            />
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn-secondary" onClick={closePreview}>
+              ← Back to editor
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={isPending}
+              onClick={() => {
+                closePreview();
+                const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+                handleSubmit(fakeEvent);
+              }}
+            >
+              {isPending ? 'Creating…' : sendEmail ? 'Send Quote' : 'Save Quote'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Editor view ───────────────────────────────────────────────────────────
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div

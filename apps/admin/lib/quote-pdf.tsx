@@ -98,24 +98,26 @@ function QuoteDocument({ q }: { q: QuotePdfData }) {
             totalCents={q.totalCents}
           />
 
-          {/* Notes */}
-          <NotesSection notes={q.notes} />
+          {/* Notes + validity — kept together so they don't split across footer */}
+          <View wrap={false}>
+            <NotesSection notes={q.notes} />
 
-          {/* Validity note */}
-          <Text
-            style={{
-              marginTop: 14,
-              fontSize: 8,
-              color: '#6b6863',
-              fontStyle: 'italic',
-              lineHeight: 1.5,
-            }}
-          >
-            Pricing snapshotted on {dateStr}. This quote is valid for{' '}
-            {Math.max(0, Math.ceil((expires.getTime() - created.getTime()) / 86_400_000))} days
-            from the date above (expires {expires.toLocaleDateString()}).
-            Your quoted price of {fmtCents(q.totalCents)} is locked through expiry.
-          </Text>
+            {/* Validity note */}
+            <Text
+              style={{
+                marginTop: 14,
+                fontSize: 8,
+                color: '#6b6863',
+                fontStyle: 'italic',
+                lineHeight: 1.5,
+              }}
+            >
+              Pricing snapshotted on {dateStr}. This quote is valid for{' '}
+              {Math.max(0, Math.ceil((expires.getTime() - created.getTime()) / 86_400_000))} days
+              from the date above (expires {expires.toLocaleDateString()}).
+              Your quoted price of {fmtCents(q.totalCents)} is locked through expiry.
+            </Text>
+          </View>
         </View>
 
         <PdfFooter />

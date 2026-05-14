@@ -71,9 +71,9 @@ export const base = StyleSheet.create({
     backgroundColor: C.brick,
   },
 
-  // Body area
+  // Body area — bottom padding must clear the fixed footer (~55px)
   body: {
-    padding: '24px 48px 60px',
+    padding: '24px 48px 80px',
   },
 
   // Home info
@@ -330,7 +330,7 @@ export function LineItemsTable({
 export function NotesSection({ notes }: { notes: string[] }) {
   if (notes.length === 0) return null;
   return (
-    <>
+    <View wrap={false} minPresenceAhead={40}>
       <Text style={base.sectionLabel}>Notes</Text>
       {notes.map((n, i) => (
         <View key={i} style={{ flexDirection: 'row', marginBottom: 4, paddingLeft: 4 }}>
@@ -338,7 +338,7 @@ export function NotesSection({ notes }: { notes: string[] }) {
           <Text style={base.noteItem}>{n}</Text>
         </View>
       ))}
-    </>
+    </View>
   );
 }
 
