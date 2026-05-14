@@ -188,21 +188,11 @@ export function QuoteFormModal({
     if (mode === pricingMode) return;
     setPricingMode(mode);
     if (mode === 'itemized') {
-      const currentTotal = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
-      const nullCount = items.filter((i) => i.amount_cents == null).length;
-      if (nullCount === 0) return;
-      const perItem = Math.floor(currentTotal / items.length);
-      const remainder = currentTotal - perItem * items.length;
-      let firstNull = true;
+      // Switch to itemized: keep existing prices, clear nulls to 0 so user fills them in
       setItems((prev) =>
-        prev.map((item) => {
-          if (item.amount_cents != null) return item;
-          if (firstNull) {
-            firstNull = false;
-            return { ...item, amount_cents: perItem + remainder };
-          }
-          return { ...item, amount_cents: perItem };
-        }),
+        prev.map((item) =>
+          item.amount_cents == null ? { ...item, amount_cents: 0 } : item,
+        ),
       );
     } else {
       const currentTotal = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
