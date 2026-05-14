@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import type { LineItem } from '@uhs/db';
-import { createQuote, previewQuotePdf } from './actions';
+import { createQuote } from './actions';
 
 type Props = {
   leadId: string;
@@ -94,15 +94,22 @@ export function QuoteFormModal({
     setErr(null);
     setIsPreviewing(true);
     try {
-      const b64 = await previewQuotePdf({
-        orgId,
-        homeId,
-        leadId,
-        validDays,
-        lineItems: validItems,
-        notes: notes.filter((n) => n.trim()),
+      const res = await fetch('/api/pdf/preview-quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orgId,
+          homeId,
+          leadId,
+          validDays,
+          lineItems: validItems,
+          notes: notes.filter((n) => n.trim()),
+        }),
       });
-      setPreviewUrl(`data:application/pdf;base64,${b64}`);
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(blob));
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Preview failed');
     } finally {
@@ -111,6 +118,7 @@ export function QuoteFormModal({
   }
 
   function closePreview() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
   }
 
