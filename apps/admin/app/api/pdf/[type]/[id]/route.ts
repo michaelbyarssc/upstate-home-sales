@@ -24,7 +24,7 @@ export async function GET(
   if (type === 'quote') {
     const { data: quote, error } = await supabase
       .from('quotes')
-      .select('*, homes(name, stock_no, beds, baths, sqft, headline, description, model_number, manufacturer, home_type), leads(contact_name, email, phone), orgs(name, brand_color)')
+      .select('*, homes(name, stock_no, beds, baths, sqft, headline, description, model, type, manufacturers(name)), leads(contact_name, email, phone), orgs(name, brand_color)')
       .eq('id', id)
       .maybeSingle();
     if (error || !quote) {
@@ -42,13 +42,13 @@ export async function GET(
       orgName: org?.name ?? 'Upstate Home Sales',
       brandColor: org?.brand_color ?? null,
       homeName: home?.name ?? '',
-      modelNumber: home?.model_number ?? null,
-      manufacturer: home?.manufacturer ?? null,
+      modelNumber: (home as any)?.model ?? null,
+      manufacturer: (home as any)?.manufacturers?.name ?? null,
       stockNo: home?.stock_no ?? '',
       beds: home?.beds ?? null,
       baths: home?.baths ?? null,
       sqft: home?.sqft ?? null,
-      homeType: home?.home_type ?? null,
+      homeType: (home as any)?.type ?? null,
       headline: home?.headline ?? null,
       description: home?.description ?? null,
       customerName: lead?.contact_name ?? null,
