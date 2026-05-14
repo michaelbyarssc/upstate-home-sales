@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect, useRef } from 'react';
 import type { LineItem } from '@uhs/db';
 import { createQuote } from './actions';
 
@@ -29,6 +29,136 @@ function fmtDollars(cents: number): string {
   });
 }
 
+function centsToDisplay(cents: number | null): string {
+  if (cents == null) return '';
+  return (cents / 100).toFixed(2);
+}
+
+type PricingMode = 'flat' | 'itemized';
+
+// ── PDF Canvas Viewer (uses PDF.js) ────────────────────────────────────────
+function PdfCanvasViewer({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [errMsg, setErrMsg] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function render() {
+      try {
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+
+        const doc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes).slice() }).promise;
+        if (cancelled || !containerRef.current) return;
+
+        containerRef.current.innerHTML = '';
+        const scale = 1.5;
+
+        for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
+          const page = await doc.getPage(pageNum);
+          const viewport = page.getViewport({ scale });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.width = '100%';
+          canvas.style.height = 'auto';
+          canvas.style.display = 'block';
+          if (pageNum > 1) canvas.style.marginTop = '12px';
+
+          containerRef.current.appendChild(canvas);
+
+          const ctx = canvas.getContext('2d')!;
+          await page.render({ canvasContext: ctx, viewport }).promise;
+        }
+
+        if (!cancelled) setStatus('ready');
+      } catch (e) {
+        if (!cancelled) {
+          setErrMsg(e instanceof Error ? e.message : 'Failed to render PDF');
+          setStatus('error');
+        }
+      }
+    }
+
+    render();
+    return () => { cancelled = true; };
+  }, [pdfBytes]);
+
+  return (
+    <div style={{ overflowY: 'auto', maxHeight: '70vh', background: '#e8e4de', padding: '16px 24px' }}>
+      {status === 'loading' && (
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--adm-ink-mute)', fontSize: 13 }}>
+          Rendering preview...
+        </div>
+      )}
+      {status === 'error' && (
+        <div style={{ textAlign: 'center', padding: 40, color: '#a53a2c', fontSize: 13 }}>
+          {errMsg}
+        </div>
+      )}
+      <div ref={containerRef} />
+    </div>
+  );
+}
+
+// ── Amount Input (edits raw text, parses on blur) ──────────────────────────
+function AmountInput({
+  cents,
+  onChange,
+  placeholder,
+}: {
+  cents: number | null;
+  onChange: (cents: number | null) => void;
+  placeholder?: string;
+}) {
+  const [raw, setRaw] = useState<string | null>(null);
+  const isEditing = raw !== null;
+
+  function handleFocus() {
+    setRaw(centsToDisplay(cents));
+  }
+
+  function handleChange(value: string) {
+    // Allow digits, dots, and empty
+    setRaw(value.replace(/[^0-9.]/g, ''));
+  }
+
+  function handleBlur() {
+    if (raw != null) {
+      const trimmed = raw.trim();
+      if (trimmed === '') {
+        onChange(null);
+      } else {
+        const parsed = parseFloat(trimmed);
+        onChange(isNaN(parsed) ? null : Math.round(parsed * 100));
+      }
+    }
+    setRaw(null);
+  }
+
+  return (
+    <input
+      type="text"
+      value={isEditing ? raw : centsToDisplay(cents)}
+      onFocus={handleFocus}
+      onChange={(e) => handleChange(e.target.value)}
+      onBlur={handleBlur}
+      placeholder={placeholder ?? 'Included'}
+      style={{
+        padding: '7px 10px',
+        fontSize: 13,
+        border: '1px solid var(--adm-line)',
+        borderRadius: 'var(--r-1)',
+        textAlign: 'right',
+      }}
+    />
+  );
+}
+
+// ── Main Modal ─────────────────────────────────────────────────────────────
 export function QuoteFormModal({
   leadId,
   orgId,
@@ -39,6 +169,7 @@ export function QuoteFormModal({
   onCreated,
 }: Props) {
   const [items, setItems] = useState<LineItem[]>(defaultLineItems);
+  const [pricingMode, setPricingMode] = useState<PricingMode>('flat');
   const [notes, setNotes] = useState<string[]>([
     'Turn-key price includes: home, shipping, setup, porches, septic, power pole, sewer & water hook-up, water line, underpinning, and HVAC.',
     'Customer will supply the land. If approved, land can be rolled into the loan.',
@@ -48,21 +179,48 @@ export function QuoteFormModal({
   const [sendEmail, setSendEmail] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [isPreviewing, setIsPreviewing] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewBytes, setPreviewBytes] = useState<ArrayBuffer | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const total = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
 
-  function updateItem(index: number, field: 'description' | 'amount_cents', value: string) {
-    setItems((prev) =>
-      prev.map((item, i) => {
-        if (i !== index) return item;
-        if (field === 'description') return { ...item, description: value };
-        // amount_cents: empty = null (included), otherwise parse dollars to cents
-        const trimmed = value.replace(/[^0-9.]/g, '');
-        return { ...item, amount_cents: trimmed === '' ? null : Math.round(parseFloat(trimmed) * 100) || 0 };
-      }),
-    );
+  function switchPricingMode(mode: PricingMode) {
+    if (mode === pricingMode) return;
+    setPricingMode(mode);
+    if (mode === 'itemized') {
+      const currentTotal = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
+      const nullCount = items.filter((i) => i.amount_cents == null).length;
+      if (nullCount === 0) return;
+      const perItem = Math.floor(currentTotal / items.length);
+      const remainder = currentTotal - perItem * items.length;
+      let firstNull = true;
+      setItems((prev) =>
+        prev.map((item) => {
+          if (item.amount_cents != null) return item;
+          if (firstNull) {
+            firstNull = false;
+            return { ...item, amount_cents: perItem + remainder };
+          }
+          return { ...item, amount_cents: perItem };
+        }),
+      );
+    } else {
+      const currentTotal = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
+      setItems((prev) =>
+        prev.map((item, i) => ({
+          ...item,
+          amount_cents: i === 0 ? currentTotal : null,
+        })),
+      );
+    }
+  }
+
+  function updateItemDesc(index: number, value: string) {
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, description: value } : item)));
+  }
+
+  function updateItemAmount(index: number, cents: number | null) {
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, amount_cents: cents } : item)));
   }
 
   function removeItem(index: number) {
@@ -104,12 +262,12 @@ export function QuoteFormModal({
           validDays,
           lineItems: validItems,
           notes: notes.filter((n) => n.trim()),
+          pricingMode,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
-      const blob = await res.blob();
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(URL.createObjectURL(blob));
+      const arrayBuffer = await res.arrayBuffer();
+      setPreviewBytes(arrayBuffer);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Preview failed');
     } finally {
@@ -118,8 +276,7 @@ export function QuoteFormModal({
   }
 
   function closePreview() {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
+    setPreviewBytes(null);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -150,7 +307,7 @@ export function QuoteFormModal({
   }
 
   // ── Preview view ──────────────────────────────────────────────────────────
-  if (previewUrl) {
+  if (previewBytes) {
     return (
       <div className="modal-overlay" onClick={closePreview}>
         <div
@@ -165,11 +322,7 @@ export function QuoteFormModal({
             </button>
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
-            <iframe
-              src={previewUrl}
-              style={{ width: '100%', height: '70vh', border: 'none' }}
-              title="Quote PDF preview"
-            />
+            <PdfCanvasViewer pdfBytes={previewBytes} />
           </div>
           <div className="modal-footer">
             <button type="button" className="btn-secondary" onClick={closePreview}>
@@ -209,6 +362,33 @@ export function QuoteFormModal({
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+            {/* Pricing mode toggle */}
+            <div style={{ display: 'flex', gap: 0, marginBottom: 12 }}>
+              {(['flat', 'itemized'] as PricingMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => switchPricingMode(mode)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    letterSpacing: '0.03em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    border: '1px solid var(--adm-line)',
+                    borderRight: mode === 'flat' ? 'none' : undefined,
+                    borderRadius: mode === 'flat' ? 'var(--r-1) 0 0 var(--r-1)' : '0 var(--r-1) var(--r-1) 0',
+                    background: pricingMode === mode ? '#b9532a' : 'var(--adm-bg)',
+                    color: pricingMode === mode ? '#fff' : 'var(--adm-ink-mute)',
+                  }}
+                >
+                  {mode === 'flat' ? 'Flat Rate' : 'Itemized'}
+                </button>
+              ))}
+            </div>
+
             {/* Line items */}
             <div>
               <div
@@ -236,7 +416,7 @@ export function QuoteFormModal({
                   <input
                     type="text"
                     value={item.description}
-                    onChange={(e) => updateItem(i, 'description', e.target.value)}
+                    onChange={(e) => updateItemDesc(i, e.target.value)}
                     placeholder="Item description"
                     style={{
                       padding: '7px 10px',
@@ -245,18 +425,9 @@ export function QuoteFormModal({
                       borderRadius: 'var(--r-1)',
                     }}
                   />
-                  <input
-                    type="text"
-                    value={item.amount_cents != null ? (item.amount_cents / 100).toFixed(2) : ''}
-                    onChange={(e) => updateItem(i, 'amount_cents', e.target.value)}
-                    placeholder="Included"
-                    style={{
-                      padding: '7px 10px',
-                      fontSize: 13,
-                      border: '1px solid var(--adm-line)',
-                      borderRadius: 'var(--r-1)',
-                      textAlign: 'right',
-                    }}
+                  <AmountInput
+                    cents={item.amount_cents}
+                    onChange={(cents) => updateItemAmount(i, cents)}
                   />
                   <button
                     type="button"
