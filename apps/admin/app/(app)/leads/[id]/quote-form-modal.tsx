@@ -102,13 +102,7 @@ export function QuoteFormModal({
         lineItems: validItems,
         notes: notes.filter((n) => n.trim()),
       });
-      // Convert base64 to Blob URL and show inline
-      const raw = atob(b64);
-      const bytes = new Uint8Array(raw.length);
-      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-      const blob = new Blob([bytes], { type: 'application/pdf' });
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(URL.createObjectURL(blob));
+      setPreviewUrl(`data:application/pdf;base64,${b64}`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Preview failed');
     } finally {
@@ -117,7 +111,6 @@ export function QuoteFormModal({
   }
 
   function closePreview() {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
   }
 
