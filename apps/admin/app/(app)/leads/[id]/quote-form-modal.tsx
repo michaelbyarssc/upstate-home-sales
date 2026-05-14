@@ -93,7 +93,7 @@ export function QuoteFormModal({
     setErr(null);
     setIsPreviewing(true);
     try {
-      const dataUrl = await previewQuotePdf({
+      const b64 = await previewQuotePdf({
         orgId,
         homeId,
         leadId,
@@ -101,7 +101,13 @@ export function QuoteFormModal({
         lineItems: validItems,
         notes: notes.filter((n) => n.trim()),
       });
-      window.open(dataUrl, '_blank');
+      // Convert base64 to Blob URL (browsers block data: URLs in window.open)
+      const raw = atob(b64);
+      const bytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Preview failed');
     } finally {

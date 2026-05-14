@@ -327,7 +327,7 @@ export async function previewQuotePdf(args: {
   };
 
   const buf = await renderQuotePdf(pdfData);
-  return `data:application/pdf;base64,${buf.toString('base64')}`;
+  return buf.toString('base64');
 }
 
 // ─── Invoice creation ─────────────────────────────────────────────────────
