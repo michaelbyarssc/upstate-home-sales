@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import type { LineItem } from '@uhs/db';
-import { createQuote } from './actions';
+import { createQuote, previewQuotePdf } from './actions';
 
 type Props = {
   leadId: string;
@@ -47,6 +47,7 @@ export function QuoteFormModal({
   const [validDays, setValidDays] = useState(30);
   const [sendEmail, setSendEmail] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const total = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
@@ -81,6 +82,31 @@ export function QuoteFormModal({
 
   function addNote() {
     setNotes((prev) => [...prev, '']);
+  }
+
+  async function handlePreview() {
+    const validItems = items.filter((i) => i.description.trim());
+    if (validItems.length === 0) {
+      setErr('Add at least one line item');
+      return;
+    }
+    setErr(null);
+    setIsPreviewing(true);
+    try {
+      const dataUrl = await previewQuotePdf({
+        orgId,
+        homeId,
+        leadId,
+        validDays,
+        lineItems: validItems,
+        notes: notes.filter((n) => n.trim()),
+      });
+      window.open(dataUrl, '_blank');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Preview failed');
+    } finally {
+      setIsPreviewing(false);
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -313,9 +339,19 @@ export function QuoteFormModal({
             <button type="button" className="btn-secondary" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={isPending}>
-              {isPending ? 'Creating…' : sendEmail ? 'Send Quote' : 'Save Quote'}
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={isPreviewing || isPending}
+                onClick={handlePreview}
+              >
+                {isPreviewing ? 'Generating…' : 'Preview PDF'}
+              </button>
+              <button type="submit" className="btn-primary" disabled={isPending || isPreviewing}>
+                {isPending ? 'Creating…' : sendEmail ? 'Send Quote' : 'Save Quote'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
