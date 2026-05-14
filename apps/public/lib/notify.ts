@@ -21,7 +21,7 @@ export async function sendEmail(args: {
     return { ok: true, skipped: true };
   }
 
-  const fromName = args.fromName ?? 'Upstate Home Sales';
+  const fromName = args.fromName ?? 'Upstate Home Center';
   const body: Record<string, unknown> = {
     from: `${fromName} <${fromAddr}>`,
     to: [args.to],

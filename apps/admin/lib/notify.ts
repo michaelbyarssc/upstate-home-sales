@@ -24,7 +24,7 @@ export async function sendEmail(args: {
   }
 
   const replyTo = `replies+${args.replyToToken}@${inboundDomain}`;
-  const fromName = args.fromName ?? 'Upstate Home Sales';
+  const fromName = args.fromName ?? 'Upstate Home Center';
   const body = {
     from: `${fromName} <${fromAddr}>`,
     to: [args.to],
