@@ -807,7 +807,7 @@ export function PhotoGrid({ photos }: { photos: PhotoItem[] }) {
     <>
       <Text style={v2.sectionLabel}>HOME PHOTOS</Text>
       {rows.map((row, ri) => (
-        <View key={ri} style={v2.photoRow}>
+        <View key={ri} style={v2.photoRow} wrap={false}>
           {row.map((photo, ci) => (
             <View key={ci} style={v2.photoCell}>
               <Image src={photo.url} style={v2.photoImage} />
@@ -825,7 +825,7 @@ export function PhotoGrid({ photos }: { photos: PhotoItem[] }) {
 
 export function LandFinancingBox() {
   return (
-    <View style={v2.landBox}>
+    <View style={v2.landBox} wrap={false}>
       <Text style={v2.landLabel}>LAND &amp; FINANCING</Text>
       <Text style={v2.landText}>
         Customer supplies the land. Land can be rolled into the loan if approved.
