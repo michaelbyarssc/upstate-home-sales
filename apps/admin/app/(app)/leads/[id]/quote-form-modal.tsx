@@ -415,7 +415,7 @@ export function QuoteFormModal({
   onClose,
   onCreated,
 }: Props) {
-  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(initialHomeId);
+  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
   const [items, setItems] = useState<LineItem[]>(defaultLineItems);
   const [pricingMode, setPricingMode] = useState<PricingMode>('flat');
   const [notes, setNotes] = useState<string[]>([
