@@ -55,7 +55,7 @@ type PhotoRow = {
 };
 
 // ── PDF Canvas Viewer (uses PDF.js) ────────────────────────────────────────
-function PdfCanvasViewer({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
+export function PdfCanvasViewer({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errMsg, setErrMsg] = useState('');

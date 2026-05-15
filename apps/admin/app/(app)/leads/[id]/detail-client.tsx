@@ -13,7 +13,7 @@ import {
 } from './actions';
 import { enrollLeadInCampaign } from '../../automations/campaigns/actions';
 import type { LeadCollaborator } from '@uhs/db';
-import { QuoteFormModal, type HomeOption } from './quote-form-modal';
+import { QuoteFormModal, PdfCanvasViewer, type HomeOption } from './quote-form-modal';
 import { InvoiceFormModal } from './invoice-form-modal';
 import { ShareLeadModal } from './share-lead-modal';
 import { removeCollaborator } from './actions';
@@ -69,6 +69,9 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   const [showShareModal, setShowShareModal] = useState(false);
   const [collaborators, setCollaborators] = useState<LeadCollaborator[]>(initialCollaborators);
   const [quotes, setQuotes] = useState<QuoteRow[]>(initialQuotes);
+  const [viewingQuote, setViewingQuote] = useState<QuoteRow | null>(null);
+  const [viewerPdfBytes, setViewerPdfBytes] = useState<ArrayBuffer | null>(null);
+  const [viewerLoading, setViewerLoading] = useState(false);
   const [, startTransition] = useTransition();
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -196,6 +199,24 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
     alert(`Invoice #${invoiceNumber} created and link copied:\n${url}`);
   }
 
+  async function openQuoteViewer(q: QuoteRow) {
+    setViewingQuote(q);
+    setViewerPdfBytes(null);
+    setViewerLoading(true);
+    try {
+      const url = await getQuotePdfUrl(q.id);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch PDF');
+      const bytes = await res.arrayBuffer();
+      setViewerPdfBytes(bytes);
+    } catch {
+      alert('Could not load PDF. It may not have been generated yet.');
+      setViewingQuote(null);
+    } finally {
+      setViewerLoading(false);
+    }
+  }
+
   async function handleHotToggle() {
     try {
       const updated = await toggleLeadHot(lead.id, !lead.is_hot);
@@ -224,19 +245,16 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
               {quotes.map((q) => {
                 const isExpired = new Date(q.expires_at) < new Date();
                 return (
-                  <a
+                  <div
                     key={q.id}
-                    href={`/q/${q.public_token}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    onClick={() => openQuoteViewer(q)}
                     style={{
                       display: 'block',
                       padding: '10px 12px',
                       background: 'var(--adm-bg)',
                       border: '1px solid var(--adm-line)',
                       borderRadius: 6,
-                      textDecoration: 'none',
-                      color: 'inherit',
+                      cursor: 'pointer',
                       fontSize: 13,
                     }}
                   >
@@ -259,33 +277,8 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
                       >
                         {isExpired ? 'Expired' : 'Active'}
                       </span>
-                      <span>·</span>
-                      <button
-                        type="button"
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          padding: 0,
-                          color: 'var(--adm-accent)',
-                          cursor: 'pointer',
-                          fontSize: 12,
-                          textDecoration: 'underline',
-                        }}
-                        onClick={async (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          try {
-                            const url = await getQuotePdfUrl(q.id);
-                            window.open(url, '_blank');
-                          } catch {
-                            alert('Could not load PDF. It may not have been generated yet.');
-                          }
-                        }}
-                      >
-                        Print
-                      </button>
                     </div>
-                  </a>
+                  </div>
                 );
               })}
             </div>
@@ -586,6 +579,97 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
           onClose={() => setShowInvoiceModal(false)}
           onCreated={handleInvoiceCreated}
         />
+      )}
+
+      {viewingQuote && (
+        <div className="modal-overlay" onClick={() => { setViewingQuote(null); setViewerPdfBytes(null); }}>
+          <div
+            className="modal-content"
+            style={{ width: 960, maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3>{viewingQuote.homes?.name ?? 'Quote'} — {new Date(viewingQuote.created_at).toLocaleDateString()}</h3>
+              <button type="button" className="modal-close" onClick={() => { setViewingQuote(null); setViewerPdfBytes(null); }}>
+                ×
+              </button>
+            </div>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              {viewerLoading && (
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--adm-ink-mute)', fontSize: 13 }}>
+                  Loading PDF...
+                </div>
+              )}
+              {viewerPdfBytes && <PdfCanvasViewer pdfBytes={viewerPdfBytes} />}
+            </div>
+            <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => { setViewingQuote(null); setViewerPdfBytes(null); }}
+              >
+                Close
+              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={!viewerPdfBytes}
+                  onClick={() => {
+                    if (!viewerPdfBytes) return;
+                    const blob = new Blob([viewerPdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Quote_${viewingQuote.homes?.name?.replace(/\s+/g, '_') ?? 'quote'}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  Download
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={!viewerPdfBytes}
+                  onClick={() => {
+                    if (!viewerPdfBytes) return;
+                    const blob = new Blob([viewerPdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const win = window.open(url, '_blank');
+                    if (win) {
+                      win.addEventListener('load', () => win.print());
+                    }
+                  }}
+                >
+                  Print
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    const publicBase = window.location.origin.replace(':3001', ':3000');
+                    const url = `${publicBase}/q/${viewingQuote.public_token}`;
+                    navigator.clipboard.writeText(url).catch(() => {});
+                    alert(`Quote link copied:\n${url}`);
+                  }}
+                >
+                  Copy Link
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    const publicBase = window.location.origin.replace(':3001', ':3000');
+                    window.open(`${publicBase}/q/${viewingQuote.public_token}`, '_blank');
+                  }}
+                >
+                  View Public Page
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {showShareModal && (
