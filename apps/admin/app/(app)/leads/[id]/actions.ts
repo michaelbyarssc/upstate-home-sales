@@ -9,6 +9,21 @@ import { renderQuotePdf, type QuotePdfData } from '../../../../lib/quote-pdf';
 import { renderInvoicePdf, type InvoicePdfData } from '../../../../lib/invoice-pdf';
 import { dispatchWorkflowEvent } from '../../../../lib/workflows';
 
+/** Extract a plain-English reason from an API error string. */
+function parseDeliveryError(raw: string | undefined): string {
+  if (!raw) return 'unknown error';
+  // Try to pull a "message" field out of a JSON body embedded in the string.
+  const jsonMatch = raw.match(/\{.*\}/s);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (typeof parsed.message === 'string') return parsed.message;
+    } catch { /* not JSON, fall through */ }
+  }
+  // Strip the "Resend 403: " prefix if present
+  return raw.replace(/^Resend \d+:\s*/i, '').slice(0, 200);
+}
+
 export async function postMessage(
   leadId: string,
   orgId: string,
@@ -48,13 +63,14 @@ export async function postMessage(
         replyToToken: lead.reply_token,
       });
       if (!result.ok) {
-        // Surface as a system note on the timeline so the user knows.
+        // Surface a plain-English note on the timeline so the user knows.
+        const reason = parseDeliveryError(result.error);
         await supabase.from('lead_messages').insert({
           lead_id: leadId,
           org_id: orgId,
           kind: 'system',
           channel: null,
-          body: `Email delivery failed: ${result.error}`,
+          body: `Email could not be delivered — ${reason}`,
         });
       }
     }
@@ -65,12 +81,13 @@ export async function postMessage(
       }
       const result = await sendSms({ to: lead.phone, body: trimmed });
       if (!result.ok) {
+        const reason = parseDeliveryError(result.error);
         await supabase.from('lead_messages').insert({
           lead_id: leadId,
           org_id: orgId,
           kind: 'system',
           channel: null,
-          body: `SMS delivery failed: ${result.error}`,
+          body: `SMS could not be delivered — ${reason}`,
         });
       }
     }
