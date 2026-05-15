@@ -889,3 +889,20 @@ export async function updateCollaboratorSplit(args: {
   revalidatePath(`/leads/${args.leadId}`);
   return { ok: true };
 }
+
+export async function getQuotePdfUrl(quoteId: string): Promise<string> {
+  const supabase = createClient();
+  const { data: quote } = await supabase
+    .from('quotes')
+    .select('pdf_storage_path')
+    .eq('id', quoteId)
+    .single();
+  if (!quote?.pdf_storage_path) throw new Error('No PDF available for this quote');
+
+  const svc = createServiceClient();
+  const { data, error } = await svc.storage
+    .from('quote-pdfs')
+    .createSignedUrl(quote.pdf_storage_path, 60 * 60);
+  if (error || !data?.signedUrl) throw new Error('Could not generate PDF link');
+  return data.signedUrl;
+}

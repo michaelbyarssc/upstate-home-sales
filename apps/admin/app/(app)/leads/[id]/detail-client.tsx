@@ -9,6 +9,7 @@ import {
   updateLeadStage,
   updateLeadAssignee,
   toggleLeadHot,
+  getQuotePdfUrl,
 } from './actions';
 import { enrollLeadInCampaign } from '../../automations/campaigns/actions';
 import type { LeadCollaborator } from '@uhs/db';
@@ -258,6 +259,31 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
                       >
                         {isExpired ? 'Expired' : 'Active'}
                       </span>
+                      <span>·</span>
+                      <button
+                        type="button"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          color: 'var(--adm-accent)',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          textDecoration: 'underline',
+                        }}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          try {
+                            const url = await getQuotePdfUrl(q.id);
+                            window.open(url, '_blank');
+                          } catch {
+                            alert('Could not load PDF. It may not have been generated yet.');
+                          }
+                        }}
+                      >
+                        Print
+                      </button>
                     </div>
                   </a>
                 );
