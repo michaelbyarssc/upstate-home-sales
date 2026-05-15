@@ -13,6 +13,13 @@ export type HomeOption = {
   listed_price_cents: number;
 };
 
+export type QuoteInitialData = {
+  homeId: string;
+  lineItems: LineItem[];
+  notes: string[];
+  validDays: number;
+};
+
 type Props = {
   leadId: string;
   orgId: string;
@@ -21,6 +28,7 @@ type Props = {
   defaultLineItems: LineItem[];
   homes: HomeOption[];
   supabaseUrl: string;
+  initialData?: QuoteInitialData | null;
   onClose: () => void;
   onCreated: (result: { id: string; public_token: string; expires_at: string; listed_price_cents: number; created_at: string; home_id: string }) => void;
 };
@@ -412,22 +420,33 @@ export function QuoteFormModal({
   defaultLineItems,
   homes,
   supabaseUrl,
+  initialData,
   onClose,
   onCreated,
 }: Props) {
-  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
-  const [items, setItems] = useState<LineItem[]>(() =>
-    defaultLineItems.map((item, i) =>
+  const isEditing = !!initialData;
+  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(initialData?.homeId ?? null);
+  const [items, setItems] = useState<LineItem[]>(() => {
+    if (initialData?.lineItems?.length) return initialData.lineItems;
+    return defaultLineItems.map((item, i) =>
       i === 0 ? { ...item, subtitle: null, amount_cents: null } : item,
-    ),
-  );
-  const [pricingMode, setPricingMode] = useState<PricingMode>('flat');
-  const [notes, setNotes] = useState<string[]>([
-    'Turn-key price includes: home, shipping, setup, porches, septic, power pole, sewer & water hook-up, water line, underpinning, and HVAC.',
-    'Customer will supply the land. If approved, land can be rolled into the loan.',
-    'All prices subject to change. This quote is valid for the period stated above.',
-  ]);
-  const [validDays, setValidDays] = useState(30);
+    );
+  });
+  const [pricingMode, setPricingMode] = useState<PricingMode>(() => {
+    if (!initialData?.lineItems?.length) return 'flat';
+    // Infer: if more than one item has a non-null amount, it's itemized
+    const priced = initialData.lineItems.filter((i) => i.amount_cents != null && i.amount_cents > 0);
+    return priced.length > 1 ? 'itemized' : 'flat';
+  });
+  const [notes, setNotes] = useState<string[]>(() => {
+    if (initialData?.notes?.length) return initialData.notes;
+    return [
+      'Turn-key price includes: home, shipping, setup, porches, septic, power pole, sewer & water hook-up, water line, underpinning, and HVAC.',
+      'Customer will supply the land. If approved, land can be rolled into the loan.',
+      'All prices subject to change. This quote is valid for the period stated above.',
+    ];
+  });
+  const [validDays, setValidDays] = useState(initialData?.validDays ?? 30);
   const [sendEmail, setSendEmail] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -436,7 +455,9 @@ export function QuoteFormModal({
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<string>>(new Set());
 
   const selectedHome = homes.find((h) => h.id === selectedHomeId);
-  const modalTitle = selectedHome ? `Create Quote — ${selectedHome.name}` : 'Create Quote';
+  const modalTitle = isEditing
+    ? `Revise Quote — ${selectedHome?.name ?? 'Quote'}`
+    : selectedHome ? `Create Quote — ${selectedHome.name}` : 'Create Quote';
 
   const total = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
 

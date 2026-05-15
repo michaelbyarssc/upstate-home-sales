@@ -890,6 +890,31 @@ export async function updateCollaboratorSplit(args: {
   return { ok: true };
 }
 
+export async function getQuoteForEdit(quoteId: string): Promise<{
+  homeId: string;
+  lineItems: LineItem[];
+  notes: string[];
+  validDays: number;
+}> {
+  const supabase = createClient();
+  const { data: quote, error } = await supabase
+    .from('quotes')
+    .select('home_id, addons_jsonb, notes_jsonb, expires_at, created_at')
+    .eq('id', quoteId)
+    .single();
+  if (error || !quote) throw new Error('Quote not found');
+
+  const diffMs = new Date(quote.expires_at).getTime() - new Date(quote.created_at).getTime();
+  const validDays = Math.max(7, Math.round(diffMs / 86_400_000));
+
+  return {
+    homeId: quote.home_id,
+    lineItems: (quote.addons_jsonb ?? []) as LineItem[],
+    notes: (quote.notes_jsonb ?? []) as string[],
+    validDays,
+  };
+}
+
 export async function getQuotePdfUrl(quoteId: string): Promise<string> {
   const supabase = createClient();
   const { data: quote } = await supabase

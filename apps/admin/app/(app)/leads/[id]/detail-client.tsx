@@ -10,10 +10,11 @@ import {
   updateLeadAssignee,
   toggleLeadHot,
   getQuotePdfUrl,
+  getQuoteForEdit,
 } from './actions';
 import { enrollLeadInCampaign } from '../../automations/campaigns/actions';
 import type { LeadCollaborator } from '@uhs/db';
-import { QuoteFormModal, PdfCanvasViewer, type HomeOption } from './quote-form-modal';
+import { QuoteFormModal, PdfCanvasViewer, type HomeOption, type QuoteInitialData } from './quote-form-modal';
 import { InvoiceFormModal } from './invoice-form-modal';
 import { ShareLeadModal } from './share-lead-modal';
 import { removeCollaborator } from './actions';
@@ -65,6 +66,7 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   const [body, setBody] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteEditData, setQuoteEditData] = useState<QuoteInitialData | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [collaborators, setCollaborators] = useState<LeadCollaborator[]>(initialCollaborators);
@@ -563,8 +565,9 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
           defaultLineItems={defaultLineItems}
           homes={homes}
           supabaseUrl={supabaseUrl}
-          onClose={() => setShowQuoteModal(false)}
-          onCreated={handleQuoteCreated}
+          initialData={quoteEditData}
+          onClose={() => { setShowQuoteModal(false); setQuoteEditData(null); }}
+          onCreated={(result) => { setQuoteEditData(null); handleQuoteCreated(result); }}
         />
       )}
 
@@ -659,12 +662,19 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
                 <button
                   type="button"
                   className="btn-primary"
-                  onClick={() => {
-                    const publicBase = window.location.origin.replace(':3001', ':3000');
-                    window.open(`${publicBase}/q/${viewingQuote.public_token}`, '_blank');
+                  onClick={async () => {
+                    try {
+                      const data = await getQuoteForEdit(viewingQuote.id);
+                      setQuoteEditData(data);
+                      setViewingQuote(null);
+                      setViewerPdfBytes(null);
+                      setShowQuoteModal(true);
+                    } catch {
+                      alert('Could not load quote data for editing.');
+                    }
                   }}
                 >
-                  View Public Page
+                  Edit Quote
                 </button>
               </div>
             </div>
