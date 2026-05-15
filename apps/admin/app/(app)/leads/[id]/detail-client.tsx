@@ -11,7 +11,7 @@ import {
   toggleLeadHot,
 } from './actions';
 import { enrollLeadInCampaign } from '../../automations/campaigns/actions';
-import { QuoteFormModal } from './quote-form-modal';
+import { QuoteFormModal, type HomeOption } from './quote-form-modal';
 import { InvoiceFormModal } from './invoice-form-modal';
 
 type EnrollmentRow = {
@@ -30,13 +30,15 @@ type Props = {
   campaigns: Array<{ id: string; name: string; channel: string; status: string }>;
   initialEnrollments: EnrollmentRow[];
   defaultLineItems: LineItem[];
+  homes: HomeOption[];
+  supabaseUrl: string;
 };
 
 type ComposeKind = 'email' | 'sms' | 'note' | 'call';
 
 const STAGES: LeadStage[] = ['new', 'in_progress', 'quoted', 'won', 'lost'];
 
-export function LeadDetailClient({ lead: initialLead, initialMessages, members, campaigns, initialEnrollments, defaultLineItems }: Props) {
+export function LeadDetailClient({ lead: initialLead, initialMessages, members, campaigns, initialEnrollments, defaultLineItems, homes, supabaseUrl }: Props) {
   const [lead, setLead] = useState(initialLead);
   const [messages, setMessages] = useState<LeadMessage[]>(initialMessages);
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>(initialEnrollments);
@@ -213,32 +215,28 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
             >
               {lead.is_hot ? 'Marked hot' : 'Mark hot'}
             </button>
-            {lead.home_id && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowQuoteModal(true)}
-                  style={{
-                    background: 'var(--adm-accent)', color: '#fff',
-                    border: 'none', padding: '7px 14px', borderRadius: 6,
-                    cursor: 'pointer', fontSize: 13, fontWeight: 500,
-                  }}
-                >
-                  + Quote
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowInvoiceModal(true)}
-                  style={{
-                    background: '#0f1c29', color: '#fff',
-                    border: 'none', padding: '7px 14px', borderRadius: 6,
-                    cursor: 'pointer', fontSize: 13, fontWeight: 500,
-                  }}
-                >
-                  + Invoice
-                </button>
-              </>
-            )}
+            <button
+              type="button"
+              onClick={() => setShowQuoteModal(true)}
+              style={{
+                background: 'var(--adm-accent)', color: '#fff',
+                border: 'none', padding: '7px 14px', borderRadius: 6,
+                cursor: 'pointer', fontSize: 13, fontWeight: 500,
+              }}
+            >
+              + Quote
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowInvoiceModal(true)}
+              style={{
+                background: '#0f1c29', color: '#fff',
+                border: 'none', padding: '7px 14px', borderRadius: 6,
+                cursor: 'pointer', fontSize: 13, fontWeight: 500,
+              }}
+            >
+              + Invoice
+            </button>
           </div>
         </div>
 
@@ -391,25 +389,28 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
         </div>
       </div>
 
-      {showQuoteModal && lead.home_id && lead.homes && (
+      {showQuoteModal && (
         <QuoteFormModal
           leadId={lead.id}
           orgId={lead.org_id}
-          homeId={lead.home_id}
-          homeName={lead.homes.name}
+          homeId={lead.home_id ?? null}
+          homeName={lead.homes?.name ?? null}
           defaultLineItems={defaultLineItems}
+          homes={homes}
+          supabaseUrl={supabaseUrl}
           onClose={() => setShowQuoteModal(false)}
           onCreated={handleQuoteCreated}
         />
       )}
 
-      {showInvoiceModal && lead.home_id && lead.homes && (
+      {showInvoiceModal && (
         <InvoiceFormModal
           leadId={lead.id}
           orgId={lead.org_id}
-          homeId={lead.home_id}
-          homeName={lead.homes.name}
+          homeId={lead.home_id ?? null}
+          homeName={lead.homes?.name ?? null}
           defaultLineItems={defaultLineItems}
+          homes={homes}
           onClose={() => setShowInvoiceModal(false)}
           onCreated={handleInvoiceCreated}
         />

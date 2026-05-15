@@ -628,6 +628,7 @@ export interface HomeAddon {
 
 export interface LineItem {
   description: string;
+  subtitle?: string | null;
   amount_cents: number | null;
 }
 

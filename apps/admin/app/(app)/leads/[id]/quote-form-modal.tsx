@@ -1,15 +1,26 @@
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
+import { createClient } from '@uhs/db/browser';
+import { HOME_PHOTO_BUCKET } from '@uhs/db';
 import type { LineItem } from '@uhs/db';
 import { createQuote } from './actions';
+
+export type HomeOption = {
+  id: string;
+  name: string;
+  stock_no: string;
+  listed_price_cents: number;
+};
 
 type Props = {
   leadId: string;
   orgId: string;
-  homeId: string;
-  homeName: string;
+  homeId: string | null;
+  homeName: string | null;
   defaultLineItems: LineItem[];
+  homes: HomeOption[];
+  supabaseUrl: string;
   onClose: () => void;
   onCreated: (token: string) => void;
 };
@@ -35,6 +46,13 @@ function centsToDisplay(cents: number | null): string {
 }
 
 type PricingMode = 'flat' | 'itemized';
+
+type PhotoRow = {
+  id: string;
+  storage_path: string;
+  alt_text: string | null;
+  sort_order: number;
+};
 
 // ── PDF Canvas Viewer (uses PDF.js) ────────────────────────────────────────
 function PdfCanvasViewer({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
@@ -122,7 +140,6 @@ function AmountInput({
   }
 
   function handleChange(value: string) {
-    // Allow digits, dots, and empty
     setRaw(value.replace(/[^0-9.]/g, ''));
   }
 
@@ -158,16 +175,247 @@ function AmountInput({
   );
 }
 
+// ── Searchable Home Dropdown ───────────────────────────────────────────────
+function HomeSelect({
+  homes,
+  selectedId,
+  onChange,
+}: {
+  homes: HomeOption[];
+  selectedId: string | null;
+  onChange: (id: string) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const selected = homes.find((h) => h.id === selectedId);
+  const filtered = search
+    ? homes.filter(
+        (h) =>
+          h.name.toLowerCase().includes(search.toLowerCase()) ||
+          h.stock_no.toLowerCase().includes(search.toLowerCase()),
+      )
+    : homes;
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', marginBottom: 12 }}>
+      <label className="field-label" style={{ display: 'block', marginBottom: 4 }}>Home</label>
+      <div
+        onClick={() => setOpen(!open)}
+        style={{
+          padding: '8px 12px',
+          border: '1px solid var(--adm-line)',
+          borderRadius: 'var(--r-1)',
+          cursor: 'pointer',
+          fontSize: 13,
+          background: 'var(--adm-bg)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <span style={{ color: selected ? 'var(--adm-ink)' : 'var(--adm-ink-mute)' }}>
+          {selected ? `${selected.name} (${selected.stock_no})` : 'Select a home...'}
+        </span>
+        <span style={{ fontSize: 10, color: 'var(--adm-ink-mute)' }}>{'\u25BC'}</span>
+      </div>
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            background: '#fff',
+            border: '1px solid var(--adm-line)',
+            borderRadius: 'var(--r-1)',
+            boxShadow: '0 4px 12px rgba(0,0,0,.12)',
+            maxHeight: 240,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or stock #..."
+            autoFocus
+            style={{
+              padding: '8px 12px',
+              border: 'none',
+              borderBottom: '1px solid var(--adm-line)',
+              fontSize: 13,
+              outline: 'none',
+            }}
+          />
+          <div style={{ overflowY: 'auto', maxHeight: 190 }}>
+            {filtered.length === 0 && (
+              <div style={{ padding: '12px', color: 'var(--adm-ink-mute)', fontSize: 12 }}>No homes found</div>
+            )}
+            {filtered.map((h) => (
+              <div
+                key={h.id}
+                onClick={() => {
+                  onChange(h.id);
+                  setOpen(false);
+                  setSearch('');
+                }}
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  background: h.id === selectedId ? '#f0ebe3' : 'transparent',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#f5f2ee')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = h.id === selectedId ? '#f0ebe3' : 'transparent')}
+              >
+                <div style={{ fontWeight: 500 }}>{h.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--adm-ink-mute)' }}>
+                  {h.stock_no} &bull; {fmtDollars(h.listed_price_cents)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Photo Picker ───────────────────────────────────────────────────────────
+function PhotoPicker({
+  homeId,
+  supabaseUrl,
+  selectedIds,
+  onToggle,
+}: {
+  homeId: string | null;
+  supabaseUrl: string;
+  selectedIds: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  const [photos, setPhotos] = useState<PhotoRow[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!homeId) {
+      setPhotos([]);
+      return;
+    }
+    setLoading(true);
+    const supabase = createClient();
+    supabase
+      .from('home_photos')
+      .select('id, storage_path, alt_text, sort_order')
+      .eq('home_id', homeId)
+      .order('sort_order')
+      .then(({ data }) => {
+        setPhotos(data ?? []);
+        setLoading(false);
+      });
+  }, [homeId]);
+
+  if (!homeId) return null;
+  if (loading) return <div style={{ fontSize: 12, color: 'var(--adm-ink-mute)', marginBottom: 12 }}>Loading photos...</div>;
+  if (photos.length === 0) return <div style={{ fontSize: 12, color: 'var(--adm-ink-mute)', marginBottom: 12 }}>No photos uploaded for this home</div>;
+
+  const baseUrl = `${supabaseUrl}/storage/v1/object/public/${HOME_PHOTO_BUCKET}`;
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <span className="field-label">Photos ({selectedIds.size}/8 selected)</span>
+      </div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 8,
+        }}
+      >
+        {photos.map((p) => {
+          const isSelected = selectedIds.has(p.id);
+          const disabled = !isSelected && selectedIds.size >= 8;
+          return (
+            <div
+              key={p.id}
+              onClick={() => !disabled && onToggle(p.id)}
+              style={{
+                position: 'relative',
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                opacity: disabled ? 0.4 : 1,
+                borderRadius: 6,
+                overflow: 'hidden',
+                border: isSelected ? '2px solid #b9532a' : '2px solid transparent',
+              }}
+            >
+              <img
+                src={`${baseUrl}/${p.storage_path}`}
+                alt={p.alt_text ?? 'Home photo'}
+                style={{
+                  width: '100%',
+                  height: 80,
+                  objectFit: 'cover',
+                  display: 'block',
+                }}
+              />
+              {isSelected && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    background: '#b9532a',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  {'\u2713'}
+                </div>
+              )}
+              <div style={{ fontSize: 10, padding: '2px 4px', color: 'var(--adm-ink-mute)', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {p.alt_text || `Photo ${p.sort_order + 1}`}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Modal ─────────────────────────────────────────────────────────────
 export function QuoteFormModal({
   leadId,
   orgId,
-  homeId,
-  homeName,
+  homeId: initialHomeId,
+  homeName: initialHomeName,
   defaultLineItems,
+  homes,
+  supabaseUrl,
   onClose,
   onCreated,
 }: Props) {
+  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(initialHomeId);
   const [items, setItems] = useState<LineItem[]>(defaultLineItems);
   const [pricingMode, setPricingMode] = useState<PricingMode>('flat');
   const [notes, setNotes] = useState<string[]>([
@@ -181,14 +429,31 @@ export function QuoteFormModal({
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [previewBytes, setPreviewBytes] = useState<ArrayBuffer | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<string>>(new Set());
+
+  const selectedHome = homes.find((h) => h.id === selectedHomeId);
+  const modalTitle = selectedHome ? `Create Quote — ${selectedHome.name}` : 'Create Quote';
 
   const total = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
+
+  function handleHomeChange(id: string) {
+    setSelectedHomeId(id);
+    setSelectedPhotoIds(new Set());
+  }
+
+  function togglePhoto(id: string) {
+    setSelectedPhotoIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else if (next.size < 8) next.add(id);
+      return next;
+    });
+  }
 
   function switchPricingMode(mode: PricingMode) {
     if (mode === pricingMode) return;
     setPricingMode(mode);
     if (mode === 'itemized') {
-      // Switch to itemized: keep existing prices, clear nulls to 0 so user fills them in
       setItems((prev) =>
         prev.map((item) =>
           item.amount_cents == null ? { ...item, amount_cents: 0 } : item,
@@ -209,6 +474,10 @@ export function QuoteFormModal({
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, description: value } : item)));
   }
 
+  function updateItemSubtitle(index: number, value: string) {
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, subtitle: value || null } : item)));
+  }
+
   function updateItemAmount(index: number, cents: number | null) {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, amount_cents: cents } : item)));
   }
@@ -218,7 +487,7 @@ export function QuoteFormModal({
   }
 
   function addItem() {
-    setItems((prev) => [...prev, { description: '', amount_cents: null }]);
+    setItems((prev) => [...prev, { description: '', subtitle: null, amount_cents: null }]);
   }
 
   function updateNote(index: number, value: string) {
@@ -234,6 +503,10 @@ export function QuoteFormModal({
   }
 
   async function handlePreview() {
+    if (!selectedHomeId) {
+      setErr('Select a home first');
+      return;
+    }
     const validItems = items.filter((i) => i.description.trim());
     if (validItems.length === 0) {
       setErr('Add at least one line item');
@@ -247,12 +520,13 @@ export function QuoteFormModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orgId,
-          homeId,
+          homeId: selectedHomeId,
           leadId,
           validDays,
           lineItems: validItems,
           notes: notes.filter((n) => n.trim()),
           pricingMode,
+          selectedPhotoIds: Array.from(selectedPhotoIds),
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -271,6 +545,10 @@ export function QuoteFormModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!selectedHomeId) {
+      setErr('Select a home first');
+      return;
+    }
     const validItems = items.filter((i) => i.description.trim());
     if (validItems.length === 0) {
       setErr('Add at least one line item');
@@ -283,11 +561,13 @@ export function QuoteFormModal({
         const q = await createQuote({
           leadId,
           orgId,
-          homeId,
+          homeId: selectedHomeId,
           validDays,
           lineItems: validItems,
           notes: notes.filter((n) => n.trim()),
           sendEmail,
+          selectedPhotoIds: Array.from(selectedPhotoIds),
+          pricingMode,
         });
         onCreated(q.public_token);
       } catch (e) {
@@ -306,7 +586,7 @@ export function QuoteFormModal({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="modal-header">
-            <h3>Preview Quote — {homeName}</h3>
+            <h3>Preview Quote — {selectedHome?.name ?? 'Quote'}</h3>
             <button type="button" className="modal-close" onClick={closePreview}>
               ×
             </button>
@@ -341,17 +621,28 @@ export function QuoteFormModal({
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-content"
-        style={{ width: 680, maxHeight: '92vh' }}
+        style={{ width: 720, maxHeight: '92vh' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h3>Create Quote — {homeName}</h3>
+          <h3>{modalTitle}</h3>
           <button type="button" className="modal-close" onClick={onClose}>
             ×
           </button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+          <div className="modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+            {/* Home selector */}
+            <HomeSelect homes={homes} selectedId={selectedHomeId} onChange={handleHomeChange} />
+
+            {/* Photo picker */}
+            <PhotoPicker
+              homeId={selectedHomeId}
+              supabaseUrl={supabaseUrl}
+              selectedIds={selectedPhotoIds}
+              onToggle={togglePhoto}
+            />
+
             {/* Pricing mode toggle */}
             <div style={{ display: 'flex', gap: 0, marginBottom: 12 }}>
               {(['flat', 'itemized'] as PricingMode[]).map((mode) => (
@@ -384,12 +675,13 @@ export function QuoteFormModal({
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 120px 32px',
+                  gridTemplateColumns: '1fr 1fr 120px 32px',
                   gap: 8,
                   marginBottom: 6,
                 }}
               >
                 <span className="field-label">Description</span>
+                <span className="field-label">Subtitle (for checklist)</span>
                 <span className="field-label">Amount</span>
                 <span />
               </div>
@@ -398,7 +690,7 @@ export function QuoteFormModal({
                   key={i}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr 120px 32px',
+                    gridTemplateColumns: '1fr 1fr 120px 32px',
                     gap: 8,
                     marginBottom: 6,
                   }}
@@ -413,6 +705,19 @@ export function QuoteFormModal({
                       fontSize: 13,
                       border: '1px solid var(--adm-line)',
                       borderRadius: 'var(--r-1)',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    value={item.subtitle ?? ''}
+                    onChange={(e) => updateItemSubtitle(i, e.target.value)}
+                    placeholder="Detail text..."
+                    style={{
+                      padding: '7px 10px',
+                      fontSize: 13,
+                      border: '1px solid var(--adm-line)',
+                      borderRadius: 'var(--r-1)',
+                      color: 'var(--adm-ink-mute)',
                     }}
                   />
                   <AmountInput

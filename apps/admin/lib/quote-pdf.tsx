@@ -10,12 +10,17 @@ import { Document, Page, Text, View, pdf } from '@react-pdf/renderer';
 import type { LineItem } from '@uhs/db';
 import {
   base,
-  PdfHeader,
-  PreparedFor,
-  LineItemsTable,
-  NotesSection,
-  PdfFooter,
+  C,
+  PdfHeaderV2,
+  PdfFooterV2,
+  HomeDetailsSection,
+  PhotoGrid,
+  LandFinancingBox,
+  FlatRatePricingSection,
+  ItemizedPricingSection,
   fmtCents,
+  type PreparedBy,
+  type PhotoItem,
 } from './pdf-components';
 
 export type QuotePdfData = {
@@ -40,87 +45,87 @@ export type QuotePdfData = {
   expiresAt: string;
   createdAt: string;
   publicUrl: string;
+  // V2 fields
+  photos: PhotoItem[];
+  preparedBy: PreparedBy;
+  pricingMode: 'flat' | 'itemized';
 };
 
 function QuoteDocument({ q }: { q: QuotePdfData }) {
   const created = new Date(q.createdAt);
-  const expires = new Date(q.expiresAt);
   const dateStr = created.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 
-  const specsLine = [
-    q.beds != null ? `${q.beds} Bed` : null,
-    q.baths != null ? `${q.baths} Bath` : null,
-  ]
+  const homeModelLabel = [q.homeName, q.modelNumber ? `Model ${q.modelNumber}` : null]
     .filter(Boolean)
-    .join(' / ');
-
-  const typeLabel = q.homeType ?? 'Manufactured Home';
+    .join(' ');
 
   return (
     <Document>
+      {/* PAGE 1: Home Details & Photos */}
       <Page size="LETTER" style={base.page}>
-        <PdfHeader orgName={q.orgName} docType="QUOTE" date={dateStr} />
+        <PdfHeaderV2 date={dateStr} preparedBy={q.preparedBy} />
 
-        <View style={base.body}>
-          {/* Home info */}
-          <Text style={base.homeName}>{q.homeName}</Text>
-          {(q.modelNumber || q.manufacturer) && (
-            <Text style={base.homeModel}>
-              {[
-                q.modelNumber ? `Model ${q.modelNumber}` : null,
-                q.manufacturer ? `Built by ${q.manufacturer}` : null,
-              ]
-                .filter(Boolean)
-                .join('  ·  ')}
-            </Text>
-          )}
-          {(specsLine || typeLabel) && (
-            <Text style={base.homeSpecs}>
-              {[specsLine, typeLabel].filter(Boolean).join('  |  ')}
-            </Text>
-          )}
-
-          {/* Prepared For */}
-          <PreparedFor
-            name={q.customerName}
-            phone={q.customerPhone}
-            email={q.customerEmail}
+        <View style={{ padding: '24px 48px 70px' }}>
+          <HomeDetailsSection
+            customerName={q.customerName}
+            customerPhone={q.customerPhone}
+            customerEmail={q.customerEmail}
+            homeName={q.homeName}
+            modelNumber={q.modelNumber}
+            manufacturer={q.manufacturer}
+            beds={q.beds}
+            baths={q.baths}
+            homeType={q.homeType}
           />
 
-          {/* Line items */}
-          <LineItemsTable
-            label="Flat Rate Pricing"
-            items={q.lineItems}
-            totalCents={q.totalCents}
-          />
+          <PhotoGrid photos={q.photos} />
 
-          {/* Notes + validity — kept together so they don't split across footer */}
-          <View wrap={false}>
-            <NotesSection notes={q.notes} />
-
-            {/* Validity note */}
-            <Text
-              style={{
-                marginTop: 14,
-                fontSize: 8,
-                color: '#6b6863',
-                fontStyle: 'italic',
-                lineHeight: 1.5,
-              }}
-            >
-              Pricing snapshotted on {dateStr}. This quote is valid for{' '}
-              {Math.max(0, Math.ceil((expires.getTime() - created.getTime()) / 86_400_000))} days
-              from the date above (expires {expires.toLocaleDateString()}).
-              Your quoted price of {fmtCents(q.totalCents)} is locked through expiry.
-            </Text>
-          </View>
+          <LandFinancingBox />
         </View>
 
-        <PdfFooter />
+        <PdfFooterV2 preparedBy={q.preparedBy} />
+      </Page>
+
+      {/* PAGE 2: Pricing */}
+      <Page size="LETTER" style={base.page}>
+        <PdfHeaderV2 date={dateStr} preparedBy={q.preparedBy} />
+
+        <View style={{ padding: '24px 48px 70px' }}>
+          {/* Quote-for line */}
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 20 }}>
+            <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: C.brick, letterSpacing: 0.6, textTransform: 'uppercase', marginRight: 12 }}>
+              QUOTE FOR
+            </Text>
+            <Text style={{ fontSize: 16, fontFamily: 'Helvetica-Bold', color: C.ink, marginRight: 8 }}>
+              {q.customerName ?? 'Customer'}
+            </Text>
+            <Text style={{ fontSize: 12, color: C.mute }}>
+              — {homeModelLabel}
+            </Text>
+          </View>
+
+          {q.pricingMode === 'flat' ? (
+            <FlatRatePricingSection
+              items={q.lineItems}
+              totalCents={q.totalCents}
+              homeName={q.homeName}
+              modelNumber={q.modelNumber}
+            />
+          ) : (
+            <ItemizedPricingSection
+              items={q.lineItems}
+              totalCents={q.totalCents}
+            />
+          )}
+
+          <LandFinancingBox />
+        </View>
+
+        <PdfFooterV2 preparedBy={q.preparedBy} />
       </Page>
     </Document>
   );

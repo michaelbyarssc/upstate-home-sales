@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect, useRef } from 'react';
 import type { LineItem } from '@uhs/db';
 import { createInvoice } from './actions';
+import type { HomeOption } from './quote-form-modal';
 
 type Props = {
   leadId: string;
   orgId: string;
-  homeId: string;
-  homeName: string;
+  homeId: string | null;
+  homeName: string | null;
   defaultLineItems: LineItem[];
+  homes: HomeOption[];
   onClose: () => void;
   onCreated: (token: string, invoiceNumber: number) => void;
 };
@@ -30,15 +32,136 @@ function fmtDollars(cents: number): string {
   });
 }
 
+// ── Searchable Home Dropdown ───────────────────────────────────────────────
+function HomeSelect({
+  homes,
+  selectedId,
+  onChange,
+}: {
+  homes: HomeOption[];
+  selectedId: string | null;
+  onChange: (id: string) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const selected = homes.find((h) => h.id === selectedId);
+  const filtered = search
+    ? homes.filter(
+        (h) =>
+          h.name.toLowerCase().includes(search.toLowerCase()) ||
+          h.stock_no.toLowerCase().includes(search.toLowerCase()),
+      )
+    : homes;
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', marginBottom: 12 }}>
+      <label className="field-label" style={{ display: 'block', marginBottom: 4 }}>Home</label>
+      <div
+        onClick={() => setOpen(!open)}
+        style={{
+          padding: '8px 12px',
+          border: '1px solid var(--adm-line)',
+          borderRadius: 'var(--r-1)',
+          cursor: 'pointer',
+          fontSize: 13,
+          background: 'var(--adm-bg)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <span style={{ color: selected ? 'var(--adm-ink)' : 'var(--adm-ink-mute)' }}>
+          {selected ? `${selected.name} (${selected.stock_no})` : 'Select a home...'}
+        </span>
+        <span style={{ fontSize: 10, color: 'var(--adm-ink-mute)' }}>{'\u25BC'}</span>
+      </div>
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            background: '#fff',
+            border: '1px solid var(--adm-line)',
+            borderRadius: 'var(--r-1)',
+            boxShadow: '0 4px 12px rgba(0,0,0,.12)',
+            maxHeight: 240,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or stock #..."
+            autoFocus
+            style={{
+              padding: '8px 12px',
+              border: 'none',
+              borderBottom: '1px solid var(--adm-line)',
+              fontSize: 13,
+              outline: 'none',
+            }}
+          />
+          <div style={{ overflowY: 'auto', maxHeight: 190 }}>
+            {filtered.length === 0 && (
+              <div style={{ padding: '12px', color: 'var(--adm-ink-mute)', fontSize: 12 }}>No homes found</div>
+            )}
+            {filtered.map((h) => (
+              <div
+                key={h.id}
+                onClick={() => {
+                  onChange(h.id);
+                  setOpen(false);
+                  setSearch('');
+                }}
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  background: h.id === selectedId ? '#f0ebe3' : 'transparent',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#f5f2ee')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = h.id === selectedId ? '#f0ebe3' : 'transparent')}
+              >
+                <div style={{ fontWeight: 500 }}>{h.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--adm-ink-mute)' }}>
+                  {h.stock_no} &bull; {fmtDollars(h.listed_price_cents)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function InvoiceFormModal({
   leadId,
   orgId,
-  homeId,
-  homeName,
+  homeId: initialHomeId,
+  homeName: initialHomeName,
   defaultLineItems,
+  homes,
   onClose,
   onCreated,
 }: Props) {
+  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(initialHomeId);
   const [items, setItems] = useState<LineItem[]>(defaultLineItems);
   const [notes, setNotes] = useState<string[]>([
     'This invoice is for the complete turn-key package as described above.',
@@ -50,6 +173,9 @@ export function InvoiceFormModal({
   const [sendEmail, setSendEmail] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+
+  const selectedHome = homes.find((h) => h.id === selectedHomeId);
+  const modalTitle = selectedHome ? `Create Invoice — ${selectedHome.name}` : 'Create Invoice';
 
   const total = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
 
@@ -86,6 +212,10 @@ export function InvoiceFormModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!selectedHomeId) {
+      setErr('Select a home first');
+      return;
+    }
     const validItems = items.filter((i) => i.description.trim());
     if (validItems.length === 0) {
       setErr('Add at least one line item');
@@ -98,7 +228,7 @@ export function InvoiceFormModal({
         const inv = await createInvoice({
           leadId,
           orgId,
-          homeId,
+          homeId: selectedHomeId,
           lineItems: validItems,
           notes: notes.filter((n) => n.trim()),
           paymentTerms,
@@ -121,11 +251,14 @@ export function InvoiceFormModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h3>Create Invoice — {homeName}</h3>
+          <h3>{modalTitle}</h3>
           <button type="button" className="modal-close" onClick={onClose}>×</button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+            {/* Home selector */}
+            <HomeSelect homes={homes} selectedId={selectedHomeId} onChange={setSelectedHomeId} />
+
             {/* Line items */}
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 32px', gap: 8, marginBottom: 6 }}>

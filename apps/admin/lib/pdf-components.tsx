@@ -3,7 +3,7 @@
  * Uses @react-pdf/renderer — server-side only.
  */
 
-import { Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import type { LineItem } from '@uhs/db';
 
 // ─── Brand tokens ─────────────────────────────────────────────────────────
@@ -369,4 +369,535 @@ export function fmtCents(cents: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+// ─── V2 Quote Components ─────────────────────────────────────────────────
+
+const v2 = StyleSheet.create({
+  // Header
+  headerBar: {
+    backgroundColor: C.navy,
+    padding: '28px 48px 22px',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontFamily: 'Times-Bold',
+    color: C.white,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  headerSub: {
+    fontSize: 10,
+    color: '#a0aab4',
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
+  headerDateLabel: {
+    fontSize: 9,
+    color: '#a0aab4',
+    marginBottom: 2,
+  },
+  headerPrepLabel: {
+    fontSize: 9,
+    color: '#a0aab4',
+    marginTop: 4,
+  },
+  headerPrepName: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: C.white,
+  },
+  headerContact: {
+    fontSize: 9,
+    color: '#a0aab4',
+    marginTop: 1,
+  },
+
+  // Body
+  body: {
+    padding: '24px 48px 70px',
+  },
+
+  // Section labels
+  sectionLabel: {
+    fontSize: 11,
+    fontFamily: 'Helvetica-Bold',
+    color: C.brick,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+
+  // Prepared For
+  prepName: {
+    fontSize: 20,
+    fontFamily: 'Helvetica-Bold',
+    color: C.ink,
+    marginBottom: 4,
+  },
+  prepContact: {
+    fontSize: 10,
+    color: C.mute,
+    marginBottom: 16,
+  },
+
+  // Home details
+  divider: {
+    borderBottomWidth: 1,
+    borderBottomColor: C.line,
+    marginBottom: 16,
+  },
+  homeName: {
+    fontSize: 24,
+    fontFamily: 'Times-Bold',
+    color: C.ink,
+  },
+  homeModel: {
+    fontSize: 18,
+    fontFamily: 'Times-Roman',
+    color: C.mute,
+    marginLeft: 10,
+  },
+  homeSpecs: {
+    fontSize: 10,
+    color: C.mute,
+    marginTop: 4,
+    marginBottom: 16,
+  },
+
+  // Photo grid
+  photoRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  photoCell: {
+    flex: 1,
+  },
+  photoImage: {
+    width: '100%',
+    height: 130,
+    objectFit: 'cover',
+  },
+  photoCaptionBar: {
+    backgroundColor: '#2c4a8a',
+    padding: '4px 8px',
+  },
+  photoCaptionText: {
+    fontSize: 8,
+    color: C.white,
+    textAlign: 'center',
+    fontFamily: 'Helvetica-Bold',
+  },
+
+  // Land & financing box
+  landBox: {
+    backgroundColor: '#f8f0e8',
+    padding: '12px 16px',
+    marginTop: 12,
+  },
+  landLabel: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: C.brick,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  landText: {
+    fontSize: 10,
+    color: C.ink,
+    lineHeight: 1.4,
+  },
+
+  // Footer
+  footerBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  footerAccent: {
+    height: 3,
+    backgroundColor: C.brick,
+  },
+  footerContent: {
+    backgroundColor: C.navy,
+    padding: '12px 48px 10px',
+    alignItems: 'center',
+  },
+  footerOrgName: {
+    fontSize: 12,
+    fontFamily: 'Helvetica-Bold',
+    color: C.white,
+    marginBottom: 3,
+  },
+  footerContactLine: {
+    fontSize: 9,
+    color: '#a0aab4',
+    marginBottom: 6,
+  },
+  footerDisclaimer: {
+    fontSize: 7,
+    color: '#707a84',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 1.4,
+  },
+
+  // Flat rate pricing
+  priceBox: {
+    backgroundColor: C.navy,
+    padding: '20px 24px 16px',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  priceAmount: {
+    fontSize: 42,
+    fontFamily: 'Times-Bold',
+    color: C.white,
+    marginBottom: 4,
+  },
+  priceSub: {
+    fontSize: 10,
+    color: '#a0aab4',
+  },
+
+  // Checklist
+  checkRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    paddingLeft: 8,
+  },
+  checkMark: {
+    fontSize: 12,
+    color: C.brick,
+    marginRight: 10,
+    marginTop: 1,
+  },
+  checkContent: {
+    flex: 1,
+  },
+  checkTitle: {
+    fontSize: 11,
+    fontFamily: 'Helvetica-Bold',
+    color: C.ink,
+    marginBottom: 1,
+  },
+  checkSub: {
+    fontSize: 9,
+    color: C.mute,
+  },
+
+  // Footnote
+  footnote: {
+    fontSize: 8,
+    color: C.mute,
+    fontStyle: 'italic',
+    marginTop: 8,
+    paddingLeft: 8,
+  },
+
+  // Quote-for line
+  quoteForLine: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 20,
+  },
+  quoteForLabel: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: C.brick,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginRight: 12,
+  },
+  quoteForName: {
+    fontSize: 16,
+    fontFamily: 'Helvetica-Bold',
+    color: C.ink,
+    marginRight: 8,
+  },
+  quoteForHome: {
+    fontSize: 12,
+    color: C.mute,
+  },
+
+  // Itemized table
+  itemTableHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: C.navy,
+    padding: '8px 12px',
+  },
+  itemTableHeaderText: {
+    fontSize: 9,
+    fontFamily: 'Helvetica-Bold',
+    color: C.white,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  itemTableRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 12px',
+  },
+  itemTableRowAlt: {
+    backgroundColor: '#f5f2ee',
+  },
+  itemTableDesc: {
+    fontSize: 10,
+    color: C.ink,
+    flex: 1,
+  },
+  itemTableAmount: {
+    fontSize: 10,
+    color: C.ink,
+    textAlign: 'right',
+    width: 100,
+  },
+  itemTableTotal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: C.navy,
+    padding: '10px 12px',
+  },
+  itemTableTotalLabel: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: C.white,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  itemTableTotalAmount: {
+    fontSize: 18,
+    fontFamily: 'Times-Bold',
+    color: C.white,
+  },
+});
+
+export type PreparedBy = {
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+};
+
+export type PhotoItem = {
+  url: string;
+  caption: string | null;
+};
+
+export function PdfHeaderV2({
+  date,
+  preparedBy,
+}: {
+  date: string;
+  preparedBy: PreparedBy;
+}) {
+  return (
+    <>
+      <View style={v2.headerBar}>
+        <View>
+          <Text style={v2.headerTitle}>UPSTATE HOME SALES</Text>
+          <Text style={v2.headerSub}>Quality Manufactured Homes &bull; South Carolina</Text>
+        </View>
+        <View style={v2.headerRight}>
+          <Text style={v2.headerDateLabel}>Quote Date: {date}</Text>
+          {preparedBy.name && (
+            <>
+              <Text style={v2.headerPrepLabel}>Prepared by:</Text>
+              <Text style={v2.headerPrepName}>{preparedBy.name}</Text>
+            </>
+          )}
+          {(preparedBy.phone || preparedBy.email) && (
+            <Text style={v2.headerContact}>
+              {[preparedBy.phone, preparedBy.email].filter(Boolean).join(' \u2022 ')}
+            </Text>
+          )}
+        </View>
+      </View>
+      <View style={base.accentBar} />
+    </>
+  );
+}
+
+export function PdfFooterV2({ preparedBy }: { preparedBy: PreparedBy }) {
+  return (
+    <View style={v2.footerBar} fixed>
+      <View style={v2.footerAccent} />
+      <View style={v2.footerContent}>
+        <Text style={v2.footerOrgName}>UPSTATE HOME SALES</Text>
+        <Text style={v2.footerContactLine}>
+          {[preparedBy.name, preparedBy.phone, preparedBy.email].filter(Boolean).join(' \u2022 ')}
+        </Text>
+        <Text style={v2.footerDisclaimer}>
+          Prices are estimates and subject to change. This is not a binding contract.
+        </Text>
+        <Text style={v2.footerDisclaimer}>
+          Financing subject to credit approval. Land roll-in subject to lender requirements.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+export function HomeDetailsSection({
+  customerName,
+  customerPhone,
+  customerEmail,
+  homeName,
+  modelNumber,
+  manufacturer,
+  beds,
+  baths,
+  homeType,
+}: {
+  customerName: string | null;
+  customerPhone: string | null;
+  customerEmail: string | null;
+  homeName: string;
+  modelNumber: string | null;
+  manufacturer: string | null;
+  beds: number | null;
+  baths: number | null;
+  homeType: string | null;
+}) {
+  const contactParts = [customerPhone, customerEmail].filter(Boolean).join('  \u2022  ');
+  const specsLine = [
+    manufacturer ? `Built by ${manufacturer}` : null,
+    beds != null && baths != null ? `${beds} Bed / ${baths} Bath` : null,
+    homeType ?? 'Manufactured Home',
+  ]
+    .filter(Boolean)
+    .join('  \u2022  ');
+
+  return (
+    <>
+      <Text style={v2.sectionLabel}>QUOTE PREPARED FOR</Text>
+      {customerName && <Text style={v2.prepName}>{customerName}</Text>}
+      {contactParts && <Text style={v2.prepContact}>{contactParts}</Text>}
+
+      <View style={v2.divider} />
+
+      <Text style={v2.sectionLabel}>HOME DETAILS</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 2 }}>
+        <Text style={v2.homeName}>{homeName}</Text>
+        {modelNumber && <Text style={v2.homeModel}>Model {modelNumber}</Text>}
+      </View>
+      {specsLine && <Text style={v2.homeSpecs}>{specsLine}</Text>}
+    </>
+  );
+}
+
+export function PhotoGrid({ photos }: { photos: PhotoItem[] }) {
+  if (photos.length === 0) return null;
+
+  const rows: PhotoItem[][] = [];
+  for (let i = 0; i < photos.length; i += 2) {
+    rows.push(photos.slice(i, i + 2));
+  }
+
+  return (
+    <>
+      <Text style={v2.sectionLabel}>HOME PHOTOS</Text>
+      {rows.map((row, ri) => (
+        <View key={ri} style={v2.photoRow}>
+          {row.map((photo, ci) => (
+            <View key={ci} style={v2.photoCell}>
+              <Image src={photo.url} style={v2.photoImage} />
+              <View style={v2.photoCaptionBar}>
+                <Text style={v2.photoCaptionText}>{photo.caption || 'Photo'}</Text>
+              </View>
+            </View>
+          ))}
+          {row.length === 1 && <View style={v2.photoCell} />}
+        </View>
+      ))}
+    </>
+  );
+}
+
+export function LandFinancingBox() {
+  return (
+    <View style={v2.landBox}>
+      <Text style={v2.landLabel}>LAND &amp; FINANCING</Text>
+      <Text style={v2.landText}>
+        Customer supplies the land. Land can be rolled into the loan if approved.
+      </Text>
+    </View>
+  );
+}
+
+export function FlatRatePricingSection({
+  items,
+  totalCents,
+  homeName,
+  modelNumber,
+}: {
+  items: LineItem[];
+  totalCents: number;
+  homeName: string;
+  modelNumber: string | null;
+}) {
+  return (
+    <>
+      <Text style={v2.sectionLabel}>YOUR ALL-INCLUSIVE QUOTE</Text>
+      <View style={v2.priceBox}>
+        <Text style={v2.priceAmount}>{fmtCents(totalCents)}</Text>
+        <Text style={v2.priceSub}>
+          Total price &bull; Excludes Water Tap (county cost: $2,500 &ndash; $6,000)
+        </Text>
+      </View>
+
+      <Text style={[v2.sectionLabel, { marginTop: 16 }]}>WHAT&apos;S INCLUDED</Text>
+      {items.map((item, i) => (
+        <View key={i} style={v2.checkRow}>
+          <Text style={v2.checkMark}>{'\u2713'}</Text>
+          <View style={v2.checkContent}>
+            <Text style={v2.checkTitle}>{item.description}</Text>
+            {item.subtitle && <Text style={v2.checkSub}>{item.subtitle}</Text>}
+          </View>
+        </View>
+      ))}
+      <Text style={v2.footnote}>
+        * Water Tap is an additional county cost, typically $2,500 &ndash; $6,000
+      </Text>
+    </>
+  );
+}
+
+export function ItemizedPricingSection({
+  items,
+  totalCents,
+}: {
+  items: LineItem[];
+  totalCents: number;
+}) {
+  return (
+    <>
+      <Text style={v2.sectionLabel}>ITEMIZED PRICING BREAKDOWN</Text>
+      <View style={v2.itemTableHeader}>
+        <Text style={v2.itemTableHeaderText}>Description</Text>
+        <Text style={[v2.itemTableHeaderText, { textAlign: 'right' }]}>Amount</Text>
+      </View>
+      {items.map((item, i) => (
+        <View key={i} style={[v2.itemTableRow, i % 2 === 0 ? v2.itemTableRowAlt : {}]}>
+          <Text style={v2.itemTableDesc}>{item.description}</Text>
+          <Text style={v2.itemTableAmount}>
+            {item.amount_cents != null ? fmtCents(item.amount_cents) : 'Included'}
+          </Text>
+        </View>
+      ))}
+      <View style={v2.itemTableTotal}>
+        <Text style={v2.itemTableTotalLabel}>Total</Text>
+        <Text style={v2.itemTableTotalAmount}>{fmtCents(totalCents)}</Text>
+      </View>
+    </>
+  );
 }

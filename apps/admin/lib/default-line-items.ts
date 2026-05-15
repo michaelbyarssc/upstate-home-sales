@@ -22,7 +22,8 @@ type HomeForLineItems = {
 export function buildDefaultLineItems(home: HomeForLineItems): LineItem[] {
   const items: LineItem[] = [
     {
-      description: `${home.name} (${home.stock_no}) — Complete Turn-Key Package`,
+      description: 'Home',
+      subtitle: `${home.name} (${home.stock_no})`,
       amount_cents: home.listed_price_cents,
     },
   ];
@@ -31,25 +32,24 @@ export function buildDefaultLineItems(home: HomeForLineItems): LineItem[] {
   const addons = Array.isArray(home.addons_jsonb) ? (home.addons_jsonb as HomeAddon[]) : [];
   for (const addon of addons) {
     if (addon.description?.trim()) {
-      items.push({ description: addon.description, amount_cents: null });
+      items.push({ description: addon.description, subtitle: null, amount_cents: null });
     }
   }
 
   // Standard inclusions — listed but not individually priced
-  const inclusions = [
-    'Shipping & Delivery',
-    'Setup & Installation',
-    'Standard Porches (4 ft x 4 ft)',
-    'Septic System',
-    'Power Pole & Hookup',
-    'Sewer & Water Hook-Up',
-    'Water Line (meter to home)',
-    'Underpinning',
-    'HVAC Unit',
+  const inclusions: Array<{ description: string; subtitle: string }> = [
+    { description: 'Shipping & Delivery', subtitle: 'Transport of the home to your land' },
+    { description: 'Professional Setup', subtitle: 'Full setup and installation on your site' },
+    { description: 'Porches', subtitle: '4ft x 4ft standard front and rear porches (larger sizes available by quote)' },
+    { description: 'Septic System', subtitle: 'Complete septic system installation' },
+    { description: 'Sewer & Water Hookup', subtitle: 'Connection of sewer and water lines to the home' },
+    { description: 'Water Line', subtitle: 'Run water line from the meter to the home' },
+    { description: 'Underpinning / Skirting', subtitle: 'Full skirting around the home\'s perimeter' },
+    { description: 'HVAC', subtitle: 'Complete heating and air conditioning unit' },
   ];
 
-  for (const desc of inclusions) {
-    items.push({ description: desc, amount_cents: null });
+  for (const item of inclusions) {
+    items.push({ description: item.description, subtitle: item.subtitle, amount_cents: null });
   }
 
   return items;

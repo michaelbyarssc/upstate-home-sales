@@ -38,6 +38,11 @@ export async function GET(
     const notes = (quote.notes_jsonb as string[] | null) ?? [];
 
     const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com';
+
+    // Fetch current user for prepared-by info
+    const { data: { user } } = await supabase.auth.getUser();
+    const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+
     const pdfData: QuotePdfData = {
       orgName: org?.name ?? 'Upstate Home Sales',
       brandColor: org?.brand_color ?? null,
@@ -60,6 +65,13 @@ export async function GET(
       expiresAt: quote.expires_at,
       createdAt: quote.created_at,
       publicUrl: `${publicBase}/q/${quote.public_token}`,
+      photos: [],
+      preparedBy: {
+        name: (typeof meta.full_name === 'string' && meta.full_name) || user?.email || null,
+        phone: (typeof meta.phone === 'string' && meta.phone) || null,
+        email: user?.email || null,
+      },
+      pricingMode: 'flat',
     };
 
     const buf = await renderQuotePdf(pdfData);

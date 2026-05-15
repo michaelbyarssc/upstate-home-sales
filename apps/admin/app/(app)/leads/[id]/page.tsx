@@ -48,7 +48,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .order('created_at'),
     supabase
       .from('homes')
-      .select('id, name, stock_no')
+      .select('id, name, stock_no, listed_price_cents')
       .is('deleted_at', null)
       .eq('status', 'published')
       .order('name')
@@ -91,6 +91,8 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         campaigns={(campaigns ?? []) as Array<{ id: string; name: string; channel: string; status: string }>}
         initialEnrollments={(enrollments ?? []) as Array<{ id: string; campaign_id: string; status: string; current_step: number; next_send_at: string | null; campaigns?: { name: string; channel: string } | { name: string; channel: string }[] | null }>}
         defaultLineItems={defaultLineItems}
+        homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number }>}
+        supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
       />
 
       <BuyerPortalPanel

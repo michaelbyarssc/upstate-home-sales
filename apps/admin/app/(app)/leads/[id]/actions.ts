@@ -121,11 +121,13 @@ export async function createQuote(args: {
   lineItems: LineItem[];
   notes: string[];
   sendEmail?: boolean;
+  selectedPhotoIds?: string[];
+  pricingMode?: 'flat' | 'itemized';
 }): Promise<{ public_token: string; expires_at: string; listed_price_cents: number }> {
   const supabase = createClient();
   const shouldEmail = args.sendEmail ?? true;
 
-  const [{ data: home, error: hErr }, { data: lead }, { data: org }] = await Promise.all([
+  const [{ data: home, error: hErr }, { data: lead }, { data: org }, { data: { user } }] = await Promise.all([
     supabase
       .from('homes')
       .select('id, name, stock_no, beds, baths, sqft, headline, description, listed_price_cents, model, type, manufacturers(name)')
@@ -141,8 +143,34 @@ export async function createQuote(args: {
       .select('name, brand_color')
       .eq('id', args.orgId)
       .maybeSingle(),
+    supabase.auth.getUser(),
   ]);
   if (hErr || !home) throw new Error(hErr?.message ?? 'Home not found');
+
+  // Build photo URLs
+  let photos: { url: string; caption: string | null }[] = [];
+  if (args.selectedPhotoIds && args.selectedPhotoIds.length > 0) {
+    const { data: photoRows } = await supabase
+      .from('home_photos')
+      .select('id, storage_path, alt_text, sort_order')
+      .in('id', args.selectedPhotoIds)
+      .order('sort_order');
+    if (photoRows) {
+      const baseUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/home-photos`;
+      photos = photoRows.map((p) => ({
+        url: `${baseUrl}/${p.storage_path}`,
+        caption: p.alt_text,
+      }));
+    }
+  }
+
+  // Build prepared-by from current user
+  const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const preparedBy = {
+    name: (typeof meta.full_name === 'string' && meta.full_name) || user?.email || null,
+    phone: (typeof meta.phone === 'string' && meta.phone) || null,
+    email: user?.email || null,
+  };
 
   // Total = sum of priced line items
   const totalCents = args.lineItems.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
@@ -194,6 +222,9 @@ export async function createQuote(args: {
       expiresAt: quote.expires_at,
       createdAt: quote.created_at,
       publicUrl,
+      photos,
+      preparedBy,
+      pricingMode: args.pricingMode ?? 'flat',
     };
     const buf = await renderQuotePdf(pdfData);
     const path = `${args.orgId}/${quote.id}.pdf`;
