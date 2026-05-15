@@ -16,7 +16,7 @@ export function SiteHeader() {
         <div className="uhs-nav-inner">
           <Link href="/" className="uhs-brand">
             <span className="name">
-              Upstate Home <em>Sales</em>
+              Upstate Home <em>Center</em>
             </span>
             <span className="tag">South Carolina</span>
           </Link>
@@ -45,7 +45,7 @@ export function SiteFooter() {
         <div className="uhs-footer-grid">
           <div className="brandblock">
             <div className="name">
-              Upstate Home <em>Sales</em>
+              Upstate Home <em>Center</em>
             </div>
             <p>
               Family-owned manufactured home dealer serving the South Carolina Upstate since 1998.
@@ -85,7 +85,7 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="uhs-footer-bottom">
-          <span>© {new Date().getFullYear()} Upstate Home Sales</span>
+          <span>© {new Date().getFullYear()} Upstate Home Center</span>
           <span className="spacer" />
           <span>Manufactured Home Dealer License # MDL.35984</span>
         </div>

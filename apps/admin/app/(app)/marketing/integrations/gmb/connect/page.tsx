@@ -36,7 +36,7 @@ export default async function GmbConnectPage() {
         </div>
         <h1>Connect Google Business Profile</h1>
         <p>
-          Authorize Upstate Home Sales to pull your reviews + post your replies via Google&rsquo;s
+          Authorize Upstate Home Center to pull your reviews + post your replies via Google&rsquo;s
           Business Profile API. Done through Google&rsquo;s OAuth consent screen — your password never
           touches our servers.
         </p>

@@ -10,7 +10,7 @@ import { createPublicClient } from '../lib/supabase';
 import type { OrgIntegration } from '@uhs/db';
 
 export const metadata: Metadata = {
-  title: { default: 'Upstate Home Sales', template: '%s · Upstate Home Sales' },
+  title: { default: 'Upstate Home Center', template: '%s · Upstate Home Center' },
   description:
     'Manufactured homes in the South Carolina Upstate. Family-owned dealer with two lots, every major manufacturer, honest pricing.',
 };

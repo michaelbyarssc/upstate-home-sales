@@ -86,7 +86,7 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
       stockNo: h.stock_no,
       status: 'in_stock',
     },
-    'Upstate Home Sales',
+    'Upstate Home Center',
   );
 
   return (

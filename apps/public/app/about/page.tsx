@@ -7,7 +7,7 @@ export default function AboutPage() {
         <div className="eyebrow">About</div>
         <h1 style={{ marginTop: 'var(--s-3)' }}>A family business, plain talk.</h1>
         <p style={{ fontSize: 'var(--t-body-l)', marginTop: 'var(--s-5)' }}>
-          Upstate Home Sales has been selling manufactured and modular homes in the South Carolina
+          Upstate Home Center has been selling manufactured and modular homes in the South Carolina
           Upstate since 1998. We operate from our Spartanburg lot and carry every major manufacturer
           that ships into the state.
         </p>

@@ -316,7 +316,7 @@ export function InvoiceFormModal({
               <textarea
                 value={paymentInstructions}
                 onChange={(e) => setPaymentInstructions(e.target.value)}
-                placeholder="e.g., Make checks payable to Upstate Home Sales LLC…"
+                placeholder="e.g., Make checks payable to Upstate Home Center LLC…"
                 rows={3}
               />
             </label>

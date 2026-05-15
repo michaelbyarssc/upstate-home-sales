@@ -348,12 +348,12 @@ export function PdfFooter() {
       <View style={base.footerAccent} />
       <View style={base.footerContent}>
         <View style={base.footerLeft}>
-          <Text style={base.footerOrgName}>Upstate Home Sales</Text>
+          <Text style={base.footerOrgName}>Upstate Home Center</Text>
           <Text style={base.footerTagline}>Built well. Priced honestly. Delivered to your land.</Text>
         </View>
         <View style={base.footerRight}>
-          <Text style={base.footerLink}>upstatehomesales.com</Text>
-          <Text style={base.footerLink}>info@upstatehomesales.com</Text>
+          <Text style={base.footerLink}>upstatehomecenter.com</Text>
+          <Text style={base.footerLink}>info@upstatehomecenter.com</Text>
         </View>
       </View>
     </View>
@@ -704,7 +704,7 @@ export function PdfHeaderV2({
     <>
       <View style={v2.headerBar}>
         <View>
-          <Text style={v2.headerTitle}>UPSTATE HOME SALES</Text>
+          <Text style={v2.headerTitle}>UPSTATE HOME CENTER</Text>
           <Text style={v2.headerSub}>Quality Manufactured Homes &bull; South Carolina</Text>
         </View>
         <View style={v2.headerRight}>
@@ -732,7 +732,7 @@ export function PdfFooterV2({ preparedBy }: { preparedBy: PreparedBy }) {
     <View style={v2.footerBar} fixed>
       <View style={v2.footerAccent} />
       <View style={v2.footerContent}>
-        <Text style={v2.footerOrgName}>UPSTATE HOME SALES</Text>
+        <Text style={v2.footerOrgName}>UPSTATE HOME CENTER</Text>
         <Text style={v2.footerContactLine}>
           {[preparedBy.name, preparedBy.phone, preparedBy.email].filter(Boolean).join(' \u2022 ')}
         </Text>

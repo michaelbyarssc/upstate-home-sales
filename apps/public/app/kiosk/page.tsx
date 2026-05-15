@@ -4,7 +4,7 @@ import { formatCompactPrice, formatMonthly } from '../../lib/finance';
 import type { PublicHome } from '@uhs/db';
 
 export const revalidate = 60;
-export const metadata = { title: 'Kiosk · Upstate Home Sales' };
+export const metadata = { title: 'Kiosk · Upstate Home Center' };
 
 type KHome = PublicHome & {
   manufacturers?: { name: string } | null;

@@ -31,7 +31,7 @@ export default async function HomePage() {
 
   // SEO: dealer Organization schema + ItemList of featured homes for AI Overviews.
   const orgJsonLd = organizationSchema({
-    name: 'Upstate Home Sales',
+    name: 'Upstate Home Center',
     url: absoluteUrl('/'),
     phone: '+1-864-680-4030',
     addressLocality: 'Spartanburg',

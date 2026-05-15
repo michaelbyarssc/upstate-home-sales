@@ -37,7 +37,7 @@ export async function updateTradeIn(
     const dollars = (finalCents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
     await sendEmail({
       to: existing.email,
-      subject: `Your trade-in offer from Upstate Home Sales`,
+      subject: `Your trade-in offer from Upstate Home Center`,
       replyToToken: id, // not a lead-thread token; inbound replies go to a generic mailbox
       text: [
         `Hi ${existing.contact_name},`,
@@ -48,7 +48,7 @@ export async function updateTradeIn(
         '',
         'This is a preliminary offer pending an in-person inspection. Reply to this email or call us to schedule a pickup walkthrough.',
         '',
-        '— Upstate Home Sales',
+        '— Upstate Home Center',
       ].join('\n'),
     }).catch((e) => console.error('[trade-in] offer email failed:', e));
 

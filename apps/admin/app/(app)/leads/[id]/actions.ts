@@ -55,7 +55,7 @@ export async function postMessage(
       const home = Array.isArray(homeRel) ? homeRel[0] : homeRel;
       const subject = home
         ? `RE: ${home.name} (${home.stock_no})`
-        : 'RE: Your inquiry with Upstate Home Sales';
+        : 'RE: Your inquiry with Upstate Home Center';
       const result = await sendEmail({
         to: lead.email,
         subject,
@@ -218,7 +218,7 @@ export async function createQuote(args: {
   let signedPdfUrl: string | null = null;
   try {
     const pdfData: QuotePdfData = {
-      orgName: org?.name ?? 'Upstate Home Sales',
+      orgName: org?.name ?? 'Upstate Home Center',
       brandColor: org?.brand_color ?? null,
       homeName: home.name,
       modelNumber: (home as any).model ?? null,
@@ -285,7 +285,7 @@ export async function createQuote(args: {
       '',
       "Reply to this email with any questions — we'll get back to you the same business day.",
       '',
-      '— Upstate Home Sales',
+      '— Upstate Home Center',
     );
     await sendEmail({
       to: lead.email,
@@ -388,7 +388,7 @@ export async function createInvoice(args: {
   let signedPdfUrl: string | null = null;
   try {
     const pdfData: InvoicePdfData = {
-      orgName: org?.name ?? 'Upstate Home Sales',
+      orgName: org?.name ?? 'Upstate Home Center',
       brandColor: org?.brand_color ?? null,
       invoiceNumber: invoice.invoice_number,
       homeName: home.name,
@@ -450,7 +450,7 @@ export async function createInvoice(args: {
       '',
       "Reply to this email with any questions — we'll get back to you the same business day.",
       '',
-      '— Upstate Home Sales',
+      '— Upstate Home Center',
     );
     await sendEmail({
       to: lead.email,
@@ -702,7 +702,7 @@ export async function inviteBuyerToPortal(args: { leadId: string }):
 
   const orgRel = (lead as unknown as { orgs: { name: string } | { name: string }[] | null }).orgs;
   const orgName =
-    (Array.isArray(orgRel) ? orgRel[0]?.name : orgRel?.name) ?? 'Upstate Home Sales';
+    (Array.isArray(orgRel) ? orgRel[0]?.name : orgRel?.name) ?? 'Upstate Home Center';
 
   const buyerName = lead.contact_name?.trim() || 'there';
   const emailResult = await sendEmail({

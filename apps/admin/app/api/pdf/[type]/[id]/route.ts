@@ -44,7 +44,7 @@ export async function GET(
     const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
 
     const pdfData: QuotePdfData = {
-      orgName: org?.name ?? 'Upstate Home Sales',
+      orgName: org?.name ?? 'Upstate Home Center',
       brandColor: org?.brand_color ?? null,
       homeName: home?.name ?? '',
       modelNumber: (home as any)?.model ?? null,
@@ -108,7 +108,7 @@ export async function GET(
 
   const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com';
   const pdfData: InvoicePdfData = {
-    orgName: org?.name ?? 'Upstate Home Sales',
+    orgName: org?.name ?? 'Upstate Home Center',
     brandColor: org?.brand_color ?? null,
     invoiceNumber: invoice.invoice_number,
     homeName: home?.name ?? '',

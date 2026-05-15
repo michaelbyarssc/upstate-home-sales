@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'UHS Admin',
-  description: 'Upstate Home Sales — dealer dashboard',
+  description: 'Upstate Home Center — dealer dashboard',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

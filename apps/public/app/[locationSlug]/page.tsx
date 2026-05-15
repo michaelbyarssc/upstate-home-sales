@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: { locationSlug: str
   const loc = await getLocation(params.locationSlug);
   if (!loc) return { title: 'Not found' };
   return {
-    title: `${loc.name} · Upstate Home Sales`,
+    title: `${loc.name} · Upstate Home Center`,
     description: loc.address
       ? `Visit our ${loc.name} location at ${loc.address}, ${loc.city ?? ''} ${loc.state ?? ''} ${loc.zip ?? ''}.`
       : `Visit our ${loc.name} location.`,

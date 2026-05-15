@@ -77,7 +77,7 @@ export async function POST(req: Request) {
   const expires = new Date(now.getTime() + validDays * 86_400_000);
 
   const pdfData: QuotePdfData = {
-    orgName: org?.name ?? 'Upstate Home Sales',
+    orgName: org?.name ?? 'Upstate Home Center',
     brandColor: org?.brand_color ?? null,
     homeName: home.name,
     modelNumber: (home as any).model ?? null,

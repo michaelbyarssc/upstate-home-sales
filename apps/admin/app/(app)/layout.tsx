@@ -38,7 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {(org?.name ?? 'U').slice(0, 1)}
           </div>
           <div className="name">
-            <div className="org-name">{org?.name ?? 'Upstate Home Sales'}</div>
+            <div className="org-name">{org?.name ?? 'Upstate Home Center'}</div>
             <div className="org-tag">Dealer admin</div>
           </div>
         </div>
