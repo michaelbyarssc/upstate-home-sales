@@ -27,7 +27,19 @@ export function MatterportButton({ url, homeName }: MatterportButtonProps) {
 
   return (
     <>
-      <button type="button" className="btn-out" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className="btn-out"
+        onClick={() => setOpen(true)}
+        style={{
+          fontFamily: '"Cormorant Garamond", "EB Garamond", Georgia, serif',
+          fontSize: 'clamp(24px, 4vw, 56px)',
+          fontWeight: 500,
+          lineHeight: 1.1,
+          padding: '0.18em 0.6em',
+          whiteSpace: 'nowrap',
+        }}
+      >
         View 3D Tour
       </button>
 
