@@ -609,22 +609,100 @@ export function QuoteFormModal({
           <div style={{ flex: 1, minHeight: 0 }}>
             <PdfCanvasViewer pdfBytes={previewBytes} />
           </div>
-          <div className="modal-footer">
+          <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
             <button type="button" className="btn-secondary" onClick={closePreview}>
               ← Back to editor
             </button>
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={isPending}
-              onClick={() => {
-                closePreview();
-                const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
-                handleSubmit(fakeEvent);
-              }}
-            >
-              {isPending ? 'Creating…' : sendEmail ? 'Send Quote' : 'Save Quote'}
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  const blob = new Blob([previewBytes], { type: 'application/pdf' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `Quote_${selectedHome?.name?.replace(/\s+/g, '_') ?? 'quote'}.pdf`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Download
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  const blob = new Blob([previewBytes], { type: 'application/pdf' });
+                  const url = URL.createObjectURL(blob);
+                  const win = window.open(url, '_blank');
+                  if (win) {
+                    win.addEventListener('load', () => win.print());
+                  }
+                }}
+              >
+                Print
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={isPending}
+                onClick={() => {
+                  const origSendEmail = sendEmail;
+                  setSendEmail(false);
+                  closePreview();
+                  startTransition(async () => {
+                    try {
+                      const q = await createQuote({
+                        leadId,
+                        orgId,
+                        homeId: selectedHomeId!,
+                        validDays,
+                        lineItems: items.filter((i) => i.description.trim()),
+                        notes: notes.filter((n) => n.trim()),
+                        sendEmail: false,
+                        selectedPhotoIds: Array.from(selectedPhotoIds),
+                        pricingMode,
+                      });
+                      onCreated(q);
+                    } catch (e) {
+                      setErr(e instanceof Error ? e.message : 'Quote creation failed');
+                      setSendEmail(origSendEmail);
+                    }
+                  });
+                }}
+              >
+                {isPending ? 'Saving…' : 'Save to Lead'}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={isPending}
+                onClick={() => {
+                  closePreview();
+                  startTransition(async () => {
+                    try {
+                      const q = await createQuote({
+                        leadId,
+                        orgId,
+                        homeId: selectedHomeId!,
+                        validDays,
+                        lineItems: items.filter((i) => i.description.trim()),
+                        notes: notes.filter((n) => n.trim()),
+                        sendEmail: true,
+                        selectedPhotoIds: Array.from(selectedPhotoIds),
+                        pricingMode,
+                      });
+                      onCreated(q);
+                    } catch (e) {
+                      setErr(e instanceof Error ? e.message : 'Quote creation failed');
+                    }
+                  });
+                }}
+              >
+                {isPending ? 'Sending…' : 'Send Quote'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
