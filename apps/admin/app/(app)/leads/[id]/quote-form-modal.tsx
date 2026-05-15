@@ -22,7 +22,7 @@ type Props = {
   homes: HomeOption[];
   supabaseUrl: string;
   onClose: () => void;
-  onCreated: (token: string) => void;
+  onCreated: (result: { id: string; public_token: string; expires_at: string; listed_price_cents: number; created_at: string; home_id: string }) => void;
 };
 
 const VALIDITY_OPTIONS = [
@@ -569,7 +569,7 @@ export function QuoteFormModal({
           selectedPhotoIds: Array.from(selectedPhotoIds),
           pricingMode,
         });
-        onCreated(q.public_token);
+        onCreated(q);
       } catch (e) {
         setErr(e instanceof Error ? e.message : 'Quote creation failed');
       }

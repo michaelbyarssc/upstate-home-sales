@@ -123,7 +123,7 @@ export async function createQuote(args: {
   sendEmail?: boolean;
   selectedPhotoIds?: string[];
   pricingMode?: 'flat' | 'itemized';
-}): Promise<{ public_token: string; expires_at: string; listed_price_cents: number }> {
+}): Promise<{ id: string; public_token: string; expires_at: string; listed_price_cents: number; created_at: string; home_id: string }> {
   const supabase = createClient();
   const shouldEmail = args.sendEmail ?? true;
 
@@ -292,9 +292,12 @@ export async function createQuote(args: {
 
   revalidatePath(`/leads/${args.leadId}`);
   return {
+    id: quote.id,
     public_token: quote.public_token,
     expires_at: quote.expires_at,
     listed_price_cents: quote.listed_price_cents,
+    created_at: quote.created_at,
+    home_id: args.homeId,
   };
 }
 

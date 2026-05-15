@@ -11,7 +11,7 @@ import '../leads.css';
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }, { data: collaborators }] = await Promise.all([
+  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }, collabRes, { data: quotes }] = await Promise.all([
     supabase
       .from('leads')
       .select('*, homes(name, stock_no, listed_price_cents, setup_cents, setup_markup_pct, include_setup_in_price, addons_cents, addons_markup_pct, addons_jsonb)')
@@ -58,8 +58,15 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .from('lead_collaborators')
       .select('*')
       .eq('lead_id', params.id)
-      .order('created_at'),
+      .order('created_at')
+      .then((r) => ({ data: r.data }), () => ({ data: null })),
+    supabase
+      .from('quotes')
+      .select('id, home_id, listed_price_cents, expires_at, created_at, public_token, pdf_storage_path, homes(name, stock_no)')
+      .eq('lead_id', params.id)
+      .order('created_at', { ascending: false }),
   ]);
+  const collaborators = collabRes?.data;
 
   // Suggestions count: only meaningful if we have a buyer link.
   let suggestionsCountFinal = 0;
@@ -125,6 +132,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         campaigns={(campaigns ?? []) as Array<{ id: string; name: string; channel: string; status: string }>}
         initialEnrollments={(enrollments ?? []) as Array<{ id: string; campaign_id: string; status: string; current_step: number; next_send_at: string | null; campaigns?: { name: string; channel: string } | { name: string; channel: string }[] | null }>}
         initialCollaborators={collabList}
+        initialQuotes={(quotes ?? []).map((q: any) => ({ ...q, homes: Array.isArray(q.homes) ? q.homes[0] ?? null : q.homes })) as Array<{ id: string; home_id: string; listed_price_cents: number; expires_at: string; created_at: string; public_token: string; pdf_storage_path: string | null; homes?: { name: string; stock_no: string } | null }>}
         defaultLineItems={defaultLineItems}
         homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number }>}
         supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}

@@ -26,6 +26,17 @@ type EnrollmentRow = {
   campaigns?: { name: string; channel: string } | { name: string; channel: string }[] | null;
 };
 
+type QuoteRow = {
+  id: string;
+  home_id: string;
+  listed_price_cents: number;
+  expires_at: string;
+  created_at: string;
+  public_token: string;
+  pdf_storage_path: string | null;
+  homes?: { name: string; stock_no: string } | null;
+};
+
 type Props = {
   lead: Lead & { homes?: { name: string; stock_no: string; listed_price_cents: number } | null };
   initialMessages: LeadMessage[];
@@ -34,6 +45,7 @@ type Props = {
   campaigns: Array<{ id: string; name: string; channel: string; status: string }>;
   initialEnrollments: EnrollmentRow[];
   initialCollaborators: LeadCollaborator[];
+  initialQuotes: QuoteRow[];
   defaultLineItems: LineItem[];
   homes: HomeOption[];
   supabaseUrl: string;
@@ -43,7 +55,7 @@ type ComposeKind = 'email' | 'sms' | 'note' | 'call';
 
 const STAGES: LeadStage[] = ['new', 'in_progress', 'quoted', 'won', 'lost'];
 
-export function LeadDetailClient({ lead: initialLead, initialMessages, members, memberProfiles, campaigns, initialEnrollments, initialCollaborators, defaultLineItems, homes, supabaseUrl }: Props) {
+export function LeadDetailClient({ lead: initialLead, initialMessages, members, memberProfiles, campaigns, initialEnrollments, initialCollaborators, initialQuotes, defaultLineItems, homes, supabaseUrl }: Props) {
   const [lead, setLead] = useState(initialLead);
   const [messages, setMessages] = useState<LeadMessage[]>(initialMessages);
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>(initialEnrollments);
@@ -55,6 +67,7 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [collaborators, setCollaborators] = useState<LeadCollaborator[]>(initialCollaborators);
+  const [quotes, setQuotes] = useState<QuoteRow[]>(initialQuotes);
   const [, startTransition] = useTransition();
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -156,11 +169,18 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
     }
   }
 
-  function handleQuoteCreated(token: string) {
+  function handleQuoteCreated(result: { id: string; public_token: string; expires_at: string; listed_price_cents: number; created_at: string; home_id: string }) {
     const publicBase = window.location.origin.replace(':3001', ':3000');
-    const url = `${publicBase}/q/${token}`;
+    const url = `${publicBase}/q/${result.public_token}`;
     try { navigator.clipboard.writeText(url); } catch {}
     setLead((l) => ({ ...l, stage: 'quoted' }));
+    // Prepend new quote to list with home info from the homes prop
+    const home = homes.find((h) => h.id === result.home_id);
+    setQuotes((prev) => [{
+      ...result,
+      pdf_storage_path: null,
+      homes: home ? { name: home.name, stock_no: home.stock_no } : null,
+    }, ...prev]);
     setShowQuoteModal(false);
     setErr(null);
     alert(`Quote created and link copied:\n${url}`);
@@ -192,8 +212,58 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
             ← Inbox
           </Link>
         </div>
-        <div className="leads-empty" style={{ padding: '40px 24px', fontSize: 13 }}>
-          Inbox view stays open in another tab — realtime keeps both in sync.
+        <div style={{ padding: '14px 16px' }}>
+          <h4 style={{ fontSize: 11, fontWeight: 600, color: 'var(--adm-ink-mute)', letterSpacing: '0.04em', margin: '0 0 10px' }}>
+            QUOTES ({quotes.length})
+          </h4>
+          {quotes.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--adm-ink-mute)' }}>No quotes yet.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {quotes.map((q) => {
+                const isExpired = new Date(q.expires_at) < new Date();
+                return (
+                  <a
+                    key={q.id}
+                    href={`/q/${q.public_token}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'block',
+                      padding: '10px 12px',
+                      background: 'var(--adm-bg)',
+                      border: '1px solid var(--adm-line)',
+                      borderRadius: 6,
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      fontSize: 13,
+                    }}
+                  >
+                    <div style={{ fontWeight: 500, marginBottom: 4 }}>
+                      {q.homes?.name ?? 'Unknown home'}
+                      {q.homes?.stock_no && (
+                        <span style={{ fontWeight: 400, color: 'var(--adm-ink-mute)', marginLeft: 6 }}>
+                          #{q.homes.stock_no}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--adm-ink-mute)' }}>
+                      <span>{new Date(q.created_at).toLocaleDateString()}</span>
+                      <span>·</span>
+                      <span>{formatCents(q.listed_price_cents)}</span>
+                      <span>·</span>
+                      <span
+                        className={`bd ${isExpired ? 'bd-danger' : 'bd-success'}`}
+                        style={{ fontSize: 11 }}
+                      >
+                        {isExpired ? 'Expired' : 'Active'}
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
