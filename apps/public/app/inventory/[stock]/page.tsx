@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createPublicClient, publicPhotoUrl } from '../../../lib/supabase';
 import { QuoteForm } from './quote-form';
 import { Gallery } from './gallery';
+import { MatterportButton } from './matterport-button';
 import { type PublicHome, type PublicHomePhoto } from '@uhs/db';
 import { absoluteUrl, homeProductSchema } from '../../../lib/seo';
 import { HomeCard } from '../../../components/HomeCard';
@@ -31,7 +32,7 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
   const { data: home } = await supabase
     .from('public_homes')
     .select(
-      'id, stock_no, name, model, type, beds, baths, sqft, width_ft, length_ft, year_built, construction, listed_price_cents, prices_hidden, starting_from, headline, description, on_lot_since, manufacturer_id, manufacturers(name)'
+      'id, stock_no, name, model, type, beds, baths, sqft, width_ft, length_ft, year_built, construction, listed_price_cents, prices_hidden, starting_from, headline, description, matterport_url, on_lot_since, manufacturer_id, manufacturers(name)'
     )
     .eq('stock_no', decodeURIComponent(stock))
     .maybeSingle();
@@ -117,7 +118,12 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
 
             <div>
               <div className="eyebrow">{h.manufacturers?.name ?? 'Manufactured Home'}{h.model ? ` · ${h.model}` : ''}</div>
-              <h1 style={{ marginTop: 8 }}>{h.name}</h1>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
+                <h1 style={{ margin: 0 }}>{h.name}</h1>
+                {h.matterport_url && (
+                  <MatterportButton url={h.matterport_url} homeName={h.name} />
+                )}
+              </div>
               {h.headline && (
                 <p style={{ fontSize: 'var(--t-body-l)', color: 'var(--c-ink-soft)', marginTop: 'var(--s-3)' }}>
                   {h.headline}

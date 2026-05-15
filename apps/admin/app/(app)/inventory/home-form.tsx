@@ -514,6 +514,19 @@ export function HomeForm(props: Props) {
                 <label className="label">Body</label>
                 <textarea className="textarea" name="description" rows={5} defaultValue={home?.description ?? ''} />
               </div>
+              <div className="field">
+                <label className="label">Matterport 3D tour URL</label>
+                <input
+                  className="input"
+                  type="url"
+                  name="matterport_url"
+                  defaultValue={home?.matterport_url ?? ''}
+                  placeholder="https://my.matterport.com/show/?m=..."
+                />
+                <div className="sub" style={{ marginTop: 4 }}>
+                  Optional. When set, the public detail page shows a &ldquo;View 3D Tour&rdquo; button.
+                </div>
+              </div>
             </div>
           </div>
 

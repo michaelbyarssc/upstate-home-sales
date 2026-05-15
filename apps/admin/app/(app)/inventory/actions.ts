@@ -30,6 +30,7 @@ type HomeFields = {
   starting_from: boolean;
   headline: string | null;
   description: string | null;
+  matterport_url: string | null;
   status: HomeStatus;
   on_lot_since: string | null;
   is_featured: boolean;
@@ -121,6 +122,7 @@ function readFields(fd: FormData): HomeFields {
     starting_from: parseChecked(fd, 'starting_from'),
     headline: parseStr(fd.get('headline')),
     description: parseStr(fd.get('description')),
+    matterport_url: parseStr(fd.get('matterport_url')),
     status: (parseStr(fd.get('status')) as HomeStatus) ?? 'draft',
     on_lot_since: parseStr(fd.get('on_lot_since')),
     is_featured: parseChecked(fd, 'is_featured'),

@@ -494,6 +494,7 @@ export interface Home {
   listed_price_cents: number;
   headline: string | null;
   description: string | null;
+  matterport_url: string | null;
   status: HomeStatus;
   on_lot_since: string | null;
   is_featured: boolean;
@@ -531,6 +532,7 @@ export interface PublicHome {
   starting_from: boolean;
   headline: string | null;
   description: string | null;
+  matterport_url: string | null;
   on_lot_since: string | null;
   is_featured: boolean;
   created_at: string;
