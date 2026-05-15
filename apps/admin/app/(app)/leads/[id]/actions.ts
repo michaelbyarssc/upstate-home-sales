@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@uhs/db/server';
 import { createServiceClient } from '@uhs/db/service';
-import type { LeadMessage, LeadStage, LineItem, MessageChannel, MessageKind, MilestoneStatus, PaymentMethod } from '@uhs/db';
+import type { CollabRole, LeadMessage, LeadStage, LineItem, MessageChannel, MessageKind, MilestoneStatus, PaymentMethod } from '@uhs/db';
 import { sendEmail, sendSms } from '../../../../lib/notify';
 import { renderQuotePdf, type QuotePdfData } from '../../../../lib/quote-pdf';
 import { renderInvoicePdf, type InvoicePdfData } from '../../../../lib/invoice-pdf';
@@ -719,6 +719,169 @@ export async function inviteBuyerToPortal(args: { leadId: string }):
   if (emailResult.skipped) {
     console.warn('[invite-buyer] magic link (Resend skipped):', actionLink);
   }
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return { ok: true };
+}
+
+// ─── Deal sharing / collaborators ────────────────────────────────────────
+
+export async function searchUsersForSharing(query: string): Promise<Array<{ id: string; email: string; name: string | null }>> {
+  if (!query || query.length < 3) return [];
+  const sb = createServiceClient();
+  const { data } = await sb.auth.admin.listUsers({ perPage: 20 });
+  if (!data?.users) return [];
+  const q = query.toLowerCase();
+  return data.users
+    .filter((u) => u.email?.toLowerCase().includes(q))
+    .slice(0, 10)
+    .map((u) => {
+      const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+      const name = (typeof meta.full_name === 'string' && meta.full_name) || null;
+      return { id: u.id, email: u.email ?? '', name };
+    });
+}
+
+export async function addCollaborator(args: {
+  leadId: string;
+  userId: string;
+  role: CollabRole;
+  splitPct?: number | null;
+  note?: string | null;
+}): Promise<{ ok: true }> {
+  const supabase = createClient();
+
+  // Validate split sum
+  if (args.role === 'split') {
+    const pct = args.splitPct ?? 0;
+    if (pct <= 0 || pct > 100) throw new Error('Split percentage must be between 1 and 100');
+    const { data: existing } = await supabase
+      .from('lead_collaborators')
+      .select('split_pct')
+      .eq('lead_id', args.leadId)
+      .eq('role', 'split');
+    const currentTotal = (existing ?? []).reduce((s: number, r: any) => s + (r.split_pct ?? 0), 0);
+    if (currentTotal + pct > 100) throw new Error(`Split total would exceed 100% (current: ${currentTotal}%)`);
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { error } = await supabase
+    .from('lead_collaborators')
+    .insert({
+      lead_id: args.leadId,
+      user_id: args.userId,
+      role: args.role,
+      split_pct: args.role === 'split' ? (args.splitPct ?? null) : null,
+      added_by: user?.id ?? null,
+      note: args.note ?? null,
+    });
+  if (error) throw new Error(error.message);
+
+  // Get lead org_id for system message
+  const { data: lead } = await supabase
+    .from('leads')
+    .select('org_id')
+    .eq('id', args.leadId)
+    .maybeSingle();
+
+  if (lead) {
+    // Resolve collaborator name
+    const sb = createServiceClient();
+    const { data: userData } = await sb.auth.admin.getUserById(args.userId);
+    const meta = (userData?.user?.user_metadata ?? {}) as Record<string, unknown>;
+    const collabName = (typeof meta.full_name === 'string' && meta.full_name) || userData?.user?.email || 'User';
+
+    const splitInfo = args.role === 'split' && args.splitPct ? ` (${args.splitPct}% split)` : '';
+    await supabase.from('lead_messages').insert({
+      lead_id: args.leadId,
+      org_id: lead.org_id,
+      kind: 'system',
+      channel: null,
+      body: `${collabName} added as ${args.role}${splitInfo}`,
+    });
+  }
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return { ok: true };
+}
+
+export async function removeCollaborator(args: { leadId: string; collaboratorId: string }): Promise<{ ok: true }> {
+  const supabase = createClient();
+
+  // Get collaborator info before deleting
+  const { data: collab } = await supabase
+    .from('lead_collaborators')
+    .select('user_id')
+    .eq('id', args.collaboratorId)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from('lead_collaborators')
+    .delete()
+    .eq('id', args.collaboratorId);
+  if (error) throw new Error(error.message);
+
+  if (collab) {
+    const { data: lead } = await supabase
+      .from('leads')
+      .select('org_id')
+      .eq('id', args.leadId)
+      .maybeSingle();
+
+    if (lead) {
+      const sb = createServiceClient();
+      const { data: userData } = await sb.auth.admin.getUserById(collab.user_id);
+      const meta = (userData?.user?.user_metadata ?? {}) as Record<string, unknown>;
+      const collabName = (typeof meta.full_name === 'string' && meta.full_name) || userData?.user?.email || 'User';
+
+      await supabase.from('lead_messages').insert({
+        lead_id: args.leadId,
+        org_id: lead.org_id,
+        kind: 'system',
+        channel: null,
+        body: `${collabName} removed as collaborator`,
+      });
+    }
+  }
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return { ok: true };
+}
+
+export async function updateCollaboratorSplit(args: {
+  collaboratorId: string;
+  leadId: string;
+  role?: CollabRole;
+  splitPct?: number | null;
+}): Promise<{ ok: true }> {
+  const supabase = createClient();
+  const newRole = args.role;
+  const newPct = args.splitPct;
+
+  if (newRole === 'split' || (!newRole && newPct != null)) {
+    const pct = newPct ?? 0;
+    if (pct <= 0 || pct > 100) throw new Error('Split percentage must be between 1 and 100');
+    const { data: existing } = await supabase
+      .from('lead_collaborators')
+      .select('id, split_pct')
+      .eq('lead_id', args.leadId)
+      .eq('role', 'split');
+    const otherTotal = (existing ?? [])
+      .filter((r: any) => r.id !== args.collaboratorId)
+      .reduce((s: number, r: any) => s + (r.split_pct ?? 0), 0);
+    if (otherTotal + pct > 100) throw new Error(`Split total would exceed 100% (others: ${otherTotal}%)`);
+  }
+
+  const patch: Record<string, unknown> = {};
+  if (newRole) patch.role = newRole;
+  if (newPct !== undefined) patch.split_pct = newRole === 'split' || (!newRole && newPct != null) ? newPct : null;
+
+  const { error } = await supabase
+    .from('lead_collaborators')
+    .update(patch)
+    .eq('id', args.collaboratorId);
+  if (error) throw new Error(error.message);
 
   revalidatePath(`/leads/${args.leadId}`);
   return { ok: true };

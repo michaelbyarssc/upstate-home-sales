@@ -79,6 +79,20 @@ export interface OrgMember {
   created_at: string;
 }
 
+// ─── Lead collaboration / deal sharing ────────────────────────────────────
+export type CollabRole = 'viewer' | 'editor' | 'split';
+
+export interface LeadCollaborator {
+  id: string;
+  lead_id: string;
+  user_id: string;
+  role: CollabRole;
+  split_pct: number | null;
+  added_by: string | null;
+  note: string | null;
+  created_at: string;
+}
+
 // ─── Customer portal (buyer side) ─────────────────────────────────────────
 export type BuyerDocKind = 'driver_license' | 'w2' | 'proof_of_income' | 'bank_statement' | 'other';
 export type MilestoneStatus = 'pending' | 'in_progress' | 'complete';

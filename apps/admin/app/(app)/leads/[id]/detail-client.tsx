@@ -11,8 +11,11 @@ import {
   toggleLeadHot,
 } from './actions';
 import { enrollLeadInCampaign } from '../../automations/campaigns/actions';
+import type { LeadCollaborator } from '@uhs/db';
 import { QuoteFormModal, type HomeOption } from './quote-form-modal';
 import { InvoiceFormModal } from './invoice-form-modal';
+import { ShareLeadModal } from './share-lead-modal';
+import { removeCollaborator } from './actions';
 
 type EnrollmentRow = {
   id: string;
@@ -27,8 +30,10 @@ type Props = {
   lead: Lead & { homes?: { name: string; stock_no: string; listed_price_cents: number } | null };
   initialMessages: LeadMessage[];
   members: Array<{ user_id: string; role: string }>;
+  memberProfiles: Record<string, { name: string | null; email: string | null }>;
   campaigns: Array<{ id: string; name: string; channel: string; status: string }>;
   initialEnrollments: EnrollmentRow[];
+  initialCollaborators: LeadCollaborator[];
   defaultLineItems: LineItem[];
   homes: HomeOption[];
   supabaseUrl: string;
@@ -38,7 +43,7 @@ type ComposeKind = 'email' | 'sms' | 'note' | 'call';
 
 const STAGES: LeadStage[] = ['new', 'in_progress', 'quoted', 'won', 'lost'];
 
-export function LeadDetailClient({ lead: initialLead, initialMessages, members, campaigns, initialEnrollments, defaultLineItems, homes, supabaseUrl }: Props) {
+export function LeadDetailClient({ lead: initialLead, initialMessages, members, memberProfiles, campaigns, initialEnrollments, initialCollaborators, defaultLineItems, homes, supabaseUrl }: Props) {
   const [lead, setLead] = useState(initialLead);
   const [messages, setMessages] = useState<LeadMessage[]>(initialMessages);
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>(initialEnrollments);
@@ -48,6 +53,8 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   const [err, setErr] = useState<string | null>(null);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [collaborators, setCollaborators] = useState<LeadCollaborator[]>(initialCollaborators);
   const [, startTransition] = useTransition();
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -305,9 +312,11 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
             <h4>Assignee</h4>
             <select value={lead.assignee_id ?? ''} onChange={(e) => handleAssigneeChange(e.target.value)}>
               <option value="">— Unassigned</option>
-              {members.map((m) => (
-                <option key={m.user_id} value={m.user_id}>{shortId(m.user_id)} ({m.role})</option>
-              ))}
+              {members.map((m) => {
+                const p = memberProfiles[m.user_id];
+                const label = p?.name || p?.email || shortId(m.user_id);
+                return <option key={m.user_id} value={m.user_id}>{label} ({m.role})</option>;
+              })}
             </select>
 
             <h4>Source</h4>
@@ -372,6 +381,73 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
               </select>
             )}
 
+            <h4>Collaborators</h4>
+            {collaborators.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
+                {collaborators.map((c) => {
+                  const p = memberProfiles[c.user_id];
+                  const displayName = p?.name || p?.email || c.user_id.slice(0, 8);
+                  const splitTotal = collaborators
+                    .filter((x) => x.role === 'split')
+                    .reduce((s, x) => s + (x.split_pct ?? 0), 0);
+                  return (
+                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                      <span style={{ flex: 1 }}>{displayName}</span>
+                      <span style={{
+                        fontSize: 10, padding: '2px 6px', borderRadius: 8, textTransform: 'uppercase', letterSpacing: 0.4,
+                        background: c.role === 'split' ? '#fef3c7' : c.role === 'editor' ? '#dbeafe' : '#f3f4f6',
+                        color: c.role === 'split' ? '#92400e' : c.role === 'editor' ? '#1e40af' : '#6b7280',
+                      }}>
+                        {c.role}{c.role === 'split' && c.split_pct != null ? ` ${c.split_pct}%` : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await removeCollaborator({ leadId: lead.id, collaboratorId: c.id });
+                            setCollaborators((prev) => prev.filter((x) => x.id !== c.id));
+                          } catch (e) {
+                            setErr(e instanceof Error ? e.message : 'Remove failed');
+                          }
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--adm-ink-mute)', fontSize: 12, padding: 0 }}
+                        title="Remove collaborator"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+                {(() => {
+                  const splitCollabs = collaborators.filter((c) => c.role === 'split');
+                  if (splitCollabs.length === 0) return null;
+                  const splitTotal = splitCollabs.reduce((s, c) => s + (c.split_pct ?? 0), 0);
+                  const assigneeP = memberProfiles[lead.assignee_id ?? ''];
+                  const assigneeName = assigneeP?.name || assigneeP?.email || 'Assignee';
+                  return (
+                    <div style={{ fontSize: 11, color: 'var(--adm-ink-mute)', marginTop: 4, padding: '6px 8px', background: '#fafaf7', borderRadius: 4 }}>
+                      Split: {assigneeName} {100 - splitTotal}% (implicit)
+                      {splitCollabs.map((c) => {
+                        const p = memberProfiles[c.user_id];
+                        return ` · ${p?.name || p?.email || '?'} ${c.split_pct ?? 0}%`;
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowShareModal(true)}
+              style={{
+                background: 'none', border: '1px dashed var(--adm-line)',
+                padding: '5px 10px', borderRadius: 4, fontSize: 12,
+                color: 'var(--adm-accent)', cursor: 'pointer', width: '100%',
+              }}
+            >
+              + Share deal
+            </button>
+
             {lead.homes && (
               <>
                 <h4>Home</h4>
@@ -413,6 +489,25 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
           homes={homes}
           onClose={() => setShowInvoiceModal(false)}
           onCreated={handleInvoiceCreated}
+        />
+      )}
+
+      {showShareModal && (
+        <ShareLeadModal
+          leadId={lead.id}
+          members={members.map((m) => ({
+            ...m,
+            name: memberProfiles[m.user_id]?.name ?? null,
+            email: memberProfiles[m.user_id]?.email ?? null,
+          }))}
+          existingCollaboratorUserIds={new Set(collaborators.map((c) => c.user_id))}
+          assigneeId={lead.assignee_id}
+          onClose={() => setShowShareModal(false)}
+          onAdded={() => {
+            setShowShareModal(false);
+            // Revalidation from the server action will refresh the page data
+            window.location.reload();
+          }}
         />
       )}
     </div>

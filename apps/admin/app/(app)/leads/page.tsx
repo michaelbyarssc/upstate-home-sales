@@ -53,6 +53,16 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
   ]);
   const homes = (homesRaw ?? []) as Array<{ id: string; name: string; stock_no: string }>;
 
+  // Fetch lead IDs where current user is a collaborator (for "shared" badge).
+  // Gracefully returns empty if lead_collaborators table doesn't exist yet.
+  let sharedLeadIds: string[] = [];
+  try {
+    const { data: collabs } = await supabase
+      .from('lead_collaborators')
+      .select('lead_id');
+    sharedLeadIds = (collabs ?? []).map((c: { lead_id: string }) => c.lead_id);
+  } catch { /* table may not exist yet */ }
+
   const tally: Record<string, number> = {};
   (counts ?? []).forEach((r: { stage: LeadStage }) => {
     tally[r.stage] = (tally[r.stage] ?? 0) + 1;
@@ -88,7 +98,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
               </Link>
             ))}
           </nav>
-          <LeadsRealtime initialRows={(rows ?? []).map((r: any) => ({ ...r, homes: Array.isArray(r.homes) ? r.homes[0] ?? null : r.homes })) as any} stage={stage} />
+          <LeadsRealtime initialRows={(rows ?? []).map((r: any) => ({ ...r, homes: Array.isArray(r.homes) ? r.homes[0] ?? null : r.homes })) as any} stage={stage} sharedLeadIds={sharedLeadIds} />
         </div>
       </div>
     </>

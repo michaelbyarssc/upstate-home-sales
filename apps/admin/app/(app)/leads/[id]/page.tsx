@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@uhs/db/server';
-import type { Lead, LeadMessage, LeadMilestone } from '@uhs/db';
+import { createServiceClient } from '@uhs/db/service';
+import type { Lead, LeadCollaborator, LeadMessage, LeadMilestone } from '@uhs/db';
 import { LeadDetailClient } from './detail-client';
 import { BuyerPortalPanel } from './portal-panel';
 import { buildDefaultLineItems } from '../../../../lib/default-line-items';
@@ -10,7 +11,7 @@ import '../leads.css';
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }] = await Promise.all([
+  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }, { data: collaborators }] = await Promise.all([
     supabase
       .from('leads')
       .select('*, homes(name, stock_no, listed_price_cents, setup_cents, setup_markup_pct, include_setup_in_price, addons_cents, addons_markup_pct, addons_jsonb)')
@@ -53,6 +54,11 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .eq('status', 'published')
       .order('name')
       .limit(50),
+    supabase
+      .from('lead_collaborators')
+      .select('*')
+      .eq('lead_id', params.id)
+      .order('created_at'),
   ]);
 
   // Suggestions count: only meaningful if we have a buyer link.
@@ -63,6 +69,33 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .select('id', { count: 'exact', head: true })
       .eq('buyer_id', buyerLink.buyer_id);
     suggestionsCountFinal = count ?? 0;
+  }
+
+  // Resolve collaborator + member profiles for display names
+  const collabList = (collaborators ?? []) as LeadCollaborator[];
+  const allUserIds = new Set([
+    ...(members ?? []).map((m: any) => m.user_id),
+    ...collabList.map((c) => c.user_id),
+  ]);
+  const memberProfiles: Record<string, { name: string | null; email: string | null }> = {};
+  if (allUserIds.size > 0) {
+    try {
+      const sb = createServiceClient();
+      const lookups = await Promise.all(
+        Array.from(allUserIds).map(async (id) => {
+          try {
+            const { data } = await sb.auth.admin.getUserById(id);
+            return { id, user: data?.user ?? null };
+          } catch { return { id, user: null }; }
+        }),
+      );
+      for (const { id, user } of lookups) {
+        if (!user) continue;
+        const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+        const name = (typeof meta.full_name === 'string' && meta.full_name) || null;
+        memberProfiles[id] = { name, email: user.email ?? null };
+      }
+    } catch { /* service client unavailable */ }
   }
 
   if (leadRes.error) {
@@ -88,8 +121,10 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         lead={lead as Lead & { homes?: { name: string; stock_no: string; listed_price_cents: number } | null }}
         initialMessages={(messages ?? []) as LeadMessage[]}
         members={(members ?? []) as Array<{ user_id: string; role: string }>}
+        memberProfiles={memberProfiles}
         campaigns={(campaigns ?? []) as Array<{ id: string; name: string; channel: string; status: string }>}
         initialEnrollments={(enrollments ?? []) as Array<{ id: string; campaign_id: string; status: string; current_step: number; next_send_at: string | null; campaigns?: { name: string; channel: string } | { name: string; channel: string }[] | null }>}
+        initialCollaborators={collabList}
         defaultLineItems={defaultLineItems}
         homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number }>}
         supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}

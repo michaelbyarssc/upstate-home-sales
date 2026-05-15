@@ -20,7 +20,7 @@ type Row = {
   homes?: { name: string; stock_no: string } | null;
 };
 
-type Props = { initialRows: Row[]; stage: string };
+type Props = { initialRows: Row[]; stage: string; sharedLeadIds?: string[] };
 
 const STAGE_BADGE: Record<LeadStage, string> = {
   new: 'bd-info',
@@ -30,8 +30,9 @@ const STAGE_BADGE: Record<LeadStage, string> = {
   lost: 'bd-soft',
 };
 
-export function LeadsRealtime({ initialRows, stage }: Props) {
+export function LeadsRealtime({ initialRows, stage, sharedLeadIds = [] }: Props) {
   const [rows, setRows] = useState<Row[]>(initialRows);
+  const sharedSet = new Set(sharedLeadIds);
   const [pulse, setPulse] = useState(0); // re-render trigger for the "X new" toast
   const [claiming, setClaiming] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -121,6 +122,7 @@ export function LeadsRealtime({ initialRows, stage }: Props) {
             <div className="meta">
               <span className={`bd ${STAGE_BADGE[r.stage] ?? 'bd-soft'}`}>{r.stage.replace('_', ' ')}</span>
               <span className="bd bd-soft">{r.source.replace('_', ' ')}</span>
+              {sharedSet.has(r.id) && <span className="bd bd-info">shared</span>}
               {!r.assignee_id && (
                 <>
                   <span className="bd bd-warn">unassigned</span>
