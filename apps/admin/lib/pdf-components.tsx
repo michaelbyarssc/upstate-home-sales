@@ -857,7 +857,7 @@ export function FlatRatePricingSection({
 
       <Text style={[v2.sectionLabel, { marginTop: 16 }]}>WHAT&apos;S INCLUDED</Text>
       {items.map((item, i) => (
-        <View key={i} style={v2.checkRow}>
+        <View key={i} style={v2.checkRow} wrap={false}>
           <Text style={v2.checkMark}>{'\u2713'}</Text>
           <View style={v2.checkContent}>
             <Text style={v2.checkTitle}>{item.description}</Text>
@@ -887,14 +887,14 @@ export function ItemizedPricingSection({
         <Text style={[v2.itemTableHeaderText, { textAlign: 'right' }]}>Amount</Text>
       </View>
       {items.map((item, i) => (
-        <View key={i} style={[v2.itemTableRow, i % 2 === 0 ? v2.itemTableRowAlt : {}]}>
+        <View key={i} style={[v2.itemTableRow, i % 2 === 0 ? v2.itemTableRowAlt : {}]} wrap={false}>
           <Text style={v2.itemTableDesc}>{item.description}</Text>
           <Text style={v2.itemTableAmount}>
             {item.amount_cents != null ? fmtCents(item.amount_cents) : 'Included'}
           </Text>
         </View>
       ))}
-      <View style={v2.itemTableTotal}>
+      <View style={v2.itemTableTotal} wrap={false}>
         <Text style={v2.itemTableTotalLabel}>Total</Text>
         <Text style={v2.itemTableTotalAmount}>{fmtCents(totalCents)}</Text>
       </View>
