@@ -65,7 +65,7 @@ function QuoteDocument({ q }: { q: QuotePdfData }) {
 
   return (
     <Document>
-      <Page size="LETTER" style={[base.page, { paddingBottom: 60 }]}>
+      <Page size="LETTER" style={[base.page, { paddingTop: 14, paddingBottom: 90 }]}>
         <PdfHeaderV2 date={dateStr} preparedBy={q.preparedBy} />
 
         <View style={{ padding: '24px 48px 0' }}>
