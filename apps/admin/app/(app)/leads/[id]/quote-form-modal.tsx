@@ -416,7 +416,11 @@ export function QuoteFormModal({
   onCreated,
 }: Props) {
   const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
-  const [items, setItems] = useState<LineItem[]>(defaultLineItems);
+  const [items, setItems] = useState<LineItem[]>(() =>
+    defaultLineItems.map((item, i) =>
+      i === 0 ? { ...item, subtitle: null, amount_cents: null } : item,
+    ),
+  );
   const [pricingMode, setPricingMode] = useState<PricingMode>('flat');
   const [notes, setNotes] = useState<string[]>([
     'Turn-key price includes: home, shipping, setup, porches, septic, power pole, sewer & water hook-up, water line, underpinning, and HVAC.',
