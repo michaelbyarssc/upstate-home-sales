@@ -65,11 +65,11 @@ function QuoteDocument({ q }: { q: QuotePdfData }) {
 
   return (
     <Document>
-      {/* PAGE 1: Home Details & Photos */}
       <Page size="LETTER" style={[base.page, { paddingBottom: 60 }]}>
         <PdfHeaderV2 date={dateStr} preparedBy={q.preparedBy} />
 
         <View style={{ padding: '24px 48px 0' }}>
+          {/* Home Details & Photos */}
           <HomeDetailsSection
             customerName={q.customerName}
             customerPhone={q.customerPhone}
@@ -85,18 +85,9 @@ function QuoteDocument({ q }: { q: QuotePdfData }) {
           <PhotoGrid photos={q.photos} />
 
           <LandFinancingBox />
-        </View>
 
-        <PdfFooterV2 preparedBy={q.preparedBy} />
-      </Page>
-
-      {/* PAGE 2: Pricing */}
-      <Page size="LETTER" style={[base.page, { paddingBottom: 60 }]}>
-        <PdfHeaderV2 date={dateStr} preparedBy={q.preparedBy} />
-
-        <View style={{ padding: '24px 48px 0' }}>
-          {/* Quote-for line */}
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 20 }}>
+          {/* Pricing */}
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 24, marginBottom: 20 }}>
             <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: C.brick, letterSpacing: 0.6, textTransform: 'uppercase', marginRight: 12 }}>
               QUOTE FOR
             </Text>
@@ -121,8 +112,6 @@ function QuoteDocument({ q }: { q: QuotePdfData }) {
               totalCents={q.totalCents}
             />
           )}
-
-          <LandFinancingBox />
         </View>
 
         <PdfFooterV2 preparedBy={q.preparedBy} />
