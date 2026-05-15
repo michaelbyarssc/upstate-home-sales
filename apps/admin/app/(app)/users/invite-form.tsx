@@ -32,6 +32,7 @@ export function InviteForm({
             email: String(fd.get('email') ?? '').trim(),
             password: String(fd.get('password') ?? ''),
             fullName: String(fd.get('fullName') ?? '').trim(),
+            phone: String(fd.get('phone') ?? '').trim() || undefined,
             role: (fd.get('role') as Role) ?? 'sales',
             scopedLot: String(fd.get('scopedLot') ?? '') || null,
           });
@@ -92,10 +93,14 @@ export function InviteForm({
         display: 'flex', flexDirection: 'column', gap: 12,
       }}>
         {mode === 'create' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
               <label className="label">Full Name *</label>
               <input className="input" name="fullName" type="text" required placeholder="Jane Doe" />
+            </div>
+            <div>
+              <label className="label">Phone</label>
+              <input className="input" name="phone" type="tel" placeholder="(864) 555-1234" />
             </div>
             <div>
               <label className="label">Password *</label>

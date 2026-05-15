@@ -72,7 +72,8 @@ async function loadMemberProfiles(userIds: string[]): Promise<Record<string, Mem
       (typeof meta.full_name === 'string' && meta.full_name) ||
       (typeof meta.name === 'string' && meta.name) ||
       null;
-    profiles[id] = { email: user.email ?? null, name };
+    const phone = (typeof meta.phone === 'string' && meta.phone) || null;
+    profiles[id] = { email: user.email ?? null, name, phone };
   }
   return profiles;
 }

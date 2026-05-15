@@ -23,6 +23,7 @@ export async function createUser(args: {
   email: string;
   password: string;
   fullName: string;
+  phone?: string;
   role: Role;
   scopedLot: string | null;
 }): Promise<{ ok: true }> {
@@ -30,12 +31,15 @@ export async function createUser(args: {
   if (!args.password || args.password.length < 8) throw new Error('Password must be at least 8 characters');
   if (!args.fullName.trim()) throw new Error('Name is required');
 
+  const metadata: Record<string, string> = { full_name: args.fullName.trim() };
+  if (args.phone?.trim()) metadata.phone = args.phone.trim();
+
   const sb = createServiceClient();
   const { data, error } = await sb.auth.admin.createUser({
     email: args.email,
     password: args.password,
     email_confirm: true,
-    user_metadata: { full_name: args.fullName.trim() },
+    user_metadata: metadata,
   });
   if (error || !data?.user) throw new Error(error?.message ?? 'User creation failed');
 
@@ -61,13 +65,20 @@ export async function createUser(args: {
  */
 export async function updateUserProfile(
   userId: string,
-  patch: { fullName?: string; email?: string },
+  patch: { fullName?: string; email?: string; phone?: string },
 ): Promise<{ ok: true }> {
   const sb = createServiceClient();
   const updates: Record<string, unknown> = {};
   if (patch.email) updates.email = patch.email;
-  if (patch.fullName !== undefined) {
-    updates.user_metadata = { full_name: patch.fullName.trim() };
+  if (patch.fullName !== undefined || patch.phone !== undefined) {
+    // Read existing metadata so we don't lose fields during shallow merge
+    const { data: existing } = await sb.auth.admin.getUserById(userId);
+    const existingMeta = (existing?.user?.user_metadata ?? {}) as Record<string, unknown>;
+    updates.user_metadata = {
+      ...existingMeta,
+      ...(patch.fullName !== undefined ? { full_name: patch.fullName.trim() } : {}),
+      ...(patch.phone !== undefined ? { phone: patch.phone.trim() || null } : {}),
+    };
   }
   if (Object.keys(updates).length === 0) throw new Error('Nothing to update');
 

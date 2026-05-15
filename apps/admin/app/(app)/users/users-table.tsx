@@ -6,11 +6,12 @@ import { updateMember, updateUserProfile, sendPasswordReset, setUserPassword } f
 
 const ROLES: Role[] = ['owner', 'manager', 'sales', 'service', 'readonly'];
 
-export type MemberProfile = { email: string | null; name: string | null };
+export type MemberProfile = { email: string | null; name: string | null; phone: string | null };
 
 type EditingUser = {
   userId: string;
   fullName: string;
+  phone: string;
   email: string;
   newPassword: string;
 };
@@ -48,6 +49,7 @@ export function UsersTable({
     setEditing({
       userId,
       fullName: p?.name ?? '',
+      phone: p?.phone ?? '',
       email: p?.email ?? '',
       newPassword: '',
     });
@@ -62,6 +64,7 @@ export function UsersTable({
     try {
       await updateUserProfile(editing.userId, {
         fullName: editing.fullName,
+        phone: editing.phone,
         email: editing.email,
       });
       if (editing.newPassword) {
@@ -71,6 +74,7 @@ export function UsersTable({
       profiles[editing.userId] = {
         name: editing.fullName || null,
         email: editing.email || null,
+        phone: editing.phone || null,
       };
       setEditing(null);
       setInfo(editing.newPassword ? 'User updated and password changed.' : 'User updated.');
@@ -116,6 +120,15 @@ export function UsersTable({
                   onChange={(e) => setEditing({ ...editing, fullName: e.target.value })}
                   placeholder="Full name"
                   autoFocus
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Phone</span>
+                <input
+                  type="tel"
+                  value={editing.phone}
+                  onChange={(e) => setEditing({ ...editing, phone: e.target.value })}
+                  placeholder="(864) 555-1234"
                 />
               </label>
               <label className="field">
