@@ -439,6 +439,17 @@ export function QuoteFormModal({
   function handleHomeChange(id: string) {
     setSelectedHomeId(id);
     setSelectedPhotoIds(new Set());
+    const home = homes.find((h) => h.id === id);
+    if (home) {
+      setItems((prev) => prev.map((item, i) => {
+        if (i !== 0) return item;
+        return {
+          ...item,
+          subtitle: `${home.name} (${home.stock_no})`,
+          amount_cents: home.listed_price_cents,
+        };
+      }));
+    }
   }
 
   function togglePhoto(id: string) {
