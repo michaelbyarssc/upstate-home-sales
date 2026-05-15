@@ -173,7 +173,7 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   function handleQuoteCreated(result: { id: string; public_token: string; expires_at: string; listed_price_cents: number; created_at: string; home_id: string }) {
     const publicBase = window.location.origin.replace(':3001', ':3000');
     const url = `${publicBase}/q/${result.public_token}`;
-    try { navigator.clipboard.writeText(url); } catch {}
+    navigator.clipboard.writeText(url).catch(() => {});
     setLead((l) => ({ ...l, stage: 'quoted' }));
     // Prepend new quote to list with home info from the homes prop
     const home = homes.find((h) => h.id === result.home_id);
@@ -190,7 +190,7 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   function handleInvoiceCreated(token: string, invoiceNumber: number) {
     const publicBase = window.location.origin.replace(':3001', ':3000');
     const url = `${publicBase}/inv/${token}`;
-    try { navigator.clipboard.writeText(url); } catch {}
+    navigator.clipboard.writeText(url).catch(() => {});
     setShowInvoiceModal(false);
     setErr(null);
     alert(`Invoice #${invoiceNumber} created and link copied:\n${url}`);
