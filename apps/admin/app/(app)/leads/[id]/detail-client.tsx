@@ -11,6 +11,8 @@ import {
   toggleLeadHot,
   getQuotePdfUrl,
   getQuoteForEdit,
+  setLeadSmsConsent,
+  sendSmsOptInLink,
 } from './actions';
 import { enrollLeadInCampaign } from '../../automations/campaigns/actions';
 import type { LeadCollaborator } from '@uhs/db';
@@ -426,7 +428,59 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
             <h4>Source</h4>
             <div className="kv"><span className="k">Channel</span><span>{lead.source.replace('_', ' ')}</span></div>
             <div className="kv"><span className="k">Created</span><span>{new Date(lead.created_at).toLocaleString()}</span></div>
-            <div className="kv"><span className="k">SMS opt-in</span><span>{lead.sms_consent ? 'Yes' : 'No'}</span></div>
+
+            <h4>SMS opt-in</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={lead.sms_consent}
+                  onChange={async (e) => {
+                    const next = e.target.checked;
+                    setLead((prev) => ({ ...prev, sms_consent: next }));
+                    const r = await setLeadSmsConsent({ leadId: lead.id, consent: next });
+                    if (!r.ok) {
+                      setLead((prev) => ({ ...prev, sms_consent: !next }));
+                      setErr(r.error);
+                    }
+                  }}
+                />
+                {lead.sms_consent ? (
+                  <span style={{ color: '#166534' }}>Consented — can send SMS</span>
+                ) : (
+                  <span style={{ color: 'var(--adm-ink-mute)' }}>Not consented</span>
+                )}
+              </label>
+              <button
+                type="button"
+                onClick={async () => {
+                  const r = await sendSmsOptInLink({ leadId: lead.id });
+                  if (!r.ok) setErr(r.error);
+                }}
+                disabled={!lead.email}
+                title={!lead.email ? 'Lead has no email on file' : 'Email a one-click confirmation link to the buyer'}
+                style={{
+                  background: '#fff',
+                  border: '1px solid var(--adm-line)',
+                  padding: '6px 10px',
+                  borderRadius: 4,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  opacity: !lead.email ? 0.5 : 1,
+                }}
+              >
+                ✉ Send opt-in confirmation link
+              </button>
+            </div>
 
             {(lead.utm_source || lead.utm_campaign || lead.gclid || lead.fbclid || lead.referrer_url) && (
               <>

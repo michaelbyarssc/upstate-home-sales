@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@uhs/db/browser';
 import type { Buyer } from '@uhs/db';
+import { setPortalSmsConsent } from './actions';
 
 type Props = { buyer: Buyer | null; userEmail: string; recoveryMode: boolean };
 
@@ -24,6 +25,7 @@ export function ProfileForm({ buyer, userEmail, recoveryMode }: Props) {
     setProfileMsg(null);
     setSavingProfile(true);
     const sb = createClient();
+    const previousNotifySms = buyer?.notify_sms ?? false;
     const { error } = await sb
       .from('buyers')
       .update({
@@ -33,12 +35,24 @@ export function ProfileForm({ buyer, userEmail, recoveryMode }: Props) {
         notify_sms: notifySms,
       })
       .eq('id', buyer!.id);
-    setSavingProfile(false);
     if (error) {
+      setSavingProfile(false);
       setProfileMsg({ kind: 'err', text: error.message });
-    } else {
-      setProfileMsg({ kind: 'ok', text: 'Profile saved.' });
+      return;
     }
+
+    // Sync SMS consent across all linked leads when the buyer flips the toggle.
+    if (notifySms !== previousNotifySms) {
+      const r = await setPortalSmsConsent(notifySms);
+      if (!r.ok) {
+        setSavingProfile(false);
+        setProfileMsg({ kind: 'err', text: `Profile saved, but SMS consent sync failed: ${r.error}` });
+        return;
+      }
+    }
+
+    setSavingProfile(false);
+    setProfileMsg({ kind: 'ok', text: 'Profile saved.' });
   }
 
   async function savePassword(e: React.FormEvent) {
@@ -97,9 +111,19 @@ export function ProfileForm({ buyer, userEmail, recoveryMode }: Props) {
               <input type="checkbox" checked={notifyEmail} onChange={(e) => setNotifyEmail(e.target.checked)} />
               Email me when there&rsquo;s a new milestone or document update.
             </label>
-            <label className="checkbox" style={{ marginTop: 8 }}>
-              <input type="checkbox" checked={notifySms} onChange={(e) => setNotifySms(e.target.checked)} />
-              Text me too. Reply STOP to opt out at any time.
+            <label className="checkbox" style={{ marginTop: 8, alignItems: 'flex-start' }}>
+              <input
+                type="checkbox"
+                checked={notifySms}
+                onChange={(e) => setNotifySms(e.target.checked)}
+                style={{ marginTop: 3 }}
+              />
+              <span>
+                Text me too about my home purchase (delivery timing, milestones, document
+                requests). By checking this box you consent to receive SMS messages from
+                Upstate Home Center. Reply STOP to any text to opt out. Msg &amp; data rates may
+                apply.
+              </span>
             </label>
           </div>
 

@@ -598,6 +598,9 @@ export interface Lead {
   sms_consent: boolean;
   sms_consent_at: string | null;
   sms_consent_text: string | null;
+  sms_consent_ip: string | null;
+  sms_consent_method: 'form' | 'admin' | 'portal' | 'email_link' | null;
+  sms_opt_in_token: string | null;
   qualifier_payload: Record<string, unknown> | null;
   utm_source: string | null;
   utm_medium: string | null;

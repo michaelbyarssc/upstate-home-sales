@@ -482,6 +482,127 @@ export async function createInvoice(args: {
   };
 }
 
+// ─── SMS consent (admin toggle + email opt-in link) ──────────────────────
+
+export async function setLeadSmsConsent(args: {
+  leadId: string;
+  consent: boolean;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: lead } = await supabase
+    .from('leads')
+    .select('org_id')
+    .eq('id', args.leadId)
+    .maybeSingle();
+  if (!lead) return { ok: false, error: 'Lead not found' };
+
+  const now = new Date().toISOString();
+  const update = args.consent
+    ? {
+        sms_consent: true,
+        sms_consent_at: now,
+        sms_consent_method: 'admin' as const,
+      }
+    : {
+        sms_consent: false,
+      };
+
+  const { error } = await supabase
+    .from('leads')
+    .update(update)
+    .eq('id', args.leadId);
+  if (error) return { ok: false, error: error.message };
+
+  const actor = user?.email ?? 'an admin';
+  await supabase.from('lead_messages').insert({
+    lead_id: args.leadId,
+    org_id: lead.org_id,
+    kind: 'system',
+    channel: null,
+    body: args.consent
+      ? `SMS consent recorded by ${actor}`
+      : `SMS consent revoked by ${actor}`,
+  });
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return { ok: true };
+}
+
+export async function sendSmsOptInLink(args: {
+  leadId: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = createClient();
+  const { data: lead } = await supabase
+    .from('leads')
+    .select('id, email, contact_name, org_id, sms_opt_in_token, reply_token, orgs(name)')
+    .eq('id', args.leadId)
+    .maybeSingle();
+  if (!lead) return { ok: false, error: 'Lead not found' };
+  if (!lead.email) return { ok: false, error: 'Lead has no email on file' };
+
+  // Reuse the existing token if one exists, otherwise mint one.
+  let token = (lead as any).sms_opt_in_token as string | null;
+  if (!token) {
+    token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    const svc = createServiceClient();
+    const { error: tokenErr } = await svc
+      .from('leads')
+      .update({ sms_opt_in_token: token })
+      .eq('id', args.leadId);
+    if (tokenErr) return { ok: false, error: tokenErr.message };
+  }
+
+  const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com';
+  const link = `${publicBase}/sms-opt-in/${token}`;
+
+  const orgRel = (lead as unknown as { orgs: { name: string } | { name: string }[] | null }).orgs;
+  const orgName =
+    (Array.isArray(orgRel) ? orgRel[0]?.name : orgRel?.name) ?? 'Upstate Home Center';
+  const buyerName = lead.contact_name?.trim() || 'there';
+
+  const result = await sendEmail({
+    to: lead.email,
+    subject: `Confirm SMS updates from ${orgName}`,
+    replyToToken: lead.reply_token,
+    text: [
+      `Hi ${buyerName},`,
+      '',
+      `${orgName} would like your okay to send text-message updates about your home purchase (delivery timing, milestones, document requests).`,
+      '',
+      `Tap to confirm — it takes one second:`,
+      link,
+      '',
+      `You can reply STOP to any text we send to opt out at any time. Message and data rates may apply.`,
+      '',
+      `If you didn't expect this email, just ignore it.`,
+      '',
+      `— ${orgName}`,
+    ].join('\n'),
+  });
+
+  if (!result.ok && !result.skipped) {
+    return { ok: false, error: result.error ?? 'Email send failed' };
+  }
+
+  await supabase.from('lead_messages').insert({
+    lead_id: args.leadId,
+    org_id: lead.org_id,
+    kind: 'system',
+    channel: null,
+    body: result.skipped
+      ? `SMS opt-in link generated (Resend not configured — link in server logs): ${link}`
+      : `SMS opt-in confirmation link emailed to ${lead.email}`,
+  });
+
+  if (result.skipped) {
+    console.warn('[sms-opt-in] (Resend skipped):', link);
+  }
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return { ok: true };
+}
+
 // ─── Dealer doc visibility + delete (quotes / invoices / purchase_orders) ─
 
 type DealerDocKind = 'quote' | 'invoice' | 'po';
