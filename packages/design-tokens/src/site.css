@@ -462,4 +462,13 @@
 @media (max-width: 900px) {
   .uhs-footer-grid { grid-template-columns: 1fr 1fr; }
   .uhs-nav-links { display: none; }
+  /* Show the hamburger replacement at the same breakpoint. */
+  .uhs-mobile-menu-toggle { display: inline-flex !important; }
+  /* Hide the "Browse homes" CTA on phones so the hamburger has room — the
+     menu has its own "Inventory" link plus a call CTA at the bottom. */
+  .uhs-nav-cta { display: none; }
+}
+
+@media (max-width: 640px) {
+  .uhs-footer-grid { grid-template-columns: 1fr; }
 }

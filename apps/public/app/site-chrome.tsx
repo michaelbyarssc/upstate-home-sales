@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { MobileMenu } from './mobile-menu';
 
 export function SiteHeader() {
   return (
@@ -32,6 +33,7 @@ export function SiteHeader() {
               Browse homes
             </Link>
           </div>
+          <MobileMenu />
         </div>
       </header>
     </>
