@@ -6,7 +6,7 @@ import type { LineItem } from '@uhs/db';
 import { setDocVisibility, deleteDealerDoc } from './actions';
 import { InvoiceFormModal } from './invoice-form-modal';
 import { PurchaseOrderFormModal } from './po-form-modal';
-import type { HomeOption } from './quote-form-modal';
+import { PdfCanvasViewer, type HomeOption } from './quote-form-modal';
 
 export type DealerDocRow = {
   kind: 'quote' | 'invoice' | 'po';
@@ -54,6 +54,9 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
   const [, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [convertSource, setConvertSource] = useState<{ kind: 'invoice' | 'po'; from: DealerDocRow } | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<DealerDocRow | null>(null);
+  const [viewerPdfBytes, setViewerPdfBytes] = useState<ArrayBuffer | null>(null);
+  const [viewerLoading, setViewerLoading] = useState(false);
 
   function toggleVisible(row: DealerDocRow) {
     const next = !row.visibleToBuyer;
@@ -87,15 +90,42 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
       setErr('No PDF available for this document.');
       return;
     }
-    const sb = createClient();
-    const { data, error } = await sb.storage
-      .from('quote-pdfs')
-      .createSignedUrl(row.pdfStoragePath, 120);
-    if (error || !data) {
-      setErr(`Couldn't load PDF: ${error?.message ?? 'unknown'}`);
-      return;
+    setViewingDoc(row);
+    setViewerPdfBytes(null);
+    setViewerLoading(true);
+    try {
+      const sb = createClient();
+      const { data, error } = await sb.storage
+        .from('quote-pdfs')
+        .createSignedUrl(row.pdfStoragePath, 120);
+      if (error || !data) throw new Error(error?.message ?? 'signed URL failed');
+      const res = await fetch(data.signedUrl);
+      if (!res.ok) throw new Error(`fetch ${res.status}`);
+      const buf = await res.arrayBuffer();
+      setViewerPdfBytes(buf);
+    } catch (e) {
+      setErr(`Couldn't load PDF: ${e instanceof Error ? e.message : 'unknown'}`);
+      setViewingDoc(null);
+    } finally {
+      setViewerLoading(false);
     }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  function closeViewer() {
+    setViewingDoc(null);
+    setViewerPdfBytes(null);
+  }
+
+  function downloadCurrent() {
+    if (!viewingDoc || !viewerPdfBytes) return;
+    const blob = new Blob([viewerPdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safe = viewingDoc.title.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '');
+    a.download = `${safe}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function startConvert(target: 'invoice' | 'po', from: DealerDocRow) {
@@ -260,6 +290,42 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
           onClose={() => setConvertSource(null)}
           onCreated={() => setConvertSource(null)}
         />
+      )}
+
+      {viewingDoc && (
+        <div className="modal-overlay" onClick={closeViewer}>
+          <div
+            className="modal-content"
+            style={{ width: 960, maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3>
+                {KIND_LABELS[viewingDoc.kind]} — {viewingDoc.title}
+              </h3>
+              <button type="button" className="modal-close" onClick={closeViewer}>×</button>
+            </div>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              {viewerLoading && (
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--adm-ink-mute)', fontSize: 13 }}>
+                  Loading PDF…
+                </div>
+              )}
+              {viewerPdfBytes && <PdfCanvasViewer pdfBytes={viewerPdfBytes} />}
+            </div>
+            <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+              <button type="button" className="btn-secondary" onClick={closeViewer}>Close</button>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={!viewerPdfBytes}
+                onClick={downloadCurrent}
+              >
+                Download
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
