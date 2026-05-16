@@ -65,31 +65,51 @@ export function MobileMenu() {
       </button>
 
       {open && (
-        <div
-          onClick={() => setOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Site menu"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.55)',
-            zIndex: 200,
-            display: 'flex',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <nav
-            onClick={(e) => e.stopPropagation()}
+        <>
+          {/* Backdrop — semi-transparent dim of the page. Fixed-positioned
+              so it covers the whole viewport regardless of parent layout. */}
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
             style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh',
+              background: 'rgba(0,0,0,0.55)',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              zIndex: 200,
+            }}
+          />
+
+          {/* Drawer panel — pinned to the right, full viewport height.
+              Fixed (not absolute) so it ignores ancestor containers. */}
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Site menu"
+            style={{
+              position: 'fixed',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              height: '100vh',
               width: 'min(320px, 88vw)',
-              height: '100%',
-              background: 'var(--c-surface)',
+              background: '#ffffff',
               padding: '20px 18px',
               display: 'flex',
               flexDirection: 'column',
               gap: 8,
               boxShadow: '-12px 0 28px rgba(0,0,0,0.25)',
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              zIndex: 201,
             }}
           >
             <div
@@ -104,10 +124,10 @@ export function MobileMenu() {
                 style={{
                   fontFamily: 'var(--f-display)',
                   fontSize: 18,
-                  color: 'var(--c-ink)',
+                  color: '#0f1c29',
                 }}
               >
-                Upstate Home <em style={{ color: 'var(--c-ink-mute)' }}>Center</em>
+                Upstate Home <em style={{ color: '#7a7268' }}>Center</em>
               </span>
               <button
                 type="button"
@@ -119,7 +139,7 @@ export function MobileMenu() {
                   fontSize: 28,
                   lineHeight: 1,
                   cursor: 'pointer',
-                  color: 'var(--c-ink-mute)',
+                  color: '#7a7268',
                   padding: '0 4px',
                 }}
               >
@@ -135,11 +155,12 @@ export function MobileMenu() {
                 style={{
                   display: 'block',
                   padding: '12px 10px',
-                  borderRadius: 'var(--r-1)',
+                  borderRadius: 6,
                   fontSize: 16,
                   textDecoration: 'none',
-                  color: 'var(--c-ink)',
-                  borderBottom: '1px solid var(--c-line)',
+                  color: '#0f1c29',
+                  background: '#ffffff',
+                  borderBottom: '1px solid #ece5d8',
                   minHeight: 44,
                   lineHeight: 1.4,
                 }}
@@ -156,10 +177,10 @@ export function MobileMenu() {
                 display: 'block',
                 textAlign: 'center',
                 padding: '14px 16px',
-                background: 'var(--c-accent)',
-                color: '#fff',
+                background: '#b9532a',
+                color: '#ffffff',
                 textDecoration: 'none',
-                borderRadius: 'var(--r-1)',
+                borderRadius: 6,
                 fontSize: 16,
                 fontWeight: 600,
                 minHeight: 44,
@@ -167,8 +188,8 @@ export function MobileMenu() {
             >
               Call (864) 680-4030
             </a>
-          </nav>
-        </div>
+          </aside>
+        </>
       )}
     </>
   );

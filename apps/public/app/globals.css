@@ -634,6 +634,18 @@
 }
 
 /* ─── Universal mobile polish across the public site ────────────────────── */
+/* Prevent body-level horizontal scroll regardless of which page is rendered.
+   A single oversized child (long URL, wide table, oversized image) used to
+   blow the viewport. These also belt-and-suspender every media element. */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+img, video, iframe, svg {
+  max-width: 100%;
+  height: auto;
+}
+
 @media (max-width: 640px) {
   /* iOS Safari zooms into inputs with font-size < 16px. Bump everything
      interactive to 16px so focusing fields doesn't trigger zoom. */
@@ -654,4 +666,15 @@
   }
   /* Photo lightbox + modal-overlay sit above mobile menu's z-index 200. */
   .modal-overlay { padding: 0; }
+  /* Long unbroken strings (IDs, tokens, URLs) wrap instead of overflowing. */
+  pre, code, kbd, samp { white-space: pre-wrap; word-break: break-word; }
+  /* Tables wrap their cell contents instead of forcing horizontal scroll. */
+  table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  table td, table th {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
 }
