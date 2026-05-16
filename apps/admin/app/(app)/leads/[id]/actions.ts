@@ -64,7 +64,6 @@ export async function postMessage(
         replyToToken: lead.reply_token,
       });
       if (!result.ok) {
-        // Surface a plain-English note on the timeline so the user knows.
         const reason = parseDeliveryError(result.error);
         await supabase.from('lead_messages').insert({
           lead_id: leadId,
@@ -72,6 +71,16 @@ export async function postMessage(
           kind: 'system',
           channel: null,
           body: `Email could not be delivered — ${reason}`,
+        });
+      } else if (result.skipped) {
+        // Email was no-op because Resend isn't configured — note it so the
+        // user doesn't think the customer got a message they actually didn't.
+        await supabase.from('lead_messages').insert({
+          lead_id: leadId,
+          org_id: orgId,
+          kind: 'system',
+          channel: null,
+          body: '⚠ Email not sent — Resend is not configured (RESEND_API_KEY / RESEND_FROM_EMAIL / EMAIL_INBOUND_DOMAIN missing). Message saved to timeline only.',
         });
       }
     }
@@ -89,6 +98,16 @@ export async function postMessage(
           kind: 'system',
           channel: null,
           body: `SMS could not be delivered — ${reason}`,
+        });
+      } else if (result.skipped) {
+        // Twilio not configured locally — message saved to timeline but
+        // never actually left the building. Make that explicit.
+        await supabase.from('lead_messages').insert({
+          lead_id: leadId,
+          org_id: orgId,
+          kind: 'system',
+          channel: null,
+          body: '⚠ SMS not sent — Twilio is not configured (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER missing). Message saved to timeline only.',
         });
       }
     }
