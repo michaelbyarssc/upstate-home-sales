@@ -135,4 +135,23 @@ button { font-family: inherit; cursor: pointer; }
   table { display: block; overflow-x: auto; white-space: nowrap; }
   /* Stacked button rows have a minimum tap target. */
   button, .btn { min-height: 36px; }
+
+  /* iOS Safari zooms in on inputs with font-size < 16px. Bump everything
+     interactive to 16px so focusing fields doesn't trigger zoom. */
+  .input, .select,
+  input[type='text'], input[type='email'], input[type='tel'],
+  input[type='number'], input[type='password'], input[type='url'],
+  input[type='search'], input[type='date'], input[type='datetime-local'],
+  textarea, select {
+    font-size: 16px;
+  }
+  /* Bigger primary CTAs for thumb tap. */
+  .btn-pri, .btn-primary { min-height: 44px; }
+  /* Edge-to-edge modals on phones. */
+  .modal-content {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
 }

@@ -300,3 +300,62 @@
   cursor: pointer;
 }
 .btn-secondary:hover { background: var(--c-bg); }
+
+/* ─── Mobile (≤ 900px) ───────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .leads-grid {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .leads-list {
+    border-right: none;
+    border-bottom: 1px solid var(--adm-line);
+  }
+
+  .lead-detail .head {
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    gap: 8px;
+  }
+  .lead-detail .head h2 { font-size: 18px; }
+  .lead-detail .head .actions {
+    margin-left: 0;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  .lead-detail .body { grid-template-columns: 1fr; }
+  .lead-detail .timeline { padding: 14px; }
+  .lead-detail .meta-pane {
+    border-left: none;
+    border-top: 1px solid var(--adm-line);
+    padding: 14px;
+  }
+
+  .msg { max-width: 95%; }
+  .msg.out { max-width: 95%; }
+
+  .compose { padding: 12px 14px; }
+  .compose-tabs { flex-wrap: wrap; }
+  .compose textarea { font-size: 16px; } /* prevents iOS zoom on focus */
+  .compose .row { flex-wrap: wrap; }
+
+  .modal-content {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  .modal-header, .modal-footer { padding: 14px; }
+  .modal-body { padding: 14px; }
+  .modal-body .field input,
+  .modal-body .field select,
+  .modal-body .field textarea {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lead-row { padding: 12px 14px; }
+  .leads-list .tabs a { padding: 10px 4px; font-size: 11px; }
+}
