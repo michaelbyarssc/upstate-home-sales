@@ -130,6 +130,54 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
     };
   }, [lead.id]);
 
+  // Polling fallback: realtime is flaky over RLS / connection drops / paid-tier
+  // gating, so re-fetch every 8 seconds and dedupe by id. Cheap query, scoped
+  // to this lead. When the tab is hidden we slow down to 60s so we're not
+  // hammering Supabase from idle tabs.
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+
+    async function refetch() {
+      const { data, error } = await supabase
+        .from('lead_messages')
+        .select('*')
+        .eq('lead_id', lead.id)
+        .order('sent_at');
+      if (cancelled || error || !data) return;
+      setMessages((prev) => {
+        const byId = new Map<string, LeadMessage>(prev.map((m) => [m.id, m]));
+        for (const m of data as LeadMessage[]) byId.set(m.id, m);
+        return Array.from(byId.values()).sort(
+          (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime(),
+        );
+      });
+    }
+
+    let id: ReturnType<typeof setInterval> | null = null;
+    function start(intervalMs: number) {
+      if (id) clearInterval(id);
+      id = setInterval(refetch, intervalMs);
+    }
+    start(document.visibilityState === 'visible' ? 8000 : 60000);
+
+    function onVisibility() {
+      if (document.visibilityState === 'visible') {
+        refetch();
+        start(8000);
+      } else {
+        start(60000);
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      cancelled = true;
+      if (id) clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [lead.id]);
+
   // Auto-scroll on new messages.
   useEffect(() => {
     timelineRef.current?.scrollTo({ top: timelineRef.current.scrollHeight, behavior: 'smooth' });
