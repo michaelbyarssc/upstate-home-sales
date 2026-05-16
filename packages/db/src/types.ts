@@ -699,6 +699,25 @@ export interface InvoicePayment {
   created_at: string;
 }
 
+export interface PurchaseOrder {
+  id: string;
+  org_id: string;
+  lead_id: string;
+  home_id: string;
+  quote_id: string | null;
+  po_number: number;
+  listed_price_cents: number;
+  line_items_jsonb: LineItem[];
+  notes_jsonb: string[] | null;
+  terms: string | null;
+  delivery_date: string | null;
+  pdf_storage_path: string | null;
+  public_token: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface QuoteSignature {
   id: string;
   quote_id: string;
