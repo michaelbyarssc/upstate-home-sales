@@ -215,3 +215,117 @@ body.portal-mode { background: var(--c-bg); }
   font: 400 13px/1.4 var(--f-body); color: var(--c-ink-mute);
   margin-top: 2px;
 }
+
+/* ─── Reusable responsive grids ────────────────────────────────── */
+/* Dashboard: main content + sidebar */
+.portal-dash-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 24px;
+}
+/* Designs list row: info + actions */
+.portal-design-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: #fff;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-3);
+  align-items: center;
+}
+.portal-design-row .portal-design-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+/* ─── Mobile (≤ 768px) ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .portal-bar {
+    padding: 10px 14px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .portal-bar .brand { font-size: 18px; }
+  .portal-bar nav {
+    order: 3;
+    flex: 1 1 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -14px;
+    padding: 4px 14px 6px;
+    gap: 2px;
+  }
+  .portal-bar nav::-webkit-scrollbar { display: none; }
+  .portal-bar nav a {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .portal-bar .who { display: none; }
+  .portal-bar .sign-out { padding: 8px 10px; font-size: 13px; }
+
+  .portal-content {
+    padding: 20px 16px 60px;
+  }
+  .portal-content h1 { font-size: clamp(26px, 7vw, 36px); }
+
+  .portal-card { padding: 18px; }
+
+  .portal-auth-wrap {
+    padding: 0;
+    align-items: stretch;
+    background: #fff;
+  }
+  .portal-auth-card {
+    padding: 28px 20px 32px;
+    border-radius: 0;
+    border: none;
+    max-width: none;
+    min-height: 100vh;
+  }
+  .portal-auth-card h1 { font-size: 20px; }
+
+  .portal-form input,
+  .portal-form select,
+  .portal-form textarea {
+    /* 16px keeps iOS Safari from zooming on focus */
+    font-size: 16px;
+    padding: 12px 14px;
+  }
+  .portal-form button[type='submit'],
+  .portal-form .magic-link-btn {
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  /* Responsive grids stack */
+  .portal-dash-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .portal-design-row {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  .portal-design-row .portal-design-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+  .portal-design-row .portal-design-actions > * {
+    flex: 1 1 140px;
+  }
+}
+
+/* ─── Small phones (≤ 480px) ───────────────────────────────────── */
+@media (max-width: 480px) {
+  .portal-bar { padding: 10px 12px; }
+  .portal-bar .brand { font-size: 16px; }
+  .portal-content { padding: 16px 12px 60px; }
+  .portal-card { padding: 14px; }
+  .portal-auth-card { padding: 24px 16px 28px; }
+}

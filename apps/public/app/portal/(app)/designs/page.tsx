@@ -58,19 +58,7 @@ export default async function PortalDesignsPage() {
             const stockNo = home?.stock_no ?? null;
             const delta = d.total_price_cents - d.base_price_cents;
             return (
-              <li
-                key={d.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  gap: 'var(--s-4)',
-                  padding: 'var(--s-5)',
-                  background: '#fff',
-                  border: '1px solid var(--c-line)',
-                  borderRadius: 'var(--r-3)',
-                  alignItems: 'center',
-                }}
-              >
+              <li key={d.id} className="portal-design-row">
                 <div>
                   <div className="eyebrow" style={{ fontSize: 11 }}>
                     {stockNo ? `Stock #${stockNo}` : 'Custom design'} ·{' '}
@@ -87,7 +75,7 @@ export default async function PortalDesignsPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                <div className="portal-design-actions">
                   <Link href={`/d/${d.share_token}`} className="btn btn-secondary" style={{ fontSize: 13 }}>
                     View / share
                   </Link>

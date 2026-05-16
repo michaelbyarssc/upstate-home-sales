@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@uhs/db/browser';
 
-type Mode = 'password' | 'magic';
+type Mode = 'magic' | 'password';
 
 export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>('password');
+  const [mode, setMode] = useState<Mode>('magic');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -23,17 +23,7 @@ export function LoginForm({ next }: { next: string }) {
     setSubmitting(true);
     const supabase = createClient();
 
-    if (mode === 'password') {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      setSubmitting(false);
-      if (error) {
-        setErr(error.message);
-        return;
-      }
-      router.push(next);
-      router.refresh();
-    } else {
-      // Magic link flow.
+    if (mode === 'magic') {
       const redirectTo = `${window.location.origin}/portal/auth/callback?next=${encodeURIComponent(next)}`;
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -44,7 +34,16 @@ export function LoginForm({ next }: { next: string }) {
         setErr(error.message);
         return;
       }
-      setInfo(`Check ${email} for a sign-in link.`);
+      setInfo(`Sign-in link sent. Open ${email} on this device and tap the link — it logs you in automatically.`);
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      setSubmitting(false);
+      if (error) {
+        setErr(error.message);
+        return;
+      }
+      router.push(next);
+      router.refresh();
     }
   }
 
@@ -57,6 +56,7 @@ export function LoginForm({ next }: { next: string }) {
           type="email"
           required
           autoComplete="email"
+          inputMode="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -84,8 +84,8 @@ export function LoginForm({ next }: { next: string }) {
 
       <button type="submit" disabled={submitting}>
         {submitting
-          ? mode === 'password' ? 'Signing in…' : 'Sending link…'
-          : mode === 'password' ? 'Sign in' : 'Send sign-in link'}
+          ? mode === 'magic' ? 'Sending link…' : 'Signing in…'
+          : mode === 'magic' ? 'Email me a sign-in link' : 'Sign in'}
       </button>
 
       <div className="portal-divider">or</div>
@@ -94,12 +94,12 @@ export function LoginForm({ next }: { next: string }) {
         type="button"
         className="magic-link-btn"
         onClick={() => {
-          setMode((m) => (m === 'password' ? 'magic' : 'password'));
+          setMode((m) => (m === 'magic' ? 'password' : 'magic'));
           setErr(null);
           setInfo(null);
         }}
       >
-        {mode === 'password' ? 'Sign in with email link' : 'Sign in with password'}
+        {mode === 'magic' ? 'Sign in with password instead' : 'Sign in with email link instead'}
       </button>
 
       {mode === 'password' && (

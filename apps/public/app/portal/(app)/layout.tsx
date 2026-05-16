@@ -29,7 +29,7 @@ export default async function PortalAppLayout({ children }: { children: React.Re
       <PortalBodyClass />
       <div className="portal-shell">
         <header className="portal-bar">
-          <Link href="/portal" className="brand">Upstate Home <em>Sales</em></Link>
+          <Link href="/portal" className="brand">Upstate Home <em>Center</em></Link>
           <nav>
             <Link href="/portal" className={isActive('/portal') ? 'active' : ''}>Dashboard</Link>
             <Link href="/portal/designs" className={isActive('/portal/designs') ? 'active' : ''}>Designs</Link>

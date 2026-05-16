@@ -6,7 +6,7 @@ export const metadata = { title: 'Create account · Buyer portal' };
 export default function PortalSignupPage() {
   return (
     <div className="portal-auth-card">
-      <Link href="/" className="brand">Upstate Home <em>Sales</em></Link>
+      <Link href="/" className="brand">Upstate Home <em>Center</em></Link>
       <p className="tag">Buyer portal</p>
       <h1>Create your account</h1>
       <p className="lede">

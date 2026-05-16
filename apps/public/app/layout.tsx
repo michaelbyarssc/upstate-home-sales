@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { SiteHeader, SiteFooter } from './site-chrome';
 import { AttributionCapture } from './attribution-capture';
@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   title: { default: 'Upstate Home Center', template: '%s · Upstate Home Center' },
   description:
     'Manufactured homes in the South Carolina Upstate. Family-owned dealer with two lots, every major manufacturer, honest pricing.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 /** Look up active org's pixel + AI config in a single round trip per request. */

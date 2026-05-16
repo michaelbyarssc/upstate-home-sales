@@ -97,7 +97,7 @@ export default async function PortalDashboard() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 24 }}>
+      <div className="portal-dash-grid">
         {/* Suggested homes */}
         <section className="portal-card">
           <div className="portal-card-head">
