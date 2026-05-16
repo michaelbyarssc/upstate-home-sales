@@ -2,16 +2,17 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@uhs/db/server';
 import { createServiceClient } from '@uhs/db/service';
-import type { Lead, LeadCollaborator, LeadMessage, LeadMilestone } from '@uhs/db';
+import type { BuyerDocument, Lead, LeadCollaborator, LeadMessage, LeadMilestone } from '@uhs/db';
 import { LeadDetailClient } from './detail-client';
 import { BuyerPortalPanel } from './portal-panel';
+import { BuyerUploadsPanel } from './buyer-uploads-panel';
 import { buildDefaultLineItems } from '../../../../lib/default-line-items';
 import '../leads.css';
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }, collabRes, { data: quotes }] = await Promise.all([
+  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }, collabRes, { data: quotes }, { data: buyerUploads }] = await Promise.all([
     supabase
       .from('leads')
       .select('*, homes(name, stock_no, listed_price_cents, setup_cents, setup_markup_pct, include_setup_in_price, addons_cents, addons_markup_pct, addons_jsonb)')
@@ -65,6 +66,11 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .select('id, home_id, listed_price_cents, expires_at, created_at, public_token, pdf_storage_path, homes(name, stock_no)')
       .eq('lead_id', params.id)
       .order('created_at', { ascending: false }),
+    supabase
+      .from('buyer_documents')
+      .select('id, kind, original_name, size_bytes, content_type, uploaded_at, storage_path, lead_id, org_id, buyer_id')
+      .eq('lead_id', params.id)
+      .order('uploaded_at', { ascending: false }),
   ]);
   const collaborators = collabRes?.data;
 
@@ -150,6 +156,8 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         initialMilestones={(milestones ?? []) as LeadMilestone[]}
         initialSuggestionsCount={suggestionsCountFinal}
       />
+
+      <BuyerUploadsPanel initialUploads={(buyerUploads ?? []) as BuyerDocument[]} />
     </>
   );
 }
