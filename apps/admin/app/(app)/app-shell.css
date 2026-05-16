@@ -187,7 +187,16 @@
 
 /* ─── Mobile (≤ 900px) — collapse the side-rail to a top bar ─────────────── */
 @media (max-width: 900px) {
-  .app-shell { grid-template-columns: 1fr; }
+  .app-shell {
+    grid-template-columns: 1fr;
+    /* Grid items default to min-width: auto (= min-content). If any descendant
+       has a wide min-content (long unbroken string, fixed-width child, etc.)
+       it pushes the track past the viewport. Cap the shell at 100vw and let
+       the children shrink. */
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  .app-sidebar, .app-main { min-width: 0; max-width: 100vw; }
 
   .app-sidebar {
     flex-direction: row;

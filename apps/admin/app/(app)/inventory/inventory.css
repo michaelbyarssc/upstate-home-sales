@@ -409,3 +409,46 @@
 }
 .sticky-actions .crumb a { color: var(--adm-ink-mute); text-decoration: none; }
 .sticky-actions .crumb .here { color: var(--adm-ink); }
+
+/* ─── Mobile: collapse the 9-column inventory table to essentials ───────────
+   Columns in order: Home, Stock #, Beds/Baths, Sq ft, Base price, Markup,
+   Listed price, Status, Lot age.
+   On ≤640px we keep Home, Beds/Baths, Listed price, Status.
+   On ≤480px we keep only Home and Listed price (the two most-used). */
+@media (max-width: 640px) {
+  .inv-table th, .inv-table td { padding: 10px 8px; font-size: 12px; }
+  .inv-table th:nth-child(2),
+  .inv-table td:nth-child(2),  /* Stock # */
+  .inv-table th:nth-child(4),
+  .inv-table td:nth-child(4),  /* Sq ft */
+  .inv-table th:nth-child(5),
+  .inv-table td:nth-child(5),  /* Base price */
+  .inv-table th:nth-child(6),
+  .inv-table td:nth-child(6),  /* Markup */
+  .inv-table th:nth-child(9),
+  .inv-table td:nth-child(9) { /* Lot age */
+    display: none;
+  }
+  .inv-table .row-thumb { width: 40px; height: 30px; }
+  .inv-table .row-name { gap: 8px; }
+  .inv-table .row-name a { font-size: 13px; }
+  .inv-table .row-name .sub { font-size: 10px; }
+
+  /* Toolbar + filters stack vertically and full-width on mobile. */
+  .inv-toolbar { flex-wrap: wrap; gap: 8px; }
+  .inv-toolbar .grow { flex: 1 1 100%; }
+  .inv-toolbar input[type="search"], .inv-toolbar input[type="text"] { width: 100%; }
+  .inv-filters { flex-wrap: wrap; gap: 6px; }
+  .inv-filters .results { margin-left: 0; flex-basis: 100%; }
+  .inv-tabs { overflow-x: auto; flex-wrap: nowrap; white-space: nowrap; }
+}
+
+@media (max-width: 480px) {
+  /* Drop Beds/Baths and Status too — leaves just Home + Listed price. */
+  .inv-table th:nth-child(3),
+  .inv-table td:nth-child(3),  /* Beds/Baths */
+  .inv-table th:nth-child(8),
+  .inv-table td:nth-child(8) { /* Status */
+    display: none;
+  }
+}

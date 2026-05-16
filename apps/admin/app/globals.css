@@ -145,17 +145,17 @@ button { font-family: inherit; cursor: pointer; }
   .nav a { padding: 6px 10px; font-size: 13px; }
 }
 @media (max-width: 640px) {
-  /* Tables wrap their cell contents instead of forcing horizontal scroll. */
+  /* Tables wrap their cell contents instead of forcing horizontal scroll.
+     Use overflow-wrap: anywhere so long unbroken tokens (URLs, IDs) wrap
+     at any character — but normal words still wrap at word boundaries.
+     Do NOT use table-layout: fixed here; with many columns it divides
+     viewport width equally and forces character-by-character stacking. */
   table {
-    display: table;
     width: 100%;
-    table-layout: fixed;
-    overflow-x: visible;
     white-space: normal;
   }
   table td, table th {
-    word-break: break-word;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
   }
   /* Long unbroken strings (IDs, tokens, URLs) wrap instead of overflowing. */
   pre, code, kbd, samp { white-space: pre-wrap; word-break: break-word; }
