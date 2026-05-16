@@ -660,6 +660,7 @@ export interface Quote {
   pdf_storage_path: string | null;
   public_token: string;
   expires_at: string;
+  visible_to_buyer: boolean;
   created_by: string | null;
   created_at: string;
 }
@@ -681,6 +682,7 @@ export interface Invoice {
   pdf_storage_path: string | null;
   public_token: string;
   due_at: string | null;
+  visible_to_buyer: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -713,6 +715,7 @@ export interface PurchaseOrder {
   delivery_date: string | null;
   pdf_storage_path: string | null;
   public_token: string;
+  visible_to_buyer: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;

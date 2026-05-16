@@ -12,6 +12,7 @@ type Props = {
   homeName: string | null;
   defaultLineItems: LineItem[];
   homes: HomeOption[];
+  quoteId?: string;
   onClose: () => void;
   onCreated: (token: string, poNumber: number) => void;
 };
@@ -148,6 +149,7 @@ export function PurchaseOrderFormModal({
   homeId: initialHomeId,
   defaultLineItems,
   homes,
+  quoteId,
   onClose,
   onCreated,
 }: Props) {
@@ -217,6 +219,7 @@ export function PurchaseOrderFormModal({
           leadId,
           orgId,
           homeId: selectedHomeId,
+          quoteId,
           lineItems: validItems,
           notes: notes.filter((n) => n.trim()),
           terms: terms.trim() || null,

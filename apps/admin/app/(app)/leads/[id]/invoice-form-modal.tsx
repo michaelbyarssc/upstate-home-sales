@@ -12,6 +12,7 @@ type Props = {
   homeName: string | null;
   defaultLineItems: LineItem[];
   homes: HomeOption[];
+  quoteId?: string;
   onClose: () => void;
   onCreated: (token: string, invoiceNumber: number) => void;
 };
@@ -158,6 +159,7 @@ export function InvoiceFormModal({
   homeName: initialHomeName,
   defaultLineItems,
   homes,
+  quoteId,
   onClose,
   onCreated,
 }: Props) {
@@ -229,6 +231,7 @@ export function InvoiceFormModal({
           leadId,
           orgId,
           homeId: selectedHomeId,
+          quoteId,
           lineItems: validItems,
           notes: notes.filter((n) => n.trim()),
           paymentTerms,

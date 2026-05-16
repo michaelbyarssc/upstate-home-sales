@@ -482,6 +482,63 @@ export async function createInvoice(args: {
   };
 }
 
+// ─── Dealer doc visibility + delete (quotes / invoices / purchase_orders) ─
+
+type DealerDocKind = 'quote' | 'invoice' | 'po';
+
+function tableFor(kind: DealerDocKind): 'quotes' | 'invoices' | 'purchase_orders' {
+  if (kind === 'quote') return 'quotes';
+  if (kind === 'invoice') return 'invoices';
+  return 'purchase_orders';
+}
+
+export async function setDocVisibility(args: {
+  kind: DealerDocKind;
+  id: string;
+  leadId: string;
+  visible: boolean;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from(tableFor(args.kind))
+    .update({ visible_to_buyer: args.visible })
+    .eq('id', args.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/leads/${args.leadId}`);
+  return { ok: true };
+}
+
+export async function deleteDealerDoc(args: {
+  kind: DealerDocKind;
+  id: string;
+  leadId: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = createClient();
+  const table = tableFor(args.kind);
+
+  // Fetch the PDF path so we can remove the file from storage.
+  const { data: row } = await supabase
+    .from(table)
+    .select('pdf_storage_path')
+    .eq('id', args.id)
+    .maybeSingle();
+
+  if (row?.pdf_storage_path) {
+    try {
+      const svc = createServiceClient();
+      await svc.storage.from('quote-pdfs').remove([row.pdf_storage_path]);
+    } catch (e) {
+      console.warn('[deleteDealerDoc] storage remove failed:', e);
+    }
+  }
+
+  const { error } = await supabase.from(table).delete().eq('id', args.id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return { ok: true };
+}
+
 // ─── Purchase order creation ──────────────────────────────────────────────
 
 export async function createPurchaseOrder(args: {
@@ -501,7 +558,7 @@ export async function createPurchaseOrder(args: {
   const [{ data: home, error: hErr }, { data: lead }, { data: org }] = await Promise.all([
     supabase
       .from('homes')
-      .select('id, name, stock_no')
+      .select('id, name, stock_no, model, year_built, beds, baths, width_ft, length_ft, listed_price_cents, manufacturers(name)')
       .eq('id', args.homeId)
       .maybeSingle(),
     supabase
@@ -521,6 +578,12 @@ export async function createPurchaseOrder(args: {
 
   const { data: nextNumResult } = await supabase.rpc('next_po_number', { p_org_id: args.orgId });
   const poNumber = (nextNumResult as number) ?? 1;
+
+  const manufacturerRel = (home as any).manufacturers;
+  const manufacturerName = Array.isArray(manufacturerRel) ? manufacturerRel[0]?.name : manufacturerRel?.name;
+  const approxSize = (home as any).width_ft && (home as any).length_ft
+    ? `${(home as any).width_ft}x${(home as any).length_ft}`
+    : null;
 
   const { data: po, error } = await supabase
     .from('purchase_orders')
@@ -545,15 +608,43 @@ export async function createPurchaseOrder(args: {
   try {
     const pdfData: PoPdfData = {
       orgName: org?.name ?? 'Upstate Home Center',
-      brandColor: org?.brand_color ?? null,
+      orgAddressLines: [
+        org?.name ?? 'Upstate Home Center',
+        '280 Gossett Rd',
+        'Spartanburg, SC 29307',
+        '(864) 680-4030',
+      ],
+      orgPhone: '(864) 680-4030',
+      dealerLicense: 'MDL.35948',
       poNumber: po.po_number,
+      housingConsultant: null,
       homeName: home.name,
       stockNo: home.stock_no,
+      manufacturer: manufacturerName ?? null,
+      modelNumber: (home as any).model ?? null,
+      approxSize,
+      year: (home as any).year_built ?? null,
+      beds: (home as any).beds ?? null,
+      baths: (home as any).baths ?? null,
+      serialNo: null,
       customerName: lead?.contact_name ?? null,
+      coBuyerName: null,
       customerPhone: lead?.phone ?? null,
       customerEmail: lead?.email ?? null,
+      deliveryAddress: null,
+      deliveryCity: null,
+      deliveryState: null,
+      deliveryZip: null,
+      mailingAddress: null,
       lineItems: args.lineItems,
       totalCents,
+      homePriceCents: (home as any).listed_price_cents ?? 0,
+      salesTaxCents: 0,
+      feesCents: 0,
+      tradeInAllowanceCents: 0,
+      tradeInBalanceOwedCents: 0,
+      cashDepositCents: 0,
+      cashAsAgreedCents: 0,
       notes: args.notes,
       terms: args.terms,
       deliveryDate: args.deliveryDate,

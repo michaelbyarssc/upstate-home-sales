@@ -2,17 +2,18 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@uhs/db/server';
 import { createServiceClient } from '@uhs/db/service';
-import type { BuyerDocument, Lead, LeadCollaborator, LeadMessage, LeadMilestone } from '@uhs/db';
+import type { BuyerDocument, Lead, LeadCollaborator, LeadMessage, LeadMilestone, LineItem } from '@uhs/db';
 import { LeadDetailClient } from './detail-client';
 import { BuyerPortalPanel } from './portal-panel';
 import { BuyerUploadsPanel } from './buyer-uploads-panel';
+import { DealerDocsPanel, type DealerDocRow } from './dealer-docs-panel';
 import { buildDefaultLineItems } from '../../../../lib/default-line-items';
 import '../leads.css';
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }, collabRes, { data: quotes }, { data: buyerUploads }] = await Promise.all([
+  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }, collabRes, { data: quotes }, { data: buyerUploads }, { data: invoicesData }, { data: posData }] = await Promise.all([
     supabase
       .from('leads')
       .select('*, homes(name, stock_no, listed_price_cents, setup_cents, setup_markup_pct, include_setup_in_price, addons_cents, addons_markup_pct, addons_jsonb)')
@@ -63,7 +64,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .then((r) => ({ data: r.data }), () => ({ data: null })),
     supabase
       .from('quotes')
-      .select('id, home_id, listed_price_cents, expires_at, created_at, public_token, pdf_storage_path, homes(name, stock_no)')
+      .select('id, home_id, listed_price_cents, expires_at, created_at, public_token, pdf_storage_path, addons_jsonb, visible_to_buyer, homes(name, stock_no)')
       .eq('lead_id', params.id)
       .order('created_at', { ascending: false }),
     supabase
@@ -71,6 +72,16 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .select('id, kind, original_name, size_bytes, content_type, uploaded_at, storage_path, lead_id, org_id, buyer_id')
       .eq('lead_id', params.id)
       .order('uploaded_at', { ascending: false }),
+    supabase
+      .from('invoices')
+      .select('id, home_id, invoice_number, listed_price_cents, line_items_jsonb, due_at, created_at, public_token, pdf_storage_path, visible_to_buyer, homes(name, stock_no)')
+      .eq('lead_id', params.id)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('purchase_orders')
+      .select('id, home_id, po_number, listed_price_cents, line_items_jsonb, delivery_date, created_at, public_token, pdf_storage_path, visible_to_buyer, homes(name, stock_no)')
+      .eq('lead_id', params.id)
+      .order('created_at', { ascending: false }),
   ]);
   const collaborators = collabRes?.data;
 
@@ -157,7 +168,90 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         initialSuggestionsCount={suggestionsCountFinal}
       />
 
+      <DealerDocsPanel
+        leadId={params.id}
+        orgId={lead.org_id}
+        homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number }>}
+        defaultLineItems={defaultLineItems}
+        initialDocs={buildDealerDocs(quotes, invoicesData, posData)}
+      />
+
       <BuyerUploadsPanel initialUploads={(buyerUploads ?? []) as BuyerDocument[]} />
     </>
+  );
+}
+
+function buildDealerDocs(
+  quotes: any[] | null,
+  invoices: any[] | null,
+  pos: any[] | null,
+): DealerDocRow[] {
+  const homeFrom = (r: any) => (Array.isArray(r?.homes) ? r.homes[0] : r?.homes) ?? null;
+
+  const quoteRows: DealerDocRow[] = (quotes ?? []).map((q: any) => {
+    const home = homeFrom(q);
+    const items = Array.isArray(q.addons_jsonb) ? (q.addons_jsonb as LineItem[]) : [];
+    return {
+      kind: 'quote',
+      id: q.id,
+      title: `Quote · ${home?.name ?? 'Home'}${home?.stock_no ? ` (${home.stock_no})` : ''}`,
+      homeId: q.home_id,
+      homeName: home?.name ?? null,
+      totalCents: q.listed_price_cents,
+      createdAt: q.created_at,
+      secondaryDate: q.expires_at,
+      secondaryLabel: 'Expires',
+      visibleToBuyer: q.visible_to_buyer ?? true,
+      pdfStoragePath: q.pdf_storage_path,
+      publicToken: q.public_token,
+      publicHref: `/q/${q.public_token}`,
+      lineItems: items,
+    };
+  });
+
+  const invoiceRows: DealerDocRow[] = (invoices ?? []).map((iv: any) => {
+    const home = homeFrom(iv);
+    const items = Array.isArray(iv.line_items_jsonb) ? (iv.line_items_jsonb as LineItem[]) : [];
+    return {
+      kind: 'invoice',
+      id: iv.id,
+      title: `Invoice #${iv.invoice_number} · ${home?.name ?? 'Home'}`,
+      homeId: iv.home_id,
+      homeName: home?.name ?? null,
+      totalCents: iv.listed_price_cents,
+      createdAt: iv.created_at,
+      secondaryDate: iv.due_at,
+      secondaryLabel: 'Due',
+      visibleToBuyer: iv.visible_to_buyer ?? true,
+      pdfStoragePath: iv.pdf_storage_path,
+      publicToken: iv.public_token,
+      publicHref: `/inv/${iv.public_token}`,
+      lineItems: items,
+    };
+  });
+
+  const poRows: DealerDocRow[] = (pos ?? []).map((po: any) => {
+    const home = homeFrom(po);
+    const items = Array.isArray(po.line_items_jsonb) ? (po.line_items_jsonb as LineItem[]) : [];
+    return {
+      kind: 'po',
+      id: po.id,
+      title: `PO #${po.po_number} · ${home?.name ?? 'Home'}`,
+      homeId: po.home_id,
+      homeName: home?.name ?? null,
+      totalCents: po.listed_price_cents,
+      createdAt: po.created_at,
+      secondaryDate: po.delivery_date,
+      secondaryLabel: 'Delivery',
+      visibleToBuyer: po.visible_to_buyer ?? true,
+      pdfStoragePath: po.pdf_storage_path,
+      publicToken: po.public_token,
+      publicHref: '',
+      lineItems: items,
+    };
+  });
+
+  return [...quoteRows, ...invoiceRows, ...poRows].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 }
