@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useRef } from 'react';
 import type { LineItem } from '@uhs/db';
 import { createPurchaseOrder } from './actions';
-import type { HomeOption } from './quote-form-modal';
+import { PdfCanvasViewer, type HomeOption } from './quote-form-modal';
 
 type Props = {
   leadId: string;
@@ -163,6 +163,8 @@ export function PurchaseOrderFormModal({
   const [sendEmail, setSendEmail] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewBytes, setPreviewBytes] = useState<ArrayBuffer | null>(null);
 
   const selectedHome = homes.find((h) => h.id === selectedHomeId);
   const modalTitle = selectedHome ? `Create Purchase Order — ${selectedHome.name}` : 'Create Purchase Order';
@@ -200,6 +202,46 @@ export function PurchaseOrderFormModal({
     setNotes((prev) => [...prev, '']);
   }
 
+  async function handlePreview() {
+    if (!selectedHomeId) {
+      setErr('Select a home first');
+      return;
+    }
+    const validItems = items.filter((i) => i.description.trim());
+    if (validItems.length === 0) {
+      setErr('Add at least one line item');
+      return;
+    }
+    setErr(null);
+    setIsPreviewing(true);
+    try {
+      const res = await fetch('/api/pdf/preview-po', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orgId,
+          homeId: selectedHomeId,
+          leadId,
+          lineItems: validItems,
+          notes: notes.filter((n) => n.trim()),
+          terms: terms.trim() || null,
+          deliveryDate: deliveryDate || null,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const arrayBuffer = await res.arrayBuffer();
+      setPreviewBytes(arrayBuffer);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Preview failed');
+    } finally {
+      setIsPreviewing(false);
+    }
+  }
+
+  function closePreview() {
+    setPreviewBytes(null);
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedHomeId) {
@@ -231,6 +273,63 @@ export function PurchaseOrderFormModal({
         setErr(e instanceof Error ? e.message : 'Purchase order creation failed');
       }
     });
+  }
+
+  // ── Preview view ──────────────────────────────────────────────────────────
+  if (previewBytes) {
+    return (
+      <div className="modal-overlay" onClick={closePreview}>
+        <div
+          className="modal-content"
+          style={{ width: 960, maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="modal-header">
+            <h3>Preview Purchase Order — {selectedHome?.name ?? 'PO'}</h3>
+            <button type="button" className="modal-close" onClick={closePreview}>
+              ×
+            </button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <PdfCanvasViewer pdfBytes={previewBytes} />
+          </div>
+          <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+            <button type="button" className="btn-secondary" onClick={closePreview}>
+              Back to edit
+            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  const blob = new Blob([previewBytes], { type: 'application/pdf' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `PO_${selectedHome?.name?.replace(/\s+/g, '_') ?? 'preview'}.pdf`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Download
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={isPending}
+                onClick={() => {
+                  closePreview();
+                  const formEvt = { preventDefault: () => {} } as React.FormEvent;
+                  handleSubmit(formEvt);
+                }}
+              >
+                {sendEmail ? 'Send PO' : 'Save PO'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -346,7 +445,15 @@ export function PurchaseOrderFormModal({
           </div>
           <div className="modal-footer">
             <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={isPending}>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={isPreviewing || isPending}
+              onClick={handlePreview}
+            >
+              {isPreviewing ? 'Generating…' : 'Preview PDF'}
+            </button>
+            <button type="submit" className="btn-primary" disabled={isPending || isPreviewing}>
               {isPending ? 'Creating…' : sendEmail ? 'Send PO' : 'Save PO'}
             </button>
           </div>
