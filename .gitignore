@@ -54,3 +54,4 @@ playwright/.cache/
 
 # Sentry
 .sentryclirc
+.env*.local
