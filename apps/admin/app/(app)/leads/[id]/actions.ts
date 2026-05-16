@@ -7,6 +7,7 @@ import type { CollabRole, LeadMessage, LeadStage, LineItem, MessageChannel, Mess
 import { sendEmail, sendSms } from '../../../../lib/notify';
 import { renderQuotePdf, type QuotePdfData } from '../../../../lib/quote-pdf';
 import { renderInvoicePdf, type InvoicePdfData } from '../../../../lib/invoice-pdf';
+import { renderPoPdf, type PoPdfData } from '../../../../lib/po-pdf';
 import { dispatchWorkflowEvent } from '../../../../lib/workflows';
 
 /** Extract a plain-English reason from an API error string. */
@@ -478,6 +479,144 @@ export async function createInvoice(args: {
     public_token: invoice.public_token,
     invoice_number: invoice.invoice_number,
     listed_price_cents: invoice.listed_price_cents,
+  };
+}
+
+// ─── Purchase order creation ──────────────────────────────────────────────
+
+export async function createPurchaseOrder(args: {
+  leadId: string;
+  orgId: string;
+  homeId: string;
+  quoteId?: string;
+  lineItems: LineItem[];
+  notes: string[];
+  terms: string | null;
+  deliveryDate: string | null;
+  sendEmail?: boolean;
+}): Promise<{ public_token: string; po_number: number; listed_price_cents: number }> {
+  const supabase = createClient();
+  const shouldEmail = args.sendEmail ?? true;
+
+  const [{ data: home, error: hErr }, { data: lead }, { data: org }] = await Promise.all([
+    supabase
+      .from('homes')
+      .select('id, name, stock_no')
+      .eq('id', args.homeId)
+      .maybeSingle(),
+    supabase
+      .from('leads')
+      .select('contact_name, email, phone, reply_token')
+      .eq('id', args.leadId)
+      .maybeSingle(),
+    supabase
+      .from('orgs')
+      .select('name, brand_color')
+      .eq('id', args.orgId)
+      .maybeSingle(),
+  ]);
+  if (hErr || !home) throw new Error(hErr?.message ?? 'Home not found');
+
+  const totalCents = args.lineItems.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
+
+  const { data: nextNumResult } = await supabase.rpc('next_po_number', { p_org_id: args.orgId });
+  const poNumber = (nextNumResult as number) ?? 1;
+
+  const { data: po, error } = await supabase
+    .from('purchase_orders')
+    .insert({
+      org_id: args.orgId,
+      lead_id: args.leadId,
+      home_id: args.homeId,
+      quote_id: args.quoteId ?? null,
+      po_number: poNumber,
+      listed_price_cents: totalCents,
+      line_items_jsonb: args.lineItems,
+      notes_jsonb: args.notes,
+      terms: args.terms,
+      delivery_date: args.deliveryDate ? args.deliveryDate : null,
+    })
+    .select('id, public_token, po_number, listed_price_cents, created_at')
+    .single();
+  if (error || !po) throw new Error(error?.message ?? 'PO insert failed');
+
+  // Render PDF + upload
+  let signedPdfUrl: string | null = null;
+  try {
+    const pdfData: PoPdfData = {
+      orgName: org?.name ?? 'Upstate Home Center',
+      brandColor: org?.brand_color ?? null,
+      poNumber: po.po_number,
+      homeName: home.name,
+      stockNo: home.stock_no,
+      customerName: lead?.contact_name ?? null,
+      customerPhone: lead?.phone ?? null,
+      customerEmail: lead?.email ?? null,
+      lineItems: args.lineItems,
+      totalCents,
+      notes: args.notes,
+      terms: args.terms,
+      deliveryDate: args.deliveryDate,
+      createdAt: po.created_at,
+    };
+    const buf = await renderPoPdf(pdfData);
+    const path = `${args.orgId}/po-${po.id}.pdf`;
+    const svc = createServiceClient();
+    const { error: upErr } = await svc.storage
+      .from('quote-pdfs')
+      .upload(path, buf, { contentType: 'application/pdf', upsert: true });
+    if (upErr) throw upErr;
+    await supabase.from('purchase_orders').update({ pdf_storage_path: path }).eq('id', po.id);
+
+    const { data: signed, error: signErr } = await svc.storage
+      .from('quote-pdfs')
+      .createSignedUrl(path, 60 * 60 * 24 * 7);
+    if (!signErr && signed?.signedUrl) signedPdfUrl = signed.signedUrl;
+  } catch (e) {
+    console.error('[po] PDF generation/upload failed:', e);
+  }
+
+  // Timeline message
+  await supabase.from('lead_messages').insert({
+    lead_id: args.leadId,
+    org_id: args.orgId,
+    kind: 'system',
+    channel: null,
+    body: `Purchase Order #${po.po_number} created${signedPdfUrl ? ` · ${signedPdfUrl}` : ''}`,
+  });
+
+  // Email
+  if (shouldEmail && lead?.email) {
+    const lines = [
+      `Hi ${lead.contact_name},`,
+      '',
+      `Here's your purchase order (#${po.po_number}) for ${home.name} (${home.stock_no}).`,
+      '',
+    ];
+    if (signedPdfUrl) {
+      lines.push(`Download PDF (good for 7 days): ${signedPdfUrl}`);
+    } else {
+      lines.push('Your PDF will be available shortly in your buyer portal.');
+    }
+    lines.push(
+      '',
+      "Reply to this email with any questions — we'll get back to you the same business day.",
+      '',
+      '— Upstate Home Center',
+    );
+    await sendEmail({
+      to: lead.email,
+      subject: `Purchase Order #${po.po_number} for ${home.name}`,
+      replyToToken: lead.reply_token,
+      text: lines.join('\n'),
+    }).catch((e) => console.error('[po] customer email failed:', e));
+  }
+
+  revalidatePath(`/leads/${args.leadId}`);
+  return {
+    public_token: po.public_token,
+    po_number: po.po_number,
+    listed_price_cents: po.listed_price_cents,
   };
 }
 

@@ -16,6 +16,7 @@ import { enrollLeadInCampaign } from '../../automations/campaigns/actions';
 import type { LeadCollaborator } from '@uhs/db';
 import { QuoteFormModal, PdfCanvasViewer, type HomeOption, type QuoteInitialData } from './quote-form-modal';
 import { InvoiceFormModal } from './invoice-form-modal';
+import { PurchaseOrderFormModal } from './po-form-modal';
 import { ShareLeadModal } from './share-lead-modal';
 import { removeCollaborator } from './actions';
 
@@ -68,6 +69,7 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [quoteEditData, setQuoteEditData] = useState<QuoteInitialData | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showPoModal, setShowPoModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [collaborators, setCollaborators] = useState<LeadCollaborator[]>(initialCollaborators);
   const [quotes, setQuotes] = useState<QuoteRow[]>(initialQuotes);
@@ -335,6 +337,17 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
             >
               + Invoice
             </button>
+            <button
+              type="button"
+              onClick={() => setShowPoModal(true)}
+              style={{
+                background: '#4a5c2e', color: '#fff',
+                border: 'none', padding: '7px 14px', borderRadius: 6,
+                cursor: 'pointer', fontSize: 13, fontWeight: 500,
+              }}
+            >
+              + PO
+            </button>
           </div>
         </div>
 
@@ -581,6 +594,19 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
           homes={homes}
           onClose={() => setShowInvoiceModal(false)}
           onCreated={handleInvoiceCreated}
+        />
+      )}
+
+      {showPoModal && (
+        <PurchaseOrderFormModal
+          leadId={lead.id}
+          orgId={lead.org_id}
+          homeId={lead.home_id ?? null}
+          homeName={lead.homes?.name ?? null}
+          defaultLineItems={defaultLineItems}
+          homes={homes}
+          onClose={() => setShowPoModal(false)}
+          onCreated={() => setShowPoModal(false)}
         />
       )}
 

@@ -106,7 +106,8 @@ export default async function DocumentsPage() {
         homeName: home?.name ?? null,
         title: `Purchase Order #${po.po_number} · ${home?.name ?? 'Home'}`,
         publicToken: po.public_token,
-        publicHref: `/po/${po.public_token}`,
+        // No public PO page yet — fall back to signed URL on the PDF.
+        publicHref: '',
         pdfStoragePath: po.pdf_storage_path,
         totalCents: po.listed_price_cents,
         createdAt: po.created_at,

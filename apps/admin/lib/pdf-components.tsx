@@ -250,7 +250,7 @@ export function PdfHeader({
   date,
 }: {
   orgName: string;
-  docType: 'QUOTE' | 'INVOICE';
+  docType: 'QUOTE' | 'INVOICE' | 'PURCHASE ORDER';
   date: string;
 }) {
   return (
