@@ -32,6 +32,8 @@ export type QuotePdfData = {
   stockNo: string;
   beds: number | null;
   baths: number | null;
+  bedsOptions?: number[] | null;
+  bathsOptions?: number[] | null;
   sqft: number | null;
   homeType: string | null;
   headline: string | null;
@@ -79,6 +81,8 @@ function QuoteDocument({ q }: { q: QuotePdfData }) {
             manufacturer={q.manufacturer}
             beds={q.beds}
             baths={q.baths}
+            bedsOptions={q.bedsOptions}
+            bathsOptions={q.bathsOptions}
             homeType={q.homeType}
           />
 

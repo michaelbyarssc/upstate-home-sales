@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   const [{ data: home, error: hErr }, { data: lead }, { data: org }, { data: { user } }] = await Promise.all([
     supabase
       .from('homes')
-      .select('id, name, stock_no, beds, baths, sqft, headline, description, listed_price_cents, model, type, manufacturers(name)')
+      .select('id, name, stock_no, beds, baths, beds_options, baths_options, sqft, headline, description, listed_price_cents, model, type, manufacturers(name)')
       .eq('id', homeId)
       .maybeSingle(),
     supabase
@@ -85,6 +85,8 @@ export async function POST(req: Request) {
     stockNo: home.stock_no,
     beds: home.beds ?? null,
     baths: home.baths ?? null,
+    bedsOptions: (home as any).beds_options ?? null,
+    bathsOptions: (home as any).baths_options ?? null,
     sqft: home.sqft ?? null,
     homeType: (home as any).type ?? null,
     headline: home.headline ?? null,

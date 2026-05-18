@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@uhs/db/server';
-import { formatCents, type Home, type Manufacturer, type HomeStatus } from '@uhs/db';
+import { formatCents, formatBedsOrBaths, type Home, type Manufacturer, type HomeStatus } from '@uhs/db';
 import './inventory.css';
 
 type SearchParams = {
@@ -62,7 +62,7 @@ export default async function InventoryPage({
   let query = supabase
     .from('homes')
     .select(
-      'id, stock_no, name, model, type, beds, baths, sqft, base_price_cents, markup_pct, listed_price_cents, status, on_lot_since, manufacturer_id, manufacturers(name)'
+      'id, stock_no, name, model, type, beds, baths, beds_options, baths_options, sqft, base_price_cents, markup_pct, listed_price_cents, status, on_lot_since, manufacturer_id, manufacturers(name)'
     )
     .is('deleted_at', null)
     .order('on_lot_since', { ascending: false, nullsFirst: false })
@@ -105,6 +105,8 @@ export default async function InventoryPage({
     | 'type'
     | 'beds'
     | 'baths'
+    | 'beds_options'
+    | 'baths_options'
     | 'sqft'
     | 'base_price_cents'
     | 'markup_pct'
@@ -220,7 +222,7 @@ export default async function InventoryPage({
                   </div>
                 </td>
                 <td><span className="stock">{h.stock_no}</span></td>
-                <td>{h.beds ?? '—'}/{h.baths ?? '—'}</td>
+                <td>{formatBedsOrBaths(h.beds, h.beds_options)}/{formatBedsOrBaths(h.baths, h.baths_options)}</td>
                 <td className="num">{h.sqft?.toLocaleString() ?? '—'}</td>
                 <td className="num">{formatCents(h.base_price_cents)}</td>
                 <td className="num" style={{ color: 'var(--adm-ink-mute)' }}>

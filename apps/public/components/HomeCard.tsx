@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { PublicHome } from '@uhs/db';
+import { type PublicHome, formatBedsOrBaths } from '@uhs/db';
 import { publicPhotoUrl } from '../lib/supabase';
 import { formatCompactPrice, formatMonthly } from '../lib/finance';
 import { CompareToggle } from './CompareToggle';
@@ -32,8 +32,10 @@ export function HomeCard({ home, index = 0 }: Props) {
   const designHref = `${detailHref}#design`;
 
   const specBits: string[] = [];
-  if (home.beds != null) specBits.push(`${home.beds} Bed`);
-  if (home.baths != null) specBits.push(`${home.baths} Bath`);
+  const bedsStr = formatBedsOrBaths(home.beds, home.beds_options);
+  const bathsStr = formatBedsOrBaths(home.baths, home.baths_options);
+  if (bedsStr !== '\u2014') specBits.push(`${bedsStr} Bed`);
+  if (bathsStr !== '\u2014') specBits.push(`${bathsStr} Bath`);
   if (home.sqft) specBits.push(`${home.sqft.toLocaleString()} Sq. Ft.`);
   if (home.width_ft && home.length_ft) specBits.push(`${home.width_ft}' × ${home.length_ft}'`);
 

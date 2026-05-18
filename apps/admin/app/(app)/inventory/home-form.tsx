@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, type FormEvent } from 'react';
 import Link from 'next/link';
-import { formatCents, type Home, type HomeAddon, type HomePhoto, type Lot, type Manufacturer } from '@uhs/db';
+import { formatCents, formatBedsOrBaths, type Home, type HomeAddon, type HomePhoto, type Lot, type Manufacturer } from '@uhs/db';
 import { uploadPhotos } from './photo-upload';
 import { createHome, updateHome, archiveHome, deletePhoto, reorderPhotos } from './actions';
 
@@ -44,6 +44,11 @@ export function HomeForm(props: Props) {
   const [mfrId, setMfrId] = useState(home?.manufacturer_id ?? '');
   const [beds, setBeds] = useState<number | ''>(home?.beds ?? '');
   const [baths, setBaths] = useState<number | ''>(home?.baths ?? '');
+  const [bedsOptions, setBedsOptions] = useState<number[]>(home?.beds_options ?? []);
+  const [bathsOptions, setBathsOptions] = useState<number[]>(home?.baths_options ?? []);
+  const [configurable, setConfigurable] = useState(
+    (home?.beds_options && home.beds_options.length > 1) || (home?.baths_options && home.baths_options.length > 1) || false
+  );
   const [sqft, setSqft] = useState<number | ''>(home?.sqft ?? '');
 
   const baseCents = Math.round(base * 100);
@@ -243,6 +248,107 @@ export function HomeForm(props: Props) {
                   <label className="label">Baths</label>
                   <input className="input" name="baths" type="number" step={0.5} min={0} value={baths} onChange={(e) => setBaths(e.target.value === '' ? '' : Number(e.target.value))} />
                 </div>
+              </div>
+              <input type="hidden" name="beds_options" value={JSON.stringify(configurable ? bedsOptions : [])} />
+              <input type="hidden" name="baths_options" value={JSON.stringify(configurable ? bathsOptions : [])} />
+              <div style={{ marginBottom: 14 }}>
+                <label className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={configurable}
+                    onChange={(e) => {
+                      setConfigurable(e.target.checked);
+                      if (e.target.checked) {
+                        if (bedsOptions.length === 0 && beds !== '') setBedsOptions([beds as number]);
+                        if (bathsOptions.length === 0 && baths !== '') setBathsOptions([baths as number]);
+                      }
+                    }}
+                  />
+                  <span className="track" />
+                  <span className="lbl">Configurable floor plan (multiple bed/bath options)</span>
+                </label>
+                {configurable && (
+                  <div style={{ marginTop: 10, padding: 14, background: 'var(--adm-bg, #f8f6f2)', borderRadius: 6 }}>
+                    <div style={{ marginBottom: 10 }}>
+                      <label className="label">Bedroom options</label>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {bedsOptions.sort((a, b) => a - b).map((v) => (
+                          <span key={v} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            background: '#fff', border: '1px solid var(--adm-line, #ddd)', borderRadius: 20,
+                            padding: '4px 10px', fontSize: 13, fontWeight: 500,
+                          }}>
+                            {v}
+                            <button type="button" onClick={() => {
+                              const next = bedsOptions.filter((x) => x !== v);
+                              setBedsOptions(next);
+                              if (next.length > 0) setBeds(Math.min(...next));
+                            }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a53a2c', fontSize: 14, padding: 0, lineHeight: 1 }}>x</button>
+                          </span>
+                        ))}
+                        <input
+                          className="input"
+                          type="number"
+                          min={0}
+                          step={1}
+                          placeholder="Add..."
+                          style={{ width: 72, padding: '4px 8px', fontSize: 13 }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = Number((e.target as HTMLInputElement).value);
+                              if (val > 0 && !bedsOptions.includes(val)) {
+                                const next = [...bedsOptions, val];
+                                setBedsOptions(next);
+                                setBeds(Math.min(...next));
+                              }
+                              (e.target as HTMLInputElement).value = '';
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="label">Bathroom options</label>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {bathsOptions.sort((a, b) => a - b).map((v) => (
+                          <span key={v} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            background: '#fff', border: '1px solid var(--adm-line, #ddd)', borderRadius: 20,
+                            padding: '4px 10px', fontSize: 13, fontWeight: 500,
+                          }}>
+                            {v}
+                            <button type="button" onClick={() => {
+                              const next = bathsOptions.filter((x) => x !== v);
+                              setBathsOptions(next);
+                              if (next.length > 0) setBaths(Math.min(...next));
+                            }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a53a2c', fontSize: 14, padding: 0, lineHeight: 1 }}>x</button>
+                          </span>
+                        ))}
+                        <input
+                          className="input"
+                          type="number"
+                          min={0}
+                          step={0.5}
+                          placeholder="Add..."
+                          style={{ width: 72, padding: '4px 8px', fontSize: 13 }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = Number((e.target as HTMLInputElement).value);
+                              if (val > 0 && !bathsOptions.includes(val)) {
+                                const next = [...bathsOptions, val];
+                                setBathsOptions(next);
+                                setBaths(Math.min(...next));
+                              }
+                              (e.target as HTMLInputElement).value = '';
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="field-row three">
                 <div className="field">
@@ -571,7 +677,11 @@ export function HomeForm(props: Props) {
                 />
                 <div className="name">{name || 'Untitled home'}</div>
                 <div className="meta">
-                  {beds || '—'} bed · {baths || '—'} bath
+                  {configurable && bedsOptions.length > 1
+                    ? formatBedsOrBaths(beds || null, bedsOptions)
+                    : (beds || '—')} bed · {configurable && bathsOptions.length > 1
+                    ? formatBedsOrBaths(baths || null, bathsOptions)
+                    : (baths || '—')} bath
                   {sqft ? ` · ${sqft.toLocaleString()} sqft` : ''}
                   {mfrName ? ` · ${mfrName}` : ''}
                 </div>
