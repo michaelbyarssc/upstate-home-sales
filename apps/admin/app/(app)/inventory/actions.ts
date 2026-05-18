@@ -14,6 +14,8 @@ type HomeFields = {
   type: HomeType;
   beds: number | null;
   baths: number | null;
+  beds_options: number[] | null;
+  baths_options: number[] | null;
   sqft: number | null;
   width_ft: number | null;
   length_ft: number | null;
@@ -73,6 +75,17 @@ function parseChecked(fd: FormData, name: string): boolean {
   return fd.get(name) === 'on' || fd.get(name) === 'true';
 }
 
+function parseNumberArray(v: FormDataEntryValue | null): number[] | null {
+  if (v == null || v === '' || v === '[]') return null;
+  try {
+    const arr = JSON.parse(String(v));
+    if (Array.isArray(arr) && arr.length > 0) {
+      return arr.map(Number).filter(Number.isFinite);
+    }
+  } catch {}
+  return null;
+}
+
 function parseAddons(fd: FormData): { addons_jsonb: HomeAddon[]; addons_cents: number; addons_markup_pct: number } {
   const raw = fd.get('addons_jsonb');
   let items: HomeAddon[] = [];
@@ -107,6 +120,8 @@ function readFields(fd: FormData): HomeFields {
     type: (parseStr(fd.get('type')) as HomeType) ?? 'double',
     beds: parseIntOrNull(fd.get('beds')),
     baths: parseFloatOrNull(fd.get('baths')),
+    beds_options: parseNumberArray(fd.get('beds_options')),
+    baths_options: parseNumberArray(fd.get('baths_options')),
     sqft: parseIntOrNull(fd.get('sqft')),
     width_ft: parseIntOrNull(fd.get('width_ft')),
     length_ft: parseIntOrNull(fd.get('length_ft')),

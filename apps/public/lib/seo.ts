@@ -30,6 +30,8 @@ export type LDHome = {
   imageUrls?: string[];
   beds?: number | null;
   baths?: number | null;
+  bedsOptions?: number[] | null;
+  bathsOptions?: number[] | null;
   sqft?: number | null;
   /** Price in cents. Null/undefined → no Offer block. */
   priceCents?: number | null;
@@ -65,12 +67,20 @@ export function organizationSchema(org: LDOrganization): string {
   return JSON.stringify(node);
 }
 
+function fmtRange(primary: number | null | undefined, options: number[] | null | undefined): string {
+  if (options && options.length > 1) {
+    const sorted = [...options].sort((a, b) => a - b);
+    return `${sorted[0]}-${sorted[sorted.length - 1]}`;
+  }
+  return primary != null ? String(primary) : '—';
+}
+
 export function homeProductSchema(h: LDHome, dealerName: string): string {
   const node: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: h.name,
-    description: h.description ?? `${h.beds ?? '—'} bed, ${h.baths ?? '—'} bath manufactured home${h.sqft ? ` with ${h.sqft.toLocaleString()} sq ft` : ''}.`,
+    description: h.description ?? `${fmtRange(h.beds, h.bedsOptions)} bed, ${fmtRange(h.baths, h.bathsOptions)} bath manufactured home${h.sqft ? ` with ${h.sqft.toLocaleString()} sq ft` : ''}.`,
     sku: h.stockNo,
     url: h.url,
   };
@@ -81,8 +91,18 @@ export function homeProductSchema(h: LDHome, dealerName: string): string {
   }
   // additionalProperty captures specs that don't fit Product cleanly.
   const props: Array<Record<string, unknown>> = [];
-  if (h.beds != null) props.push({ '@type': 'PropertyValue', name: 'Bedrooms', value: h.beds });
-  if (h.baths != null) props.push({ '@type': 'PropertyValue', name: 'Bathrooms', value: h.baths });
+  if (h.bedsOptions && h.bedsOptions.length > 1) {
+    const sorted = [...h.bedsOptions].sort((a, b) => a - b);
+    props.push({ '@type': 'PropertyValue', name: 'Bedrooms', minValue: sorted[0], maxValue: sorted[sorted.length - 1], value: `${sorted[0]}-${sorted[sorted.length - 1]}` });
+  } else if (h.beds != null) {
+    props.push({ '@type': 'PropertyValue', name: 'Bedrooms', value: h.beds });
+  }
+  if (h.bathsOptions && h.bathsOptions.length > 1) {
+    const sorted = [...h.bathsOptions].sort((a, b) => a - b);
+    props.push({ '@type': 'PropertyValue', name: 'Bathrooms', minValue: sorted[0], maxValue: sorted[sorted.length - 1], value: `${sorted[0]}-${sorted[sorted.length - 1]}` });
+  } else if (h.baths != null) {
+    props.push({ '@type': 'PropertyValue', name: 'Bathrooms', value: h.baths });
+  }
   if (h.sqft != null) props.push({ '@type': 'PropertyValue', name: 'Square Feet', value: h.sqft });
   if (props.length) node.additionalProperty = props;
 

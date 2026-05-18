@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { createPublicClient, publicPhotoUrl } from '../../../lib/supabase';
 import { QuoteForm } from './quote-form';
 import { Gallery } from './gallery';
-import { type PublicHome, type PublicHomePhoto } from '@uhs/db';
+import { type PublicHome, type PublicHomePhoto, formatBedsOrBaths } from '@uhs/db';
 import { absoluteUrl, homeProductSchema } from '../../../lib/seo';
 import { HomeCard } from '../../../components/HomeCard';
 import { VisitorTracker } from '../../../components/VisitorTracker';
@@ -31,7 +31,7 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
   const { data: home } = await supabase
     .from('public_homes')
     .select(
-      'id, stock_no, name, model, type, beds, baths, sqft, width_ft, length_ft, year_built, construction, listed_price_cents, prices_hidden, starting_from, headline, description, on_lot_since, manufacturer_id, manufacturers(name)'
+      'id, stock_no, name, model, type, beds, baths, beds_options, baths_options, sqft, width_ft, length_ft, year_built, construction, listed_price_cents, prices_hidden, starting_from, headline, description, on_lot_since, manufacturer_id, manufacturers(name)'
     )
     .eq('stock_no', decodeURIComponent(stock))
     .maybeSingle();
@@ -61,7 +61,7 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
   const { data: candidates } = await supabase
     .from('public_homes')
     .select(
-      'id, stock_no, name, model, type, beds, baths, sqft, width_ft, length_ft, listed_price_cents, prices_hidden, starting_from, on_lot_since, is_featured, manufacturer_id, manufacturers(name), public_home_photos(storage_path, sort_order)'
+      'id, stock_no, name, model, type, beds, baths, beds_options, baths_options, sqft, width_ft, length_ft, listed_price_cents, prices_hidden, starting_from, on_lot_since, is_featured, manufacturer_id, manufacturers(name), public_home_photos(storage_path, sort_order)'
     )
     .neq('id', h.id)
     .or(`manufacturer_id.eq.${h.manufacturer_id ?? '00000000-0000-0000-0000-000000000000'},type.eq.${h.type}`)
@@ -80,6 +80,8 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
       imageUrls: allPhotos.slice(0, 6).map((p) => publicPhotoUrl(p.storage_path)),
       beds: h.beds,
       baths: h.baths,
+      bedsOptions: h.beds_options,
+      bathsOptions: h.baths_options,
       sqft: h.sqft,
       priceCents: h.listed_price_cents,
       startingFrom: h.starting_from,
@@ -127,7 +129,7 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
 
             <div className="spec-grid">
               <div className="row"><span className="lbl">Type</span><span>{cap(h.type)}-wide</span></div>
-              <div className="row"><span className="lbl">Beds / baths</span><span>{h.beds ?? '—'} / {h.baths ?? '—'}</span></div>
+              <div className="row"><span className="lbl">Beds / baths</span><span>{formatBedsOrBaths(h.beds, h.beds_options)} / {formatBedsOrBaths(h.baths, h.baths_options)}</span></div>
               <div className="row"><span className="lbl">Square feet</span><span>{h.sqft?.toLocaleString() ?? '—'}</span></div>
               <div className="row"><span className="lbl">Dimensions</span><span>{h.width_ft && h.length_ft ? `${h.width_ft}′ × ${h.length_ft}′` : '—'}</span></div>
               <div className="row"><span className="lbl">Year built</span><span>{h.year_built ?? '—'}</span></div>

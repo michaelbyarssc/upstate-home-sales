@@ -4,7 +4,7 @@
  */
 
 import { Text, View, Image, StyleSheet } from '@react-pdf/renderer';
-import type { LineItem } from '@uhs/db';
+import { type LineItem, formatBedsOrBaths } from '@uhs/db';
 
 // ─── Brand tokens ─────────────────────────────────────────────────────────
 export const C = {
@@ -756,6 +756,8 @@ export function HomeDetailsSection({
   manufacturer,
   beds,
   baths,
+  bedsOptions,
+  bathsOptions,
   homeType,
 }: {
   customerName: string | null;
@@ -766,12 +768,17 @@ export function HomeDetailsSection({
   manufacturer: string | null;
   beds: number | null;
   baths: number | null;
+  bedsOptions?: number[] | null;
+  bathsOptions?: number[] | null;
   homeType: string | null;
 }) {
   const contactParts = [customerPhone, customerEmail].filter(Boolean).join('  \u2022  ');
+  const bedsStr = formatBedsOrBaths(beds, bedsOptions);
+  const bathsStr = formatBedsOrBaths(baths, bathsOptions);
+  const hasBedBath = bedsStr !== '\u2014' || bathsStr !== '\u2014';
   const specsLine = [
     manufacturer ? `Built by ${manufacturer}` : null,
-    beds != null && baths != null ? `${beds} Bed / ${baths} Bath` : null,
+    hasBedBath ? `${bedsStr} Bed / ${bathsStr} Bath` : null,
     homeType ?? 'Manufactured Home',
   ]
     .filter(Boolean)

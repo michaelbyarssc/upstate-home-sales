@@ -411,6 +411,8 @@ export interface HomeModel {
   type: HomeType;
   beds: number | null;
   baths: number | null;
+  beds_options: number[] | null;
+  baths_options: number[] | null;
   sqft: number | null;
   width_ft: number | null;
   length_ft: number | null;
@@ -476,6 +478,8 @@ export interface Home {
   type: HomeType;
   beds: number | null;
   baths: number | null;
+  beds_options: number[] | null;
+  baths_options: number[] | null;
   sqft: number | null;
   width_ft: number | null;
   length_ft: number | null;
@@ -521,6 +525,8 @@ export interface PublicHome {
   type: HomeType;
   beds: number | null;
   baths: number | null;
+  beds_options: number[] | null;
+  baths_options: number[] | null;
   sqft: number | null;
   width_ft: number | null;
   length_ft: number | null;
@@ -568,6 +574,20 @@ export function formatCents(cents: number | null | undefined): string {
   if (cents == null) return '—';
   const dollars = Math.round(cents / 100);
   return '$' + dollars.toLocaleString();
+}
+
+/** Format beds/baths with configurable options → "3", "3 or 4", "2, 2.5, or 3". */
+export function formatBedsOrBaths(
+  primary: number | null,
+  options: number[] | null | undefined,
+): string {
+  if (options && options.length > 1) {
+    const sorted = [...options].sort((a, b) => a - b);
+    if (sorted.length === 2) return `${sorted[0]} or ${sorted[1]}`;
+    return sorted.slice(0, -1).join(', ') + ', or ' + sorted[sorted.length - 1];
+  }
+  if (primary != null) return String(primary);
+  return '\u2014';
 }
 
 // ─── Leads ────────────────────────────────────────────────────────────────

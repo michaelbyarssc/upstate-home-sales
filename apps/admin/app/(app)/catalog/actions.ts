@@ -14,6 +14,8 @@ type ModelFields = {
   type: HomeType;
   beds: number | null;
   baths: number | null;
+  beds_options: number[] | null;
+  baths_options: number[] | null;
   sqft: number | null;
   width_ft: number | null;
   length_ft: number | null;
@@ -42,6 +44,17 @@ function parseFloatOrNull(v: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function parseNumberArray(v: FormDataEntryValue | null): number[] | null {
+  if (v == null || v === '' || v === '[]') return null;
+  try {
+    const arr = JSON.parse(String(v));
+    if (Array.isArray(arr) && arr.length > 0) {
+      return arr.map(Number).filter(Number.isFinite);
+    }
+  } catch {}
+  return null;
+}
+
 function readFields(fd: FormData): ModelFields {
   return {
     name: String(fd.get('name') ?? '').trim(),
@@ -51,6 +64,8 @@ function readFields(fd: FormData): ModelFields {
     type: (parseStr(fd.get('type')) as HomeType) ?? 'double',
     beds: parseIntOrNull(fd.get('beds')),
     baths: parseFloatOrNull(fd.get('baths')),
+    beds_options: parseNumberArray(fd.get('beds_options')),
+    baths_options: parseNumberArray(fd.get('baths_options')),
     sqft: parseIntOrNull(fd.get('sqft')),
     width_ft: parseIntOrNull(fd.get('width_ft')),
     length_ft: parseIntOrNull(fd.get('length_ft')),
@@ -154,7 +169,7 @@ export async function stockModelsOnLot(input: {
   // SELECT, but we double-check by counting matched rows.
   const { data: models, error: modelsErr } = await supabase
     .from('home_models')
-    .select('id, name, model_code, manufacturer_id, type, beds, baths, sqft, width_ft, length_ft, year_built, construction, headline, description')
+    .select('id, name, model_code, manufacturer_id, type, beds, baths, beds_options, baths_options, sqft, width_ft, length_ft, year_built, construction, headline, description')
     .in('id', input.modelIds)
     .eq('org_id', orgId)
     .is('deleted_at', null);
@@ -182,6 +197,8 @@ export async function stockModelsOnLot(input: {
         type: m.type,
         beds: m.beds,
         baths: m.baths,
+        beds_options: (m as any).beds_options ?? null,
+        baths_options: (m as any).baths_options ?? null,
         sqft: m.sqft,
         width_ft: m.width_ft,
         length_ft: m.length_ft,

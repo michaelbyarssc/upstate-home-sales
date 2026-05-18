@@ -24,7 +24,7 @@ export async function GET(
   if (type === 'quote') {
     const { data: quote, error } = await supabase
       .from('quotes')
-      .select('*, homes(name, stock_no, beds, baths, sqft, headline, description, model, type, manufacturers(name)), leads(contact_name, email, phone), orgs(name, brand_color)')
+      .select('*, homes(name, stock_no, beds, baths, beds_options, baths_options, sqft, headline, description, model, type, manufacturers(name)), leads(contact_name, email, phone), orgs(name, brand_color)')
       .eq('id', id)
       .maybeSingle();
     if (error || !quote) {
@@ -52,6 +52,8 @@ export async function GET(
       stockNo: home?.stock_no ?? '',
       beds: home?.beds ?? null,
       baths: home?.baths ?? null,
+      bedsOptions: (home as any)?.beds_options ?? null,
+      bathsOptions: (home as any)?.baths_options ?? null,
       sqft: home?.sqft ?? null,
       homeType: (home as any)?.type ?? null,
       headline: home?.headline ?? null,
