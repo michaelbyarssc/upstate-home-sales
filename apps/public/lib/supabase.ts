@@ -10,6 +10,10 @@ export function createPublicClient() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   return createJsClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: {
+      fetch: (input, init) =>
+        fetch(input, { ...init, cache: 'no-store' }),
+    },
   });
 }
 
