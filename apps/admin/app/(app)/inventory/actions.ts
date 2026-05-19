@@ -221,11 +221,13 @@ export async function reorderPhotos(homeId: string, orderedIds: string[]) {
     throw new Error('Photo set mismatch');
   }
 
-  await Promise.all(
-    orderedIds.map((id, idx) =>
-      supabase.from('home_photos').update({ sort_order: idx }).eq('id', id),
-    ),
-  );
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from('home_photos')
+      .update({ sort_order: i })
+      .eq('id', orderedIds[i]);
+    if (error) throw new Error(error.message);
+  }
 
   revalidatePath(`/inventory/${homeId}`);
 }

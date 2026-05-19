@@ -36,6 +36,8 @@ export function createClient() {
     },
     global: {
       headers: activeOrg ? { [ACTIVE_ORG_HEADER]: activeOrg } : {},
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: 'no-store' }),
     },
   });
 }
