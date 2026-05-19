@@ -110,13 +110,9 @@ export async function updateModel(id: string, fd: FormData) {
 
 export async function archiveModel(id: string) {
   const supabase = createClient();
-  const { error } = await supabase
-    .from('home_models')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+  const { error } = await supabase.rpc('archive_model', { model_id: id });
   if (error) throw new Error(error.message);
   revalidatePath('/catalog');
-  redirect('/catalog');
 }
 
 export async function deleteModelPhoto(photoId: string, modelId: string) {

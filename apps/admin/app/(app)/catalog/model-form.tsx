@@ -2,6 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { HomeModel, HomeModelPhoto, Manufacturer } from '@uhs/db';
 import { uploadModelPhotos } from './photo-upload';
 import { createModel, updateModel, archiveModel, deleteModelPhoto } from './actions';
@@ -23,6 +24,7 @@ const CONSTRUCTION_OPTIONS = [
 
 export function ModelForm(props: Props) {
   const { mode, model, photos: initialPhotos = [], manufacturers, publicPhotoBaseUrl } = props;
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [photos, setPhotos] = useState(initialPhotos);
@@ -263,7 +265,10 @@ export function ModelForm(props: Props) {
                   type="button"
                   onClick={() => {
                     if (confirm('Archive this model? It will be hidden from the catalog. Existing stocked units are not affected.')) {
-                      startTransition(() => archiveModel(model!.id));
+                      startTransition(async () => {
+                        await archiveModel(model!.id);
+                        router.push('/catalog');
+                      });
                     }
                   }}
                   style={{
