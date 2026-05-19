@@ -8,6 +8,7 @@ type SearchParams = {
   manufacturer?: string;
   type?: string;
   q?: string;
+  archived?: string;
 };
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
   const mfrSlug = searchParams.manufacturer;
   const homeType = searchParams.type;
   const q = searchParams.q?.trim();
+  const showArchived = searchParams.archived === 'true';
 
   let mfrId: string | null = null;
   if (mfrSlug) {
@@ -31,9 +33,13 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
   let query = supabase
     .from('home_models')
     .select('id, name, model_code, series, type, beds, baths, sqft, manufacturer_id, manufacturers(name)')
-    .is('deleted_at', null)
-    .order('name')
     .limit(500);
+
+  if (showArchived) {
+    query = query.not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
+  } else {
+    query = query.is('deleted_at', null).order('name');
+  }
   if (mfrId) query = query.eq('manufacturer_id', mfrId);
   if (homeType) query = query.eq('type', homeType);
   if (q) query = query.or(`name.ilike.%${q}%,model_code.ilike.%${q}%,series.ilike.%${q}%`);
@@ -90,7 +96,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
         <div>
           <div className="eyebrow">Workspace · Catalog</div>
           <h1>Home models</h1>
-          <p>{rows.length} reusable templates · check one or more, then stock to a lot.</p>
+          <p>{showArchived ? `Showing ${rows.length} archived models` : `${rows.length} reusable templates · check one or more, then stock to a lot.`}</p>
         </div>
         <Link href="/catalog/new" style={{
           background: 'var(--adm-accent)', color: '#fff', padding: '9px 14px',
@@ -116,10 +122,14 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
         </select>
         <input type="text" name="q" placeholder="Search name, model code, series" defaultValue={q ?? ''} className="grow" />
         <button type="submit" className="btn">Apply</button>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          <input type="checkbox" name="archived" value="true" defaultChecked={showArchived} />
+          Show archived
+        </label>
         <span className="results"><strong>{rows.length}</strong> match</span>
       </form>
 
-      <CatalogTable rows={rows} lots={(lots ?? []) as Pick<Lot, 'id' | 'name'>[]} />
+      <CatalogTable rows={rows} lots={(lots ?? []) as Pick<Lot, 'id' | 'name'>[]} showArchived={showArchived} />
     </>
   );
 }

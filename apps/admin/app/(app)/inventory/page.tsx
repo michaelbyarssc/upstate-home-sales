@@ -8,6 +8,7 @@ type SearchParams = {
   manufacturer?: string;
   type?: string;
   q?: string;
+  archived?: string;
 };
 
 const STATUSES: Array<{ key: HomeStatus | 'all'; label: string }> = [
@@ -48,6 +49,7 @@ export default async function InventoryPage({
   const mfrSlug = searchParams.manufacturer;
   const homeType = searchParams.type;
   const q = searchParams.q?.trim();
+  const showArchived = searchParams.archived === 'true';
 
   let mfrId: string | null = null;
   if (mfrSlug) {
@@ -62,13 +64,17 @@ export default async function InventoryPage({
   let query = supabase
     .from('homes')
     .select(
-      'id, stock_no, name, model, type, beds, baths, beds_options, baths_options, sqft, base_price_cents, markup_pct, listed_price_cents, status, on_lot_since, manufacturer_id, manufacturers(name)'
+      'id, stock_no, name, model, type, beds, baths, beds_options, baths_options, sqft, base_price_cents, markup_pct, listed_price_cents, status, on_lot_since, deleted_at, manufacturer_id, manufacturers(name)'
     )
-    .is('deleted_at', null)
-    .order('on_lot_since', { ascending: false, nullsFirst: false })
     .limit(200);
 
-  if (status) query = query.eq('status', status);
+  if (showArchived) {
+    query = query.not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
+  } else {
+    query = query.is('deleted_at', null).order('on_lot_since', { ascending: false, nullsFirst: false });
+  }
+
+  if (!showArchived && status) query = query.eq('status', status);
   if (mfrId) query = query.eq('manufacturer_id', mfrId);
   if (homeType) query = query.eq('type', homeType);
   if (q) query = query.or(`name.ilike.%${q}%,stock_no.ilike.%${q}%,model.ilike.%${q}%`);
@@ -133,7 +139,7 @@ export default async function InventoryPage({
         <div>
           <div className="eyebrow">Workspace · Week 2</div>
           <h1>Inventory</h1>
-          <p>{total} non-archived listings · base + markup never exposed publicly.</p>
+          <p>{showArchived ? `Showing ${homes.length} archived homes` : `${total} non-archived listings · base + markup never exposed publicly.`}</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <Link href="/inventory/new" style={{
@@ -145,17 +151,19 @@ export default async function InventoryPage({
         </div>
       </div>
 
-      <nav className="inv-tabs">
-        {STATUSES.map((t) => {
-          const active = (status ?? 'all') === t.key;
-          const count = t.key === 'all' ? total : tally[t.key] ?? 0;
-          return (
-            <Link key={t.key} href={tabHref(t.key)} className={active ? 'active' : ''}>
-              {t.label} <span className="count">· {count}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      {!showArchived && (
+        <nav className="inv-tabs">
+          {STATUSES.map((t) => {
+            const active = (status ?? 'all') === t.key;
+            const count = t.key === 'all' ? total : tally[t.key] ?? 0;
+            return (
+              <Link key={t.key} href={tabHref(t.key)} className={active ? 'active' : ''}>
+                {t.label} <span className="count">· {count}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
 
       <form className="inv-filters" method="GET" action="/inventory">
         {status && <input type="hidden" name="status" value={status} />}
@@ -176,6 +184,10 @@ export default async function InventoryPage({
         </select>
         <input type="text" name="q" placeholder="Search name, stock #, model" defaultValue={q ?? ''} className="grow" />
         <button type="submit" className="btn">Apply</button>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          <input type="checkbox" name="archived" value="true" defaultChecked={showArchived} />
+          Show archived
+        </label>
         <span className="results">
           <strong>{homes.length}</strong> match
         </span>

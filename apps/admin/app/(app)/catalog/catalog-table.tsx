@@ -23,9 +23,11 @@ export type CatalogRow = {
 export function CatalogTable({
   rows,
   lots,
+  showArchived,
 }: {
   rows: CatalogRow[];
   lots: Pick<Lot, 'id' | 'name'>[];
+  showArchived?: boolean;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [lotId, setLotId] = useState<string>(lots[0]?.id ?? '');
@@ -100,9 +102,11 @@ export function CatalogTable({
       <table className="inv-table">
         <thead>
           <tr>
-            <th style={{ width: 28 }}>
-              <input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label="Select all" />
-            </th>
+            {!showArchived && (
+              <th style={{ width: 28 }}>
+                <input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label="Select all" />
+              </th>
+            )}
             <th>Model</th>
             <th>Type</th>
             <th>Beds/Baths</th>
@@ -114,15 +118,17 @@ export function CatalogTable({
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.id} className={selected.has(r.id) ? 'selected' : ''}>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={selected.has(r.id)}
-                  onChange={() => toggle(r.id)}
-                  aria-label={`Select ${r.name}`}
-                />
-              </td>
+            <tr key={r.id} className={selected.has(r.id) ? 'selected' : ''} style={showArchived ? { opacity: 0.75 } : undefined}>
+              {!showArchived && (
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(r.id)}
+                    onChange={() => toggle(r.id)}
+                    aria-label={`Select ${r.name}`}
+                  />
+                </td>
+              )}
               <td>
                 <div className="row-name">
                   <div
@@ -146,7 +152,7 @@ export function CatalogTable({
         </tbody>
       </table>
 
-      {selectedCount > 0 && (
+      {selectedCount > 0 && !showArchived && (
         <div className="catalog-action-bar">
           <span className="count">{selectedCount} selected</span>
           <span className="spacer" />

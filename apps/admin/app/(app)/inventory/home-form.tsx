@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatCents, formatBedsOrBaths, type Home, type HomeAddon, type HomePhoto, type Lot, type Manufacturer } from '@uhs/db';
 import { uploadPhotos } from './photo-upload';
-import { createHome, updateHome, archiveHome, deletePhoto, reorderPhotos } from './actions';
+import { createHome, updateHome, archiveHome, restoreHome, deletePhoto, reorderPhotos } from './actions';
 
 type Props = {
   mode: 'create' | 'edit';
@@ -14,6 +14,7 @@ type Props = {
   manufacturers: Manufacturer[];
   lots: Lot[];
   publicPhotoBaseUrl: string;
+  isArchived?: boolean;
 };
 
 const CONSTRUCTION_OPTIONS = [
@@ -24,7 +25,7 @@ const CONSTRUCTION_OPTIONS = [
 ];
 
 export function HomeForm(props: Props) {
-  const { mode, home, photos: initialPhotos = [], manufacturers, lots, publicPhotoBaseUrl } = props;
+  const { mode, home, photos: initialPhotos = [], manufacturers, lots, publicPhotoBaseUrl, isArchived } = props;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -161,14 +162,16 @@ export function HomeForm(props: Props) {
         </div>
         {error && <span className="bd bd-danger">{error}</span>}
         <Link href="/inventory" style={{ padding: '8px 14px', textDecoration: 'none', color: 'var(--adm-ink-mute)', fontSize: 13, fontWeight: 500 }}>Cancel</Link>
-        <button type="submit" disabled={pending} style={{
-          background: 'var(--adm-accent)', color: '#fff',
-          border: 'none', padding: '9px 16px', borderRadius: 6,
-          fontWeight: 500, fontSize: 13, cursor: 'pointer',
-          opacity: pending ? 0.7 : 1,
-        }}>
-          {pending ? 'Saving…' : mode === 'create' ? 'Create home' : 'Save changes'}
-        </button>
+        {!isArchived && (
+          <button type="submit" disabled={pending} style={{
+            background: 'var(--adm-accent)', color: '#fff',
+            border: 'none', padding: '9px 16px', borderRadius: 6,
+            fontWeight: 500, fontSize: 13, cursor: 'pointer',
+            opacity: pending ? 0.7 : 1,
+          }}>
+            {pending ? 'Saving…' : mode === 'create' ? 'Create home' : 'Save changes'}
+          </button>
+        )}
       </div>
 
       <div className="page-header">
@@ -179,6 +182,17 @@ export function HomeForm(props: Props) {
         )}
       </div>
 
+      {isArchived && (
+        <div style={{
+          padding: '10px 14px', marginBottom: 14, borderRadius: 6,
+          background: '#faf0ee', border: '1px solid #e0c0bc',
+          color: '#a53a2c', fontSize: 13, fontWeight: 500,
+        }}>
+          This home is archived. Restore it to make changes or republish.
+        </div>
+      )}
+
+      <fieldset disabled={!!isArchived} style={{ border: 'none', padding: 0, margin: 0 }}>
       <div className="inv-grid">
         {/* LEFT — form */}
         <div>
@@ -638,7 +652,7 @@ export function HomeForm(props: Props) {
             </div>
           </div>
 
-          {mode === 'edit' && (
+          {mode === 'edit' && !isArchived && (
             <div className="card" style={{ borderColor: '#e0c0bc' }}>
               <div className="card-head">
                 <h3 style={{ color: '#a53a2c' }}>Danger zone</h3>
@@ -665,6 +679,7 @@ export function HomeForm(props: Props) {
               </div>
             </div>
           )}
+
         </div>
 
         {/* RIGHT — sticky sidebar */}
@@ -736,6 +751,42 @@ export function HomeForm(props: Props) {
           </div>
         </aside>
       </div>
+      </fieldset>
+
+      {mode === 'edit' && isArchived && (
+        <div style={{ maxWidth: 720, marginTop: 14 }}>
+          <div className="card" style={{ borderColor: '#bcd1ad' }}>
+            <div className="card-head">
+              <h3 style={{ color: '#4a6b3f' }}>Restore</h3>
+              <div className="sub">Restoring this home sets its status to Draft. It will not appear on the public site until published.</div>
+            </div>
+            <div className="card-body">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  if (confirm('Restore this home? It will be set to Draft status.')) {
+                    startTransition(async () => {
+                      try {
+                        await restoreHome(home!.id);
+                        router.push('/inventory');
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : 'Restore failed');
+                      }
+                    });
+                  }
+                }}
+                style={{
+                  background: '#e6efe2', color: '#4a6b3f', border: '1px solid #bcd1ad',
+                  padding: '8px 14px', borderRadius: 6, fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                }}
+              >
+                {pending ? 'Restoring…' : 'Restore this home'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

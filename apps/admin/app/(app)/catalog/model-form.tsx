@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { HomeModel, HomeModelPhoto, Manufacturer } from '@uhs/db';
 import { uploadModelPhotos } from './photo-upload';
-import { createModel, updateModel, archiveModel, deleteModelPhoto } from './actions';
+import { createModel, updateModel, archiveModel, restoreModel, deleteModelPhoto } from './actions';
 
 type Props = {
   mode: 'create' | 'edit';
@@ -13,6 +13,7 @@ type Props = {
   photos?: HomeModelPhoto[];
   manufacturers: Manufacturer[];
   publicPhotoBaseUrl: string;
+  isArchived?: boolean;
 };
 
 const CONSTRUCTION_OPTIONS = [
@@ -23,7 +24,7 @@ const CONSTRUCTION_OPTIONS = [
 ];
 
 export function ModelForm(props: Props) {
-  const { mode, model, photos: initialPhotos = [], manufacturers, publicPhotoBaseUrl } = props;
+  const { mode, model, photos: initialPhotos = [], manufacturers, publicPhotoBaseUrl, isArchived } = props;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -81,14 +82,16 @@ export function ModelForm(props: Props) {
         </div>
         {error && <span className="bd bd-danger">{error}</span>}
         <Link href="/catalog" style={{ padding: '8px 14px', textDecoration: 'none', color: 'var(--adm-ink-mute)', fontSize: 13, fontWeight: 500 }}>Cancel</Link>
-        <button type="submit" disabled={pending} style={{
-          background: 'var(--adm-accent)', color: '#fff',
-          border: 'none', padding: '9px 16px', borderRadius: 6,
-          fontWeight: 500, fontSize: 13, cursor: 'pointer',
-          opacity: pending ? 0.7 : 1,
-        }}>
-          {pending ? 'Saving…' : mode === 'create' ? 'Create model' : 'Save changes'}
-        </button>
+        {!isArchived && (
+          <button type="submit" disabled={pending} style={{
+            background: 'var(--adm-accent)', color: '#fff',
+            border: 'none', padding: '9px 16px', borderRadius: 6,
+            fontWeight: 500, fontSize: 13, cursor: 'pointer',
+            opacity: pending ? 0.7 : 1,
+          }}>
+            {pending ? 'Saving…' : mode === 'create' ? 'Create model' : 'Save changes'}
+          </button>
+        )}
       </div>
 
       <div className="page-header">
@@ -99,6 +102,17 @@ export function ModelForm(props: Props) {
         )}
       </div>
 
+      {isArchived && (
+        <div style={{
+          padding: '10px 14px', marginBottom: 14, borderRadius: 6,
+          background: '#faf0ee', border: '1px solid #e0c0bc',
+          color: '#a53a2c', fontSize: 13, fontWeight: 500,
+        }}>
+          This model is archived. Restore it to make changes or stock new units.
+        </div>
+      )}
+
+      <fieldset disabled={!!isArchived} style={{ border: 'none', padding: 0, margin: 0 }}>
       <div className="inv-grid">
         <div>
           <div className="card">
@@ -254,7 +268,7 @@ export function ModelForm(props: Props) {
             </div>
           </div>
 
-          {mode === 'edit' && (
+          {mode === 'edit' && !isArchived && (
             <div className="card" style={{ borderColor: '#e0c0bc' }}>
               <div className="card-head">
                 <h3 style={{ color: '#a53a2c' }}>Danger zone</h3>
@@ -281,6 +295,7 @@ export function ModelForm(props: Props) {
               </div>
             </div>
           )}
+
         </div>
 
         <aside style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -294,6 +309,42 @@ export function ModelForm(props: Props) {
           </div>
         </aside>
       </div>
+      </fieldset>
+
+      {mode === 'edit' && isArchived && (
+        <div style={{ maxWidth: 720, marginTop: 14 }}>
+          <div className="card" style={{ borderColor: '#bcd1ad' }}>
+            <div className="card-head">
+              <h3 style={{ color: '#4a6b3f' }}>Restore</h3>
+              <div className="sub">Restoring this model makes it visible in the catalog again so it can be stocked onto lots.</div>
+            </div>
+            <div className="card-body">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  if (confirm('Restore this model? It will reappear in the catalog.')) {
+                    startTransition(async () => {
+                      try {
+                        await restoreModel(model!.id);
+                        router.push('/catalog');
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : 'Restore failed');
+                      }
+                    });
+                  }
+                }}
+                style={{
+                  background: '#e6efe2', color: '#4a6b3f', border: '1px solid #bcd1ad',
+                  padding: '8px 14px', borderRadius: 6, fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                }}
+              >
+                {pending ? 'Restoring…' : 'Restore this model'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

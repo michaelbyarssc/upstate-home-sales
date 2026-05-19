@@ -115,6 +115,14 @@ export async function archiveModel(id: string) {
   revalidatePath('/catalog');
 }
 
+export async function restoreModel(id: string) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc('restore_model', { model_id: id });
+  if (error) throw new Error(error.message);
+  revalidatePath('/catalog');
+  revalidatePath(`/catalog/${id}`);
+}
+
 export async function deleteModelPhoto(photoId: string, modelId: string) {
   const supabase = createClient();
   const { data: photo } = await supabase

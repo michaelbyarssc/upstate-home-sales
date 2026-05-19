@@ -189,6 +189,14 @@ export async function archiveHome(id: string) {
   revalidatePath('/inventory');
 }
 
+export async function restoreHome(id: string) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc('restore_home', { home_id: id });
+  if (error) throw new Error(error.message);
+  revalidatePath('/inventory');
+  revalidatePath(`/inventory/${id}`);
+}
+
 export async function deletePhoto(photoId: string, homeId: string) {
   const supabase = createClient();
   const { data: photo } = await supabase
