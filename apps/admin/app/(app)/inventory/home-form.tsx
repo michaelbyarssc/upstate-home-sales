@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition, type FormEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatCents, formatBedsOrBaths, type Home, type HomeAddon, type HomePhoto, type Lot, type Manufacturer } from '@uhs/db';
 import { uploadPhotos } from './photo-upload';
 import { createHome, updateHome, archiveHome, deletePhoto, reorderPhotos } from './actions';
@@ -24,6 +25,7 @@ const CONSTRUCTION_OPTIONS = [
 
 export function HomeForm(props: Props) {
   const { mode, home, photos: initialPhotos = [], manufacturers, lots, publicPhotoBaseUrl } = props;
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [photos, setPhotos] = useState(initialPhotos);
@@ -647,7 +649,10 @@ export function HomeForm(props: Props) {
                   type="button"
                   onClick={() => {
                     if (confirm('Archive this home? It will be removed from the public site.')) {
-                      startTransition(() => archiveHome(home!.id));
+                      startTransition(async () => {
+                        await archiveHome(home!.id);
+                        router.push('/inventory');
+                      });
                     }
                   }}
                   style={{

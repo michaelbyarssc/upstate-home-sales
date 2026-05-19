@@ -184,13 +184,9 @@ export async function updateHome(id: string, fd: FormData) {
 
 export async function archiveHome(id: string) {
   const supabase = createClient();
-  const { error } = await supabase
-    .from('homes')
-    .update({ status: 'archived', deleted_at: new Date().toISOString() })
-    .eq('id', id);
+  const { error } = await supabase.rpc('archive_home', { home_id: id });
   if (error) throw new Error(error.message);
   revalidatePath('/inventory');
-  redirect('/inventory');
 }
 
 export async function deletePhoto(photoId: string, homeId: string) {
