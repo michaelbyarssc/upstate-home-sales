@@ -62,7 +62,7 @@ export default async function HomePage() {
               paperwork, and we&rsquo;ll set you up with the right floor plan in an afternoon.
             </p>
             <div className="cta">
-              <Link href="/inventory" className="btn btn-primary">Browse inventory</Link>
+              <Link href="/inventory" className="btn btn-primary">Home Options</Link>
               <Link href="/financing" className="btn btn-secondary">Financing options</Link>
             </div>
           </div>

@@ -86,7 +86,7 @@ export default async function LocationHomePage({ params }: { params: { locationS
             </p>
             <div style={{ marginTop: 'var(--s-6)', display: 'flex', gap: 'var(--s-3)' }}>
               <Link href="/inventory" className="btn btn-primary" style={{ background: brand, borderColor: brand }}>
-                Browse inventory
+                Home Options
               </Link>
               <Link href="/financing" className="btn btn-secondary">Financing options</Link>
             </div>
