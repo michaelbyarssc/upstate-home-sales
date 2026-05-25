@@ -87,7 +87,7 @@ export default async function HomePage() {
           <div className="section-head">
             <div className="lhs">
               <div className="eyebrow">Featured listings</div>
-              <h2>On the lot this week</h2>
+              <h2>Featured Homes This Week</h2>
             </div>
             <div className="rhs">
               <Link href="/inventory" className="btn btn-ghost">See all →</Link>

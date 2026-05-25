@@ -114,7 +114,7 @@ export default async function LocationHomePage({ params }: { params: { locationS
             <div>
               <div className="eyebrow">Featured listings</div>
               <h2 style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-h1)', marginTop: 'var(--s-2)' }}>
-                On the lot this week
+                Featured Homes This Week
               </h2>
             </div>
             <Link href="/inventory" style={{ color: brand, fontWeight: 500 }}>See all →</Link>
