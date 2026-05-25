@@ -11,7 +11,18 @@ import { InventoryFilters } from '../../components/InventoryFilters';
 export const metadata = { title: 'Available Homes' };
 export const dynamic = 'force-dynamic';
 
-type SearchParams = { type?: string; mfr?: string; q?: string; price?: string };
+type SearchParams = {
+  type?: string;
+  mfr?: string;
+  q?: string;
+  price?: string;
+  beds?: string;
+  baths?: string;
+  min_price?: string;
+  max_price?: string;
+  min_sqft?: string;
+  max_sqft?: string;
+};
 
 const SQFT_BANDS: Array<{ label: string; min: number; max: number | null }> = [
   { label: '1,800+ sq. ft.', min: 1800, max: null },
@@ -22,7 +33,7 @@ const SQFT_BANDS: Array<{ label: string; min: number; max: number | null }> = [
 
 export default async function InventoryListPage({ searchParams }: { searchParams: SearchParams }) {
   const supabase = createPublicClient();
-  const { type, mfr, q, price } = searchParams;
+  const { type, mfr, q, price, beds, baths, min_price, max_price, min_sqft, max_sqft } = searchParams;
 
   let mfrId: string | null = null;
   if (mfr) {
@@ -41,9 +52,41 @@ export default async function InventoryListPage({ searchParams }: { searchParams
   if (type) query = query.eq('type', type);
   if (mfrId) query = query.eq('manufacturer_id', mfrId);
   if (q) query = query.or(`name.ilike.%${q}%,model.ilike.%${q}%`);
-  if (price === 'u100') query = query.lt('listed_price_cents', 10_000_000);
-  else if (price === '100-200') query = query.gte('listed_price_cents', 10_000_000).lt('listed_price_cents', 20_000_000);
+
+  // Explicit min/max price (from the parser) wins over the legacy bucket dropdown.
+  const hasExplicitPrice = min_price != null || max_price != null;
+  if (hasExplicitPrice) {
+    if (min_price != null) {
+      const n = parseInt(min_price, 10);
+      if (Number.isFinite(n)) query = query.gte('listed_price_cents', n * 100);
+    }
+    if (max_price != null) {
+      const n = parseInt(max_price, 10);
+      if (Number.isFinite(n)) query = query.lte('listed_price_cents', n * 100);
+    }
+  } else if (price === 'u100') query = query.lt('listed_price_cents', 10_000_000);
+  else if (price === '100-200')
+    query = query.gte('listed_price_cents', 10_000_000).lt('listed_price_cents', 20_000_000);
   else if (price === 'o200') query = query.gte('listed_price_cents', 20_000_000);
+
+  // Beds — match primary beds OR configurable beds_options array.
+  if (beds != null) {
+    const n = parseInt(beds, 10);
+    if (Number.isFinite(n)) query = query.or(`beds.eq.${n},beds_options.cs.{${n}}`);
+  }
+  if (baths != null) {
+    const n = parseFloat(baths);
+    if (Number.isFinite(n)) query = query.or(`baths.eq.${n},baths_options.cs.{${n}}`);
+  }
+
+  if (min_sqft != null) {
+    const n = parseInt(min_sqft, 10);
+    if (Number.isFinite(n)) query = query.gte('sqft', n);
+  }
+  if (max_sqft != null) {
+    const n = parseInt(max_sqft, 10);
+    if (Number.isFinite(n)) query = query.lte('sqft', n);
+  }
 
   const [{ data: rows }, { data: manufacturers }, { data: collections }] = await Promise.all([
     query,
@@ -118,8 +161,11 @@ export default async function InventoryListPage({ searchParams }: { searchParams
             price={price}
             manufacturers={(manufacturers ?? []) as Array<{ id: string; slug: string; name: string }>}
           />
-          <SmartSearchBar defaultValue={q ?? ''} />
-          {(type || mfr || q || price) && (
+          <SmartSearchBar
+            defaultValue={q ?? ''}
+            manufacturers={(manufacturers ?? []).map((m) => ({ slug: m.slug, name: m.name }))}
+          />
+          {(type || mfr || q || price || beds || baths || min_price || max_price || min_sqft || max_sqft) && (
             <Link href="/inventory" className="btn btn-ghost btn-sm">Clear</Link>
           )}
           <span className="results"><strong>{homes.length}</strong> match</span>

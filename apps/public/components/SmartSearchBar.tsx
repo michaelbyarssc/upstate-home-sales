@@ -2,38 +2,45 @@
 
 import { useState, useTransition, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { parseSearchQuery, type ParsedSearch } from '../lib/search-parser';
 
 /**
- * PR 2.4 — replaces the plain `<input name="q">` + Filter button in the
- * inventory filter bar. Auto-detects natural-language queries
- * (e.g., "3 bed double under 80k") and routes them through /api/ai/parse-search,
- * otherwise falls through to the standard `?q=` ILIKE behavior.
+ * Search input for /inventory. Parses the query client-side via the
+ * deterministic parser and pushes the resulting URL params. Fires a
+ * fire-and-forget POST to /api/ai/parse-search so the dealer's search
+ * report still gets each query logged (no blocking on the network).
  *
- * Reads the other filter fields (type, mfr, price) out of the surrounding
- * form via DOM so the existing server-rendered <form> doesn't need to be
- * restructured as a client component.
+ * The sibling type/mfr/price selects in the surrounding filter-bar
+ * form are pulled out via DOM so the existing server-rendered form
+ * structure stays as-is.
  */
 
-const NL_HINTS = /(under|over|less than|more than|with \d+ ?bed|\$\d|sqft|sq ?ft|cheap|affordable|spacious)/i;
+type Manufacturer = { slug: string; name: string };
 
-function isNlQuery(text: string): boolean {
-  if (!text) return false;
-  if (NL_HINTS.test(text)) return true;
-  // 4+ words is usually a sentence rather than a plain keyword.
-  return text.trim().split(/\s+/).length >= 4;
-}
+type Props = {
+  defaultValue?: string;
+  manufacturers: Manufacturer[];
+};
 
-type Props = { defaultValue?: string };
+const FILTER_KEYS = [
+  'beds',
+  'baths',
+  'type',
+  'mfr',
+  'min_price',
+  'max_price',
+  'min_sqft',
+  'max_sqft',
+  'q',
+] as const;
 
-export function SmartSearchBar({ defaultValue = '' }: Props) {
+export function SmartSearchBar({ defaultValue = '', manufacturers }: Props) {
   const router = useRouter();
   const [text, setText] = useState(defaultValue);
-  const [pending, startTransition] = useTransition();
-  const [err, setErr] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
-  function buildBaseParams(): URLSearchParams {
+  function readSiblingSelects(): URLSearchParams {
     const params = new URLSearchParams();
-    // Pull the sibling selects out of the same <form>.
     const form = document.querySelector<HTMLFormElement>('form.filter-bar');
     if (form) {
       const typeEl = form.querySelector<HTMLSelectElement>('select[name="type"]');
@@ -46,69 +53,57 @@ export function SmartSearchBar({ defaultValue = '' }: Props) {
     return params;
   }
 
-  function navigatePlain(query: string) {
-    const params = buildBaseParams();
-    if (query) params.set('q', query);
-    router.push(`/inventory${params.toString() ? '?' + params.toString() : ''}`);
+  function buildParams(query: string, filters: ParsedSearch): URLSearchParams {
+    const params = readSiblingSelects();
+    for (const key of FILTER_KEYS) {
+      const v = filters[key];
+      if (v != null && v !== '') params.set(key, String(v));
+    }
+    // Explicit min/max price beats the legacy bucket — drop it to avoid double-filtering.
+    if (params.has('min_price') || params.has('max_price')) params.delete('price');
+    // Empty query → no `q` param (cleaner URLs).
+    if (!filters.q && query) {
+      // Whole query was parsed into structured filters; don't also pass it as q.
+    }
+    return params;
   }
 
-  async function runSmartSearch(query: string) {
-    setErr(null);
-    try {
-      const res = await fetch('/api/ai/parse-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const { filters } = (await res.json()) as { filters: Record<string, string | number | null | undefined> };
-      const params = buildBaseParams();
-      // Smart-search filters take precedence over manual selects when both are set.
-      if (filters.type) params.set('type', String(filters.type));
-      if (filters.mfr) params.set('mfr', String(filters.mfr));
-      if (filters.max_price) {
-        const max = Number(filters.max_price);
-        if (max < 100000) params.set('price', 'u100');
-        else if (max < 200000) params.set('price', '100-200');
-        else params.set('price', 'o200');
-      }
-      if (filters.q) params.set('q', String(filters.q));
-      if (filters.beds != null) params.set('beds', String(filters.beds));
-      router.push(`/inventory?${params.toString()}`);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Smart search failed');
-      navigatePlain(query);
-    }
+  function logSearch(query: string, filters: ParsedSearch) {
+    // Fire-and-forget — search proceeds whether this succeeds or not.
+    void fetch('/api/ai/parse-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, filters }),
+      keepalive: true,
+    }).catch(() => {});
   }
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const query = text.trim();
     if (!query) {
-      navigatePlain('');
+      const params = readSiblingSelects();
+      router.push(`/inventory${params.toString() ? '?' + params.toString() : ''}`);
       return;
     }
-    if (isNlQuery(query)) {
-      startTransition(() => runSmartSearch(query));
-    } else {
-      navigatePlain(query);
-    }
+    const filters = parseSearchQuery(query, manufacturers);
+    const params = buildParams(query, filters);
+    logSearch(query, filters);
+    startTransition(() => {
+      router.push(`/inventory${params.toString() ? '?' + params.toString() : ''}`);
+    });
   }
-
-  const isSmart = isNlQuery(text);
 
   return (
     <>
       {/*
-        Nested <form> is invalid HTML. Use a sibling form with the same
-        action/method so the outer filter-bar form's selects post correctly
-        when the user clicks Filter. The outer button click triggers our
-        capture-onSubmit handler via JS instead.
+        The outer filter-bar form is intercepted via this component's
+        keydown + button click handlers (a nested <form> would be invalid).
       */}
       <input
         type="text"
         name="q"
-        placeholder="Search — try '3 bed double under 80k'"
+        placeholder="Search — try '3/2 Clayton under 80k'"
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
@@ -126,16 +121,9 @@ export function SmartSearchBar({ defaultValue = '' }: Props) {
           const fakeEvent = { preventDefault() {} } as FormEvent<HTMLFormElement>;
           onSubmit(fakeEvent);
         }}
-        disabled={pending}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
       >
-        {pending ? 'Thinking…' : isSmart ? '✨ Smart filter' : 'Filter'}
+        Filter
       </button>
-      {err && (
-        <span style={{ fontSize: 11, color: '#a53a2c' }} role="alert">
-          {err}
-        </span>
-      )}
     </>
   );
 }
