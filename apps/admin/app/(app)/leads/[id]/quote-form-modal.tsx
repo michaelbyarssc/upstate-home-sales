@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef } from 'react';
 import { createClient } from '@uhs/db/browser';
-import { HOME_PHOTO_BUCKET } from '@uhs/db';
+import { HOME_PHOTO_BUCKET, formatBedsOrBaths } from '@uhs/db';
 import type { LineItem } from '@uhs/db';
 import { createQuote } from './actions';
 
@@ -11,6 +11,11 @@ export type HomeOption = {
   name: string;
   stock_no: string;
   listed_price_cents: number;
+  beds: number | null;
+  baths: number | null;
+  beds_options: number[] | null;
+  baths_options: number[] | null;
+  sqft: number | null;
 };
 
 export type QuoteInitialData = {
@@ -293,6 +298,19 @@ function HomeSelect({
                 <div style={{ fontSize: 11, color: 'var(--adm-ink-mute)' }}>
                   {h.stock_no} &bull; {fmtDollars(h.listed_price_cents)}
                 </div>
+                {(() => {
+                  const bedsStr = formatBedsOrBaths(h.beds, h.beds_options);
+                  const bathsStr = formatBedsOrBaths(h.baths, h.baths_options);
+                  const bits: string[] = [];
+                  if (bedsStr !== '—') bits.push(`${bedsStr} Bed`);
+                  if (bathsStr !== '—') bits.push(`${bathsStr} Bath`);
+                  if (h.sqft) bits.push(`${h.sqft.toLocaleString()} Sq. Ft.`);
+                  return bits.length > 0 ? (
+                    <div style={{ fontSize: 11, color: 'var(--adm-ink-mute)', marginTop: 2 }}>
+                      {bits.join(' | ')}
+                    </div>
+                  ) : null;
+                })()}
               </div>
             ))}
           </div>

@@ -51,7 +51,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .order('created_at'),
     supabase
       .from('homes')
-      .select('id, name, stock_no, listed_price_cents')
+      .select('id, name, stock_no, listed_price_cents, beds, baths, beds_options, baths_options, sqft')
       .is('deleted_at', null)
       .eq('status', 'published')
       .order('name')
@@ -151,7 +151,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         initialCollaborators={collabList}
         initialQuotes={(quotes ?? []).map((q: any) => ({ ...q, homes: Array.isArray(q.homes) ? q.homes[0] ?? null : q.homes })) as Array<{ id: string; home_id: string; listed_price_cents: number; expires_at: string; created_at: string; public_token: string; pdf_storage_path: string | null; homes?: { name: string; stock_no: string } | null }>}
         defaultLineItems={defaultLineItems}
-        homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number }>}
+        homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number; beds: number | null; baths: number | null; beds_options: number[] | null; baths_options: number[] | null; sqft: number | null }>}
         supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
       />
 
@@ -171,7 +171,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       <DealerDocsPanel
         leadId={params.id}
         orgId={lead.org_id}
-        homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number }>}
+        homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number; beds: number | null; baths: number | null; beds_options: number[] | null; baths_options: number[] | null; sqft: number | null }>}
         defaultLineItems={defaultLineItems}
         initialDocs={buildDealerDocs(quotes, invoicesData, posData)}
       />
