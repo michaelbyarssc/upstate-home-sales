@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 const LINKS: Array<{ href: string; label: string }> = [
-  { href: '/inventory', label: 'Inventory' },
+  { href: '/inventory', label: 'Available Homes' },
   { href: '/financing', label: 'Financing' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },

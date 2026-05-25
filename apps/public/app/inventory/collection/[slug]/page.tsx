@@ -69,7 +69,7 @@ export default async function CollectionPage({ params }: { params: Params }) {
         <nav className="inv-breadcrumb" aria-label="Breadcrumb">
           <Link href="/">Home</Link>
           <span className="sep">›</span>
-          <Link href="/inventory">Inventory</Link>
+          <Link href="/inventory">Available Homes</Link>
           <span className="sep">›</span>
           <span className="current">{collection.name}</span>
         </nav>

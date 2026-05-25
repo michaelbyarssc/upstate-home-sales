@@ -8,7 +8,7 @@ import { VisitorTracker } from '../../components/VisitorTracker';
 import { SmartSearchBar } from '../../components/SmartSearchBar';
 import { InventoryFilters } from '../../components/InventoryFilters';
 
-export const metadata = { title: 'Inventory' };
+export const metadata = { title: 'Available Homes' };
 export const dynamic = 'force-dynamic';
 
 type SearchParams = { type?: string; mfr?: string; q?: string; price?: string };
@@ -87,7 +87,7 @@ export default async function InventoryListPage({ searchParams }: { searchParams
         <nav className="inv-breadcrumb" aria-label="Breadcrumb">
           <Link href="/">Home</Link>
           <span className="sep">›</span>
-          <span className="current">Inventory</span>
+          <span className="current">Available Homes</span>
         </nav>
 
         <div className="section-head">

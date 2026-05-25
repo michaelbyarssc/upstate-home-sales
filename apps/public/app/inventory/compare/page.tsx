@@ -43,7 +43,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
           <nav className="inv-breadcrumb" aria-label="Breadcrumb">
             <Link href="/">Home</Link>
             <span className="sep">›</span>
-            <Link href="/inventory">Inventory</Link>
+            <Link href="/inventory">Available Homes</Link>
             <span className="sep">›</span>
             <span className="current">Compare</span>
           </nav>
@@ -85,7 +85,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
         <nav className="inv-breadcrumb" aria-label="Breadcrumb">
           <Link href="/">Home</Link>
           <span className="sep">›</span>
-          <Link href="/inventory">Inventory</Link>
+          <Link href="/inventory">Available Homes</Link>
           <span className="sep">›</span>
           <span className="current">Compare</span>
         </nav>

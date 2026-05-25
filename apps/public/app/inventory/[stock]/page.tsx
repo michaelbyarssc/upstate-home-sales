@@ -100,7 +100,7 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
         <nav className="inv-breadcrumb" aria-label="Breadcrumb">
           <Link href="/">Home</Link>
           <span className="sep">›</span>
-          <Link href="/inventory">Inventory</Link>
+          <Link href="/inventory">Available Homes</Link>
           <span className="sep">›</span>
           {h.manufacturers?.name && (
             <>

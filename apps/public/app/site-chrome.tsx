@@ -22,7 +22,7 @@ export function SiteHeader() {
             <span className="tag">South Carolina</span>
           </Link>
           <nav className="uhs-nav-links">
-            <Link href="/inventory">Inventory</Link>
+            <Link href="/inventory">Available Homes</Link>
             <Link href="/financing">Financing</Link>
             <Link href="/about">About</Link>
             <Link href="/contact">Contact</Link>
