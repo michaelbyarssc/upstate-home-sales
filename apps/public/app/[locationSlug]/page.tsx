@@ -117,7 +117,7 @@ export default async function LocationHomePage({ params }: { params: { locationS
                 Featured Homes This Week
               </h2>
             </div>
-            <Link href="/inventory" style={{ color: brand, fontWeight: 500 }}>See all →</Link>
+            <Link href="/inventory" style={{ color: brand, fontWeight: 500 }}>See All Homes →</Link>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--s-5)', marginTop: 'var(--s-6)' }}>
             {homes.slice(0, 6).map((h, i) => (

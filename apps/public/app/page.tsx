@@ -90,7 +90,7 @@ export default async function HomePage() {
               <h2>Featured Homes This Week</h2>
             </div>
             <div className="rhs">
-              <Link href="/inventory" className="btn btn-ghost">See all →</Link>
+              <Link href="/inventory" className="btn btn-ghost">See All Homes →</Link>
             </div>
           </div>
           {homes.length === 0 ? (
