@@ -156,20 +156,7 @@ export function LoanCalculator({ initialPrice }: Props) {
               onChange={setMaxMonthly}
             />
           )}
-          <RangeField
-            id="lc-down"
-            label="Down payment"
-            value={downPct}
-            min={0}
-            max={50}
-            step={0.5}
-            display={`${downPct}%${
-              mode === 'estimate'
-                ? ` (${formatUSD(Math.round(price * (downPct / 100)))})`
-                : ''
-            }`}
-            onChange={setDownPct}
-          />
+          <DownPaymentField pct={downPct} price={price} mode={mode} onChange={setDownPct} />
           <RangeField
             id="lc-apr"
             label="Interest rate (APR)"
@@ -177,7 +164,7 @@ export function LoanCalculator({ initialPrice }: Props) {
             min={1}
             max={15}
             step={0.1}
-            display={`${apr.toFixed(1)}%`}
+            unit="%"
             onChange={setApr}
           />
           <RangeField
@@ -187,7 +174,7 @@ export function LoanCalculator({ initialPrice }: Props) {
             min={5}
             max={30}
             step={1}
-            display={`${termYears} years`}
+            unit=" years"
             onChange={setTermYears}
           />
         </div>
@@ -253,6 +240,10 @@ function NumField(props: {
   );
 }
 
+function clampNumber(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
+
 function RangeField(props: {
   id: string;
   label: string;
@@ -260,14 +251,32 @@ function RangeField(props: {
   min: number;
   max: number;
   step: number;
-  display: string;
+  unit: string;
   onChange: (n: number) => void;
 }) {
+  function commit(raw: string) {
+    if (raw === '' || raw === '-' || raw === '.') return;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return;
+    props.onChange(clampNumber(n, props.min, props.max));
+  }
   return (
     <div className="field">
       <div className="loan-range-head">
-        <label className="label" htmlFor={props.id}>{props.label}</label>
-        <span className="loan-range-display">{props.display}</span>
+        <label className="label" htmlFor={`${props.id}-input`}>{props.label}</label>
+        <span className="loan-range-input-wrap">
+          <input
+            id={`${props.id}-input`}
+            type="number"
+            className="loan-range-input"
+            value={props.value}
+            min={props.min}
+            max={props.max}
+            step={props.step}
+            onChange={(e) => commit(e.target.value)}
+          />
+          <span className="loan-range-input-unit">{props.unit}</span>
+        </span>
       </div>
       <input
         id={props.id}
@@ -278,6 +287,80 @@ function RangeField(props: {
         max={props.max}
         step={props.step}
         onChange={(e) => props.onChange(Number(e.target.value))}
+        aria-label={props.label}
+      />
+    </div>
+  );
+}
+
+function DownPaymentField(props: {
+  pct: number;
+  price: number;
+  mode: 'estimate' | 'afford';
+  onChange: (pct: number) => void;
+}) {
+  const dollars = Math.round(props.price * (props.pct / 100));
+
+  function commitPct(raw: string) {
+    if (raw === '' || raw === '-' || raw === '.') return;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return;
+    props.onChange(clampNumber(n, 0, 50));
+  }
+  function commitDollars(raw: string) {
+    if (raw === '' || raw === '.' || props.price <= 0) return;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return;
+    const clampedDollars = clampNumber(n, 0, props.price);
+    const pct = (clampedDollars / props.price) * 100;
+    props.onChange(clampNumber(Math.round(pct * 10) / 10, 0, 50));
+  }
+
+  return (
+    <div className="field">
+      <div className="loan-range-head">
+        <label className="label" htmlFor="lc-down-pct">Down payment</label>
+        <div className="loan-range-input-pair">
+          <span className="loan-range-input-wrap">
+            <input
+              id="lc-down-pct"
+              type="number"
+              className="loan-range-input"
+              value={props.pct}
+              min={0}
+              max={50}
+              step={0.5}
+              onChange={(e) => commitPct(e.target.value)}
+            />
+            <span className="loan-range-input-unit">%</span>
+          </span>
+          {props.mode === 'estimate' && (
+            <span className="loan-range-input-wrap">
+              <span className="loan-range-input-unit">$</span>
+              <input
+                id="lc-down-dollars"
+                type="number"
+                className="loan-range-input loan-range-input-wide"
+                value={dollars}
+                min={0}
+                max={props.price}
+                step={500}
+                onChange={(e) => commitDollars(e.target.value)}
+              />
+            </span>
+          )}
+        </div>
+      </div>
+      <input
+        id="lc-down"
+        type="range"
+        className="loan-range"
+        value={props.pct}
+        min={0}
+        max={50}
+        step={0.5}
+        onChange={(e) => props.onChange(Number(e.target.value))}
+        aria-label="Down payment"
       />
     </div>
   );

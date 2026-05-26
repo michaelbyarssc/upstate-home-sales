@@ -402,6 +402,39 @@
   font: 600 13px/1 var(--f-body); color: var(--c-ink);
   font-variant-numeric: tabular-nums;
 }
+.loan-range-input-wrap {
+  display: inline-flex; align-items: baseline; gap: 2px;
+}
+.loan-range-input {
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  appearance: textfield;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  font: 600 13px/1.2 var(--f-body);
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+  width: 56px;
+  text-align: right;
+  padding: 2px 2px;
+  outline: none;
+  border-radius: 0;
+  transition: border-color var(--d-fast) var(--ease);
+}
+.loan-range-input::-webkit-outer-spin-button,
+.loan-range-input::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+.loan-range-input:hover { border-bottom-color: var(--c-line); }
+.loan-range-input:focus { border-bottom-color: var(--c-accent); }
+.loan-range-input-wide { width: 92px; }
+.loan-range-input-unit {
+  font: 600 13px/1 var(--f-body); color: var(--c-ink);
+}
+.loan-range-input-pair {
+  display: inline-flex; align-items: baseline; gap: 12px;
+}
 .loan-range {
   -webkit-appearance: none; appearance: none;
   width: 100%; height: 6px;
