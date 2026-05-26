@@ -98,12 +98,21 @@ export default async function CatalogPage({ searchParams }: { searchParams: Sear
           <h1>Home models</h1>
           <p>{showArchived ? `Showing ${rows.length} archived models` : `${rows.length} reusable templates · check one or more, then stock to a lot.`}</p>
         </div>
-        <Link href="/catalog/new" style={{
-          background: 'var(--adm-accent)', color: '#fff', padding: '9px 14px',
-          borderRadius: 6, textDecoration: 'none', fontWeight: 500, fontSize: 13,
-        }}>
-          + Add model
-        </Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link href="/catalog/import" style={{
+            background: '#fff', color: 'var(--adm-ink)',
+            padding: '9px 14px', borderRadius: 6, textDecoration: 'none',
+            fontWeight: 500, fontSize: 13, border: '1px solid var(--adm-line)',
+          }}>
+            Import from URL
+          </Link>
+          <Link href="/catalog/new" style={{
+            background: 'var(--adm-accent)', color: '#fff', padding: '9px 14px',
+            borderRadius: 6, textDecoration: 'none', fontWeight: 500, fontSize: 13,
+          }}>
+            + Add model
+          </Link>
+        </div>
       </div>
 
       <form className="inv-filters" method="GET" action="/catalog">
