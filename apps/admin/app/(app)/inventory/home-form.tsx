@@ -50,8 +50,26 @@ export function HomeForm(props: Props) {
   const [bedsOptions, setBedsOptions] = useState<number[]>(home?.beds_options ?? []);
   const [bathsOptions, setBathsOptions] = useState<number[]>(home?.baths_options ?? []);
   const [configurable, setConfigurable] = useState(
-    (home?.beds_options && home.beds_options.length > 1) || (home?.baths_options && home.baths_options.length > 1) || false
+    Boolean(
+      (home?.beds_options && home.beds_options.length > 0) ||
+        (home?.baths_options && home.baths_options.length > 0),
+    ),
   );
+
+  function commitChip(
+    inputEl: HTMLInputElement,
+    current: number[],
+    setNext: (xs: number[]) => void,
+    setPrimary: (n: number) => void,
+  ) {
+    const val = Number(inputEl.value);
+    if (val > 0 && !current.includes(val)) {
+      const next = [...current, val];
+      setNext(next);
+      setPrimary(Math.min(...next));
+    }
+    inputEl.value = '';
+  }
   const [sqft, setSqft] = useState<number | ''>(home?.sqft ?? '');
 
   const baseCents = Math.round(base * 100);
@@ -312,16 +330,12 @@ export function HomeForm(props: Props) {
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const val = Number((e.target as HTMLInputElement).value);
-                              if (val > 0 && !bedsOptions.includes(val)) {
-                                const next = [...bedsOptions, val];
-                                setBedsOptions(next);
-                                setBeds(Math.min(...next));
-                              }
-                              (e.target as HTMLInputElement).value = '';
+                              commitChip(e.target as HTMLInputElement, bedsOptions, setBedsOptions, (n) => setBeds(n));
                             }
                           }}
+                          onBlur={(e) => commitChip(e.target as HTMLInputElement, bedsOptions, setBedsOptions, (n) => setBeds(n))}
                         />
+                        <span style={{ fontSize: 11, color: 'var(--adm-ink-mute)' }}>Press Enter to add</span>
                       </div>
                     </div>
                     <div>
@@ -351,16 +365,12 @@ export function HomeForm(props: Props) {
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const val = Number((e.target as HTMLInputElement).value);
-                              if (val > 0 && !bathsOptions.includes(val)) {
-                                const next = [...bathsOptions, val];
-                                setBathsOptions(next);
-                                setBaths(Math.min(...next));
-                              }
-                              (e.target as HTMLInputElement).value = '';
+                              commitChip(e.target as HTMLInputElement, bathsOptions, setBathsOptions, (n) => setBaths(n));
                             }
                           }}
+                          onBlur={(e) => commitChip(e.target as HTMLInputElement, bathsOptions, setBathsOptions, (n) => setBaths(n))}
                         />
+                        <span style={{ fontSize: 11, color: 'var(--adm-ink-mute)' }}>Press Enter to add</span>
                       </div>
                     </div>
                   </div>
