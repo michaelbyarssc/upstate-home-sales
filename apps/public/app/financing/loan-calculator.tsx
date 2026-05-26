@@ -305,7 +305,7 @@ function DownPaymentField(props: {
     if (raw === '' || raw === '-' || raw === '.') return;
     const n = Number(raw);
     if (!Number.isFinite(n)) return;
-    props.onChange(clampNumber(n, 0, 50));
+    props.onChange(clampNumber(n, 0, 100));
   }
   function commitDollars(raw: string) {
     if (raw === '' || raw === '.' || props.price <= 0) return;
@@ -313,7 +313,7 @@ function DownPaymentField(props: {
     if (!Number.isFinite(n)) return;
     const clampedDollars = clampNumber(n, 0, props.price);
     const pct = (clampedDollars / props.price) * 100;
-    props.onChange(clampNumber(Math.round(pct * 10) / 10, 0, 50));
+    props.onChange(clampNumber(Math.round(pct * 10) / 10, 0, 100));
   }
 
   return (
@@ -328,7 +328,7 @@ function DownPaymentField(props: {
               className="loan-range-input"
               value={props.pct}
               min={0}
-              max={50}
+              max={100}
               step={0.5}
               onChange={(e) => commitPct(e.target.value)}
             />
@@ -357,7 +357,7 @@ function DownPaymentField(props: {
         className="loan-range"
         value={props.pct}
         min={0}
-        max={50}
+        max={100}
         step={0.5}
         onChange={(e) => props.onChange(Number(e.target.value))}
         aria-label="Down payment"
