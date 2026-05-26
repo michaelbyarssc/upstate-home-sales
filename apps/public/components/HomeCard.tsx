@@ -31,6 +31,10 @@ export function HomeCard({ home, index = 0 }: Props) {
   const detailHref = `/inventory/${encodeURIComponent(home.stock_no)}`;
   const designHref = `${detailHref}#design`;
 
+  const isConfigurable =
+    (home.beds_options && home.beds_options.length > 1) ||
+    (home.baths_options && home.baths_options.length > 1);
+
   const specBits: string[] = [];
   const bedsStr = formatBedsOrBaths(home.beds, home.beds_options);
   const bathsStr = formatBedsOrBaths(home.baths, home.baths_options);
@@ -60,6 +64,11 @@ export function HomeCard({ home, index = 0 }: Props) {
         )}
         {isNew && <span className="badge new">New</span>}
         {home.is_featured && !isNew && <span className="badge">Featured</span>}
+        {isConfigurable && (
+          <span className={`badge configurable${isNew || home.is_featured ? ' stacked' : ''}`}>
+            Configurable
+          </span>
+        )}
         <CompareToggle stock_no={home.stock_no} name={home.name} />
       </Link>
 

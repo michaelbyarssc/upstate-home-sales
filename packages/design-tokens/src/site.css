@@ -146,6 +146,8 @@
 }
 .home-card .badge.new { background: var(--uhs-brick); }
 .home-card .badge.sold { background: var(--c-ink-mute); }
+.home-card .badge.configurable { background: var(--uhs-ink, #1b2233); }
+.home-card .badge.configurable.stacked { top: 44px; }
 
 .home-card-body {
   padding: var(--s-4) var(--s-5) var(--s-5);
