@@ -308,6 +308,16 @@ function DownPaymentField(props: {
 }) {
   const dollars = Math.round(props.price * (props.pct / 100));
 
+  // Local drafts while an input is focused. Without these, typing into a
+  // controlled input that derives from props would snap mid-keystroke (e.g.,
+  // $1 → pct=0.0008% → derived $ rendered as "0" before the user sees "1").
+  const [draftDollars, setDraftDollars] = useState<string | null>(null);
+  const dollarsDisplay = draftDollars ?? String(dollars);
+  const [draftPct, setDraftPct] = useState<string | null>(null);
+  // Show pct rounded to 2 decimals when unfocused so high-precision storage
+  // (needed for $ round-trip) doesn't leak as "0.0010455438..." into the UI.
+  const pctDisplay = draftPct ?? String(Math.round(props.pct * 100) / 100);
+
   function commitPct(raw: string) {
     if (raw === '' || raw === '-' || raw === '.') return;
     const n = Number(raw);
@@ -315,7 +325,10 @@ function DownPaymentField(props: {
     props.onChange(clampNumber(n, 0, 100));
   }
   function commitDollars(raw: string) {
-    if (raw === '' || raw === '.') return;
+    if (raw === '' || raw === '.') {
+      props.onChange(0);
+      return;
+    }
     const n = Number(raw);
     if (!Number.isFinite(n) || n < 0) return;
     let pct: number;
@@ -330,7 +343,10 @@ function DownPaymentField(props: {
       if (newPrice <= 0) return;
       pct = (n / newPrice) * 100;
     }
-    props.onChange(clampNumber(Math.round(pct * 10) / 10, 0, 100));
+    // Store pct at full precision so the $ amount round-trips exactly
+    // (Math.round on pct would collapse $1 / $120k = 0.0008% to 0%, and
+    // the derived $ would then snap back to 0).
+    props.onChange(clampNumber(pct, 0, 100));
   }
 
   return (
@@ -343,11 +359,22 @@ function DownPaymentField(props: {
               id="lc-down-pct"
               type="number"
               className="loan-range-input"
-              value={props.pct}
+              value={pctDisplay}
               min={0}
               max={100}
               step={0.5}
-              onChange={(e) => commitPct(e.target.value)}
+              onChange={(e) => setDraftPct(e.target.value)}
+              onBlur={(e) => {
+                commitPct(e.target.value);
+                setDraftPct(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  commitPct((e.target as HTMLInputElement).value);
+                  setDraftPct(null);
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
             />
             <span className="loan-range-input-unit">%</span>
           </span>
@@ -357,10 +384,21 @@ function DownPaymentField(props: {
               id="lc-down-dollars"
               type="number"
               className="loan-range-input loan-range-input-wide"
-              value={dollars}
+              value={dollarsDisplay}
               min={0}
               step={500}
-              onChange={(e) => commitDollars(e.target.value)}
+              onChange={(e) => setDraftDollars(e.target.value)}
+              onBlur={(e) => {
+                commitDollars(e.target.value);
+                setDraftDollars(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  commitDollars((e.target as HTMLInputElement).value);
+                  setDraftDollars(null);
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
             />
           </span>
         </div>
