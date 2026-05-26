@@ -313,7 +313,7 @@
   background: var(--c-surface);
   border: 1px solid var(--c-line);
   border-radius: var(--r-3);
-  padding: var(--s-7);
+  padding: var(--s-8);
 }
 .loan-calc-head {
   display: flex; flex-direction: column; align-items: stretch;
