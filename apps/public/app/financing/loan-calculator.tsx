@@ -313,8 +313,10 @@ function DownPaymentField(props: {
   const [draftDollars, setDraftDollars] = useState<string | null>(null);
 
   function parseNum(s: string | null): number | null {
-    if (s == null || s === '' || s === '-' || s === '.') return null;
-    const n = Number(s);
+    if (s == null) return null;
+    const cleaned = s.replace(/,/g, '');
+    if (cleaned === '' || cleaned === '-' || cleaned === '.') return null;
+    const n = Number(cleaned);
     return Number.isFinite(n) ? n : null;
   }
 
@@ -355,9 +357,10 @@ function DownPaymentField(props: {
   }
 
   // Display values: when a draft is set, show the literal string the user
-  // typed (avoids snap-back on `.` mid-decimal or trailing zeros).
+  // typed (avoids snap-back on `.` mid-decimal or trailing zeros). When
+  // unfocused, the $ value formats with comma thousands separators.
   const pctDisplay = draftPct ?? String(Math.round(effectivePct * 100) / 100);
-  const dollarsDisplay = draftDollars ?? String(effectiveDollars);
+  const dollarsDisplay = draftDollars ?? effectiveDollars.toLocaleString('en-US');
 
   function commitPct(raw: string) {
     if (raw === '' || raw === '-' || raw === '.') {
@@ -369,11 +372,12 @@ function DownPaymentField(props: {
     props.onChange(clampNumber(n, 0, 100));
   }
   function commitDollars(raw: string) {
-    if (raw === '' || raw === '.') {
+    const cleaned = raw.replace(/,/g, '');
+    if (cleaned === '' || cleaned === '.') {
       props.onChange(0);
       return;
     }
-    const n = Number(raw);
+    const n = Number(cleaned);
     if (!Number.isFinite(n) || n < 0) return;
     props.onChange(pctFromDollars(n));
   }
@@ -411,11 +415,10 @@ function DownPaymentField(props: {
             <span className="loan-range-input-unit">$</span>
             <input
               id="lc-down-dollars"
-              type="number"
+              type="text"
+              inputMode="numeric"
               className="loan-range-input loan-range-input-wide"
               value={dollarsDisplay}
-              min={0}
-              step={500}
               onChange={(e) => setDraftDollars(e.target.value)}
               onBlur={(e) => {
                 commitDollars(e.target.value);
