@@ -306,20 +306,64 @@ function DownPaymentField(props: {
   mode: 'estimate' | 'afford';
   onChange: (pct: number) => void;
 }) {
-  const dollars = Math.round(props.price * (props.pct / 100));
-
-  // Local drafts while an input is focused. Without these, typing into a
-  // controlled input that derives from props would snap mid-keystroke (e.g.,
-  // $1 → pct=0.0008% → derived $ rendered as "0" before the user sees "1").
-  const [draftDollars, setDraftDollars] = useState<string | null>(null);
-  const dollarsDisplay = draftDollars ?? String(dollars);
+  // Drafts hold the user's literal keystrokes while an input is focused;
+  // we also derive the *other* field live from whichever draft is active
+  // so the two stay synced as the user types.
   const [draftPct, setDraftPct] = useState<string | null>(null);
-  // Show pct rounded to 2 decimals when unfocused so high-precision storage
-  // (needed for $ round-trip) doesn't leak as "0.0010455438..." into the UI.
-  const pctDisplay = draftPct ?? String(Math.round(props.pct * 100) / 100);
+  const [draftDollars, setDraftDollars] = useState<string | null>(null);
+
+  function parseNum(s: string | null): number | null {
+    if (s == null || s === '' || s === '-' || s === '.') return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function pctFromDollars(d: number): number {
+    if (props.mode === 'estimate') {
+      if (props.price <= 0) return 0;
+      return clampNumber((d / props.price) * 100, 0, 100);
+    }
+    const newPrice = props.principal + d;
+    if (newPrice <= 0) return 0;
+    return clampNumber((d / newPrice) * 100, 0, 100);
+  }
+
+  function dollarsFromPct(p: number): number {
+    if (props.mode === 'estimate') {
+      return Math.round(props.price * (p / 100));
+    }
+    if (p >= 100) return props.principal; // cash-buyer edge; principal is the natural cap in afford mode
+    return Math.round((props.principal * p) / (100 - p));
+  }
+
+  const draftPctN = parseNum(draftPct);
+  const draftDollarsN = parseNum(draftDollars);
+
+  // Pick the active source of truth: whichever input has a parseable draft
+  // drives the live derivation of the other. Fall back to props.pct otherwise.
+  let effectivePct: number;
+  let effectiveDollars: number;
+  if (draftDollarsN != null) {
+    effectivePct = pctFromDollars(draftDollarsN);
+    effectiveDollars = draftDollarsN;
+  } else if (draftPctN != null) {
+    effectivePct = clampNumber(draftPctN, 0, 100);
+    effectiveDollars = dollarsFromPct(effectivePct);
+  } else {
+    effectivePct = props.pct;
+    effectiveDollars = dollarsFromPct(props.pct);
+  }
+
+  // Display values: when a draft is set, show the literal string the user
+  // typed (avoids snap-back on `.` mid-decimal or trailing zeros).
+  const pctDisplay = draftPct ?? String(Math.round(effectivePct * 100) / 100);
+  const dollarsDisplay = draftDollars ?? String(effectiveDollars);
 
   function commitPct(raw: string) {
-    if (raw === '' || raw === '-' || raw === '.') return;
+    if (raw === '' || raw === '-' || raw === '.') {
+      props.onChange(0);
+      return;
+    }
     const n = Number(raw);
     if (!Number.isFinite(n)) return;
     props.onChange(clampNumber(n, 0, 100));
@@ -331,22 +375,7 @@ function DownPaymentField(props: {
     }
     const n = Number(raw);
     if (!Number.isFinite(n) || n < 0) return;
-    let pct: number;
-    if (props.mode === 'estimate') {
-      if (props.price <= 0) return;
-      const clamped = clampNumber(n, 0, props.price);
-      pct = (clamped / props.price) * 100;
-    } else {
-      // afford mode: principal stays fixed (driven by monthly + apr + term),
-      // typed $ becomes the down portion. New price = principal + $.
-      const newPrice = props.principal + n;
-      if (newPrice <= 0) return;
-      pct = (n / newPrice) * 100;
-    }
-    // Store pct at full precision so the $ amount round-trips exactly
-    // (Math.round on pct would collapse $1 / $120k = 0.0008% to 0%, and
-    // the derived $ would then snap back to 0).
-    props.onChange(clampNumber(pct, 0, 100));
+    props.onChange(pctFromDollars(n));
   }
 
   return (
