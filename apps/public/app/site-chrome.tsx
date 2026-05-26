@@ -24,6 +24,7 @@ export function SiteHeader() {
           <nav className="uhs-nav-links">
             <Link href="/inventory">Available Homes</Link>
             <Link href="/financing">Financing</Link>
+            <Link href="/investors">Investors</Link>
             <Link href="/about">About</Link>
             <Link href="/contact">Contact</Link>
           </nav>
