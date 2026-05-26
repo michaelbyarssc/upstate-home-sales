@@ -5,8 +5,10 @@ import { findAdapter, runImport, type ProgressEvent } from '../../../../../lib/c
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-// Vercel Pro: up to 800s. Adjust down if our plan is lower.
-export const maxDuration = 800;
+// 300s matches the existing /api/cron/gmb-sync route — the highest the
+// project's plan currently allows. Big imports may exceed this; if so,
+// the dealer can split by series/region (paste a more specific URL).
+export const maxDuration = 300;
 
 type Body = { url?: string; only?: string[]; update?: boolean };
 
