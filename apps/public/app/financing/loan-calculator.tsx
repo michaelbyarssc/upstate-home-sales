@@ -396,14 +396,13 @@ function DownPaymentField(props: {
               min={0}
               max={100}
               step={0.5}
-              onChange={(e) => setDraftPct(e.target.value)}
-              onBlur={(e) => {
+              onChange={(e) => {
+                setDraftPct(e.target.value);
                 commitPct(e.target.value);
-                setDraftPct(null);
               }}
+              onBlur={() => setDraftPct(null)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  commitPct((e.target as HTMLInputElement).value);
                   setDraftPct(null);
                   (e.target as HTMLInputElement).blur();
                 }
@@ -419,14 +418,13 @@ function DownPaymentField(props: {
               inputMode="numeric"
               className="loan-range-input loan-range-input-wide"
               value={dollarsDisplay}
-              onChange={(e) => setDraftDollars(e.target.value)}
-              onBlur={(e) => {
+              onChange={(e) => {
+                setDraftDollars(e.target.value);
                 commitDollars(e.target.value);
-                setDraftDollars(null);
               }}
+              onBlur={() => setDraftDollars(null)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  commitDollars((e.target as HTMLInputElement).value);
                   setDraftDollars(null);
                   (e.target as HTMLInputElement).blur();
                 }
