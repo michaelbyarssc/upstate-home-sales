@@ -16,7 +16,7 @@ export default async function HomePage() {
   const { data: featured } = await supabase
     .from('public_homes')
     .select(
-      'id, stock_no, name, model, type, beds, baths, sqft, listed_price_cents, prices_hidden, starting_from, on_lot_since, is_featured, manufacturer_id, manufacturers(name), public_home_photos(storage_path, sort_order)'
+      'id, stock_no, name, model, type, beds, baths, beds_options, baths_options, sqft, width_ft, length_ft, listed_price_cents, prices_hidden, starting_from, on_lot_since, is_featured, manufacturer_id, manufacturers(name), public_home_photos(storage_path, sort_order)'
     )
     .order('is_featured', { ascending: false })
     .order('on_lot_since', { ascending: false, nullsFirst: false })
