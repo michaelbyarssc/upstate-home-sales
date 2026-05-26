@@ -55,3 +55,7 @@ playwright/.cache/
 # Sentry
 .sentryclirc
 .env*.local
+
+# Catalog importer local cache
+scripts/import-catalog/.runs.jsonl
+scripts/import-catalog/.cache/
