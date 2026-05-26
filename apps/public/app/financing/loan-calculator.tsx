@@ -156,7 +156,13 @@ export function LoanCalculator({ initialPrice }: Props) {
               onChange={setMaxMonthly}
             />
           )}
-          <DownPaymentField pct={downPct} price={price} mode={mode} onChange={setDownPct} />
+          <DownPaymentField
+            pct={downPct}
+            price={mode === 'estimate' ? price : Math.round(result.priceCents / 100)}
+            principal={Math.round(result.principalCents / 100)}
+            mode={mode}
+            onChange={setDownPct}
+          />
           <RangeField
             id="lc-apr"
             label="Interest rate (APR)"
@@ -296,6 +302,7 @@ function RangeField(props: {
 function DownPaymentField(props: {
   pct: number;
   price: number;
+  principal: number;
   mode: 'estimate' | 'afford';
   onChange: (pct: number) => void;
 }) {
@@ -308,11 +315,21 @@ function DownPaymentField(props: {
     props.onChange(clampNumber(n, 0, 100));
   }
   function commitDollars(raw: string) {
-    if (raw === '' || raw === '.' || props.price <= 0) return;
+    if (raw === '' || raw === '.') return;
     const n = Number(raw);
-    if (!Number.isFinite(n)) return;
-    const clampedDollars = clampNumber(n, 0, props.price);
-    const pct = (clampedDollars / props.price) * 100;
+    if (!Number.isFinite(n) || n < 0) return;
+    let pct: number;
+    if (props.mode === 'estimate') {
+      if (props.price <= 0) return;
+      const clamped = clampNumber(n, 0, props.price);
+      pct = (clamped / props.price) * 100;
+    } else {
+      // afford mode: principal stays fixed (driven by monthly + apr + term),
+      // typed $ becomes the down portion. New price = principal + $.
+      const newPrice = props.principal + n;
+      if (newPrice <= 0) return;
+      pct = (n / newPrice) * 100;
+    }
     props.onChange(clampNumber(Math.round(pct * 10) / 10, 0, 100));
   }
 
@@ -334,21 +351,18 @@ function DownPaymentField(props: {
             />
             <span className="loan-range-input-unit">%</span>
           </span>
-          {props.mode === 'estimate' && (
-            <span className="loan-range-input-wrap">
-              <span className="loan-range-input-unit">$</span>
-              <input
-                id="lc-down-dollars"
-                type="number"
-                className="loan-range-input loan-range-input-wide"
-                value={dollars}
-                min={0}
-                max={props.price}
-                step={500}
-                onChange={(e) => commitDollars(e.target.value)}
-              />
-            </span>
-          )}
+          <span className="loan-range-input-wrap">
+            <span className="loan-range-input-unit">$</span>
+            <input
+              id="lc-down-dollars"
+              type="number"
+              className="loan-range-input loan-range-input-wide"
+              value={dollars}
+              min={0}
+              step={500}
+              onChange={(e) => commitDollars(e.target.value)}
+            />
+          </span>
         </div>
       </div>
       <input
