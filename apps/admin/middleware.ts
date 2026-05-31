@@ -2,8 +2,18 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACTIVE_ORG_COOKIE } from '@uhs/db';
 
-// Routes that don't require auth.
-const PUBLIC_PREFIXES = ['/login', '/auth/callback', '/_next', '/favicon.ico'];
+// Routes that don't require a user session. Webhooks (verified by re-fetching
+// from the provider) and crons (gated by CRON_SECRET) enforce their own auth and
+// are called by external services with no Supabase session, so they must skip the
+// session check + login redirect here.
+const PUBLIC_PREFIXES = [
+  '/login',
+  '/auth/callback',
+  '/_next',
+  '/favicon.ico',
+  '/api/webhooks',
+  '/api/cron',
+];
 
 export async function middleware(req: NextRequest) {
   // Expose the current pathname to server components via a request header so
