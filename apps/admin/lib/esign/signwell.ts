@@ -104,9 +104,12 @@ export class SignWellProvider implements EsignProvider {
         name,
         email,
       })),
-      // Prefilled auto-fill fields. TODO(verify): SignWell uses `fields` for
-      // create-from-template prefill keyed by api_id; confirm vs `template_fields`.
-      fields: Object.entries(a.prefill).map(([api_id, value]) => ({ api_id, value })),
+      // Prefilled auto-fill fields keyed by api_id. Confirmed against the live
+      // API: create-from-template uses `template_fields` (NOT `fields`); omit
+      // the key entirely when there's nothing to prefill.
+      ...(Object.keys(a.prefill).length > 0
+        ? { template_fields: Object.entries(a.prefill).map(([api_id, value]) => ({ api_id, value })) }
+        : {}),
       ...(a.redirectUrl ? { embedded_signing_redirect_url: a.redirectUrl } : {}),
     };
 
