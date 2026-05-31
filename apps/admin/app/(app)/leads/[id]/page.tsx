@@ -7,6 +7,7 @@ import { LeadDetailClient } from './detail-client';
 import { BuyerPortalPanel } from './portal-panel';
 import { BuyerUploadsPanel } from './buyer-uploads-panel';
 import { DealerDocsPanel, type DealerDocRow } from './dealer-docs-panel';
+import { LeadSignDocsPanel } from './lead-sign-docs-panel';
 import { buildDefaultLineItems } from '../../../../lib/default-line-items';
 import '../leads.css';
 
@@ -134,6 +135,31 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     ? buildDefaultLineItems(homeRel as any)
     : [];
 
+  // ── Document engine: active templates + this lead's document instances ──
+  const [{ data: signTemplates }, { data: docInstances }] = await Promise.all([
+    supabase.from('document_templates').select('id, name').eq('status', 'active').order('name'),
+    supabase
+      .from('document_instances')
+      .select('id, doc_number, status, created_at')
+      .eq('lead_id', params.id)
+      .order('created_at', { ascending: false }),
+  ]);
+  const instIds = ((docInstances ?? []) as Array<{ id: string }>).map((d) => d.id);
+  const { data: signSessions } = instIds.length
+    ? await supabase
+        .from('signing_sessions')
+        .select('instance_id, session_token, created_at')
+        .in('instance_id', instIds)
+        .order('created_at', { ascending: false })
+    : { data: [] as Array<{ instance_id: string; session_token: string; created_at: string }> };
+  const tokenByInstance = new Map<string, string>();
+  for (const s of (signSessions ?? []) as Array<{ instance_id: string; session_token: string }>) {
+    if (!tokenByInstance.has(s.instance_id)) tokenByInstance.set(s.instance_id, s.session_token);
+  }
+  const signInstances = ((docInstances ?? []) as Array<{ id: string; doc_number: number | null; status: string; created_at: string }>).map(
+    (d) => ({ ...d, session_token: tokenByInstance.get(d.id) ?? null }),
+  );
+
   return (
     <>
       <div style={{ marginBottom: 14 }}>
@@ -174,6 +200,13 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number; beds: number | null; baths: number | null; beds_options: number[] | null; baths_options: number[] | null; sqft: number | null }>}
         defaultLineItems={defaultLineItems}
         initialDocs={buildDealerDocs(quotes, invoicesData, posData)}
+      />
+
+      <LeadSignDocsPanel
+        leadId={params.id}
+        templates={(signTemplates ?? []) as Array<{ id: string; name: string }>}
+        instances={signInstances}
+        publicBaseUrl={process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com'}
       />
 
       <BuyerUploadsPanel initialUploads={(buyerUploads ?? []) as BuyerDocument[]} />
