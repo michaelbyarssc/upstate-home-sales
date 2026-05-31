@@ -570,6 +570,8 @@ export const HOME_PHOTO_BUCKET = 'home-photos';
 export const QUOTE_PDF_BUCKET = 'quote-pdfs';
 export const TRADEIN_PHOTO_BUCKET = 'tradein-photos';
 export const ORG_BRANDING_BUCKET = 'org-branding';
+export const DOC_TEMPLATES_BUCKET = 'doc-templates';
+export const DOC_INSTANCES_BUCKET = 'doc-instances';
 
 /** Format cents → "$1,234". Used everywhere we render listed prices. */
 export function formatCents(cents: number | null | undefined): string {
@@ -756,6 +758,143 @@ export interface QuoteSignature {
   signed_at: string;
 }
 
+// ─── Document engine (e-signature) ────────────────────────────────────────
+export type DocumentTemplateKind =
+  | 'purchase_order' | 'purchase_agreement' | 'disclosure' | 'addendum' | 'generic';
+export type DocumentTemplateStatus = 'draft' | 'active' | 'archived';
+export type DocFieldSource = 'binding' | 'manual' | 'signer';
+export type DocSignerRole = 'buyer' | 'co_buyer' | 'seller' | 'witness';
+export type DocumentInstanceStatus =
+  | 'draft' | 'sent' | 'partially_signed' | 'completed' | 'voided' | 'declined';
+export type SigningSessionMode = 'in_person' | 'remote';
+export type SigningSessionStatus =
+  | 'pending' | 'in_progress' | 'completed' | 'expired' | 'canceled';
+
+export interface DocumentTemplate {
+  id: string;
+  org_id: string;
+  kind: DocumentTemplateKind;
+  name: string;
+  description: string | null;
+  provider: string;
+  provider_template_id: string | null;
+  source_pdf_path: string | null;
+  status: DocumentTemplateStatus;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentTemplateFieldMap {
+  id: string;
+  template_id: string;
+  org_id: string;
+  provider_field_id: string;
+  label: string;
+  source: DocFieldSource;
+  binding_key: string | null;
+  signer_role: DocSignerRole | null;
+  required: boolean;
+  created_at: string;
+}
+
+/** One resolved field frozen into document_instances.snapshot_jsonb at generate time. */
+export interface DocumentSnapshotField {
+  provider_field_id: string;
+  source: DocFieldSource;
+  binding_key: string | null;
+  signer_role: DocSignerRole | null;
+  /** Raw resolved value (string form) sent to the provider for prefill. */
+  value: string | null;
+  /** Money fields: the snapshotted cents (the price snapshot). */
+  value_cents: number | null;
+  /** Human display string as it should appear on the document. */
+  display: string | null;
+}
+
+export interface DocumentInstanceSnapshot {
+  fields: DocumentSnapshotField[];
+  generated_at: string;
+}
+
+export interface DocumentInstance {
+  id: string;
+  org_id: string;
+  lead_id: string;
+  template_id: string;
+  home_id: string | null;
+  quote_id: string | null;
+  trade_in_id: string | null;
+  provider: string;
+  provider_envelope_id: string | null;
+  status: DocumentInstanceStatus;
+  doc_number: number | null;
+  snapshot_jsonb: DocumentInstanceSnapshot | Record<string, never>;
+  listed_price_cents: number | null;
+  signed_pdf_path: string | null;
+  audit_pdf_path: string | null;
+  signed_pdf_sha256: string | null;
+  public_token: string;
+  created_by: string | null;
+  created_at: string;
+  completed_at: string | null;
+  voided_at: string | null;
+  voided_by: string | null;
+  void_reason: string | null;
+  updated_at: string;
+}
+
+export interface DocumentSignature {
+  id: string;
+  instance_id: string;
+  org_id: string;
+  signer_role: DocSignerRole;
+  signer_name: string;
+  signer_email: string | null;
+  provider_recipient_id: string | null;
+  signer_ip: string | null;
+  signed_at: string;
+}
+
+export interface SigningSessionRecipient {
+  recipientId: string;
+  embeddedUrl?: string | null;
+}
+
+export interface SigningSession {
+  id: string;
+  instance_id: string;
+  org_id: string;
+  mode: SigningSessionMode;
+  status: SigningSessionStatus;
+  signer_roles: DocSignerRole[];
+  current_role_idx: number;
+  recipient_map_jsonb: Partial<Record<DocSignerRole, SigningSessionRecipient>>;
+  session_token: string;
+  remote_email: string | null;
+  expires_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  updated_at: string;
+}
+
+/** Narrow projection exposed to the anon kiosk /sign page via public_signing_sessions. */
+export interface PublicSigningSession {
+  session_token: string;
+  mode: SigningSessionMode;
+  status: SigningSessionStatus;
+  signer_roles: DocSignerRole[];
+  current_role_idx: number;
+  expires_at: string | null;
+  instance_token: string;
+  instance_status: DocumentInstanceStatus;
+  template_name: string;
+  org_name: string;
+  brand_color: string | null;
+}
+
 // ─── Campaigns ────────────────────────────────────────────────────────────
 export type CampaignChannel = 'email' | 'sms';
 export type CampaignStatus = 'draft' | 'active' | 'paused' | 'archived';
@@ -805,7 +944,9 @@ export type WorkflowEvent =
   | 'quote.sent'
   | 'quote.signed'
   | 'invoice.sent'
-  | 'lead.message.received';
+  | 'lead.message.received'
+  | 'document.completed'
+  | 'document.signed';
 
 export type WorkflowAction =
   | { type: 'enroll_in_campaign'; campaign_id: string }
