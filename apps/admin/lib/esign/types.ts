@@ -70,7 +70,36 @@ export type EsignCreateResult = {
   recipients: EsignCreatedRecipient[];
 };
 
+/** A vendor template as shown in the registry "Register template" picker. */
+export type EsignTemplateSummary = {
+  id: string;
+  name: string;
+  /** Vendor status, e.g. SignWell "Draft" | "Available". */
+  status: string;
+};
+
+/** One field/placeholder defined on a vendor template (for the field-mapping UI). */
+export type EsignTemplateField = {
+  /** The vendor field api_id (what we prefill / map). */
+  apiId: string;
+  /** Field type, e.g. 'signature' | 'text' | 'date' | 'checkbox'. */
+  type: string;
+  /** Which signer placeholder owns this field, if any (e.g. SignWell "Customer #1"). */
+  placeholderName: string | null;
+  page: number;
+};
+
 export interface EsignProvider {
+  /** List the vendor's templates (for the registry "Register template" picker). */
+  listTemplates(): Promise<EsignTemplateSummary[]>;
+
+  /** Fetch a template's fields + placeholders (for the field-mapping UI). */
+  getTemplateFields(templateId: string): Promise<{
+    status: string;
+    placeholders: string[];
+    fields: EsignTemplateField[];
+  }>;
+
   /** Create + send a document from a vendor template, prefilling our mapped fields. */
   createEnvelopeFromTemplate(a: EsignCreateArgs): Promise<EsignCreateResult>;
 

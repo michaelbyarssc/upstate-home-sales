@@ -51,6 +51,36 @@ export class SignWellProvider implements EsignProvider {
     return (await this.req(path, init)).json() as Promise<Json>;
   }
 
+  async listTemplates() {
+    const data = await this.json('/document_templates/?limit=100');
+    const templates = (data.templates as Json[] | undefined) ?? [];
+    return templates.map((t) => ({
+      id: String(t.id),
+      name: String(t.name ?? 'Untitled'),
+      status: String(t.status ?? ''),
+    }));
+  }
+
+  async getTemplateFields(templateId: string) {
+    const t = await this.json(`/document_templates/${templateId}/`);
+    // `fields` is an array-of-arrays (one inner array per page); flatten it.
+    const rawFields = (t.fields as unknown[] | undefined) ?? [];
+    const flat: Json[] = rawFields.flatMap((row) => (Array.isArray(row) ? (row as Json[]) : [row as Json]));
+    const placeholders = ((t.placeholders as Json[] | undefined) ?? [])
+      .map((p) => String(p.name ?? ''))
+      .filter(Boolean);
+    return {
+      status: String(t.status ?? ''),
+      placeholders,
+      fields: flat.map((f) => ({
+        apiId: String(f.api_id ?? ''),
+        type: String(f.type ?? 'text'),
+        placeholderName: (f.placeholder_name as string | undefined) ?? null,
+        page: Number(f.page ?? 1),
+      })),
+    };
+  }
+
   async createEnvelopeFromTemplate(a: EsignCreateArgs): Promise<EsignCreateResult> {
     // Assign a stable vendor recipient id per role so we can map the response back.
     const recipients = a.recipients.map((r, i) => ({
