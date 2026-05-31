@@ -52,7 +52,8 @@ export class SignWellProvider implements EsignProvider {
   }
 
   async listTemplates() {
-    const data = await this.json('/document_templates/?limit=100');
+    // SignWell caps `limit` at 50.
+    const data = await this.json('/document_templates/?limit=50');
     const templates = (data.templates as Json[] | undefined) ?? [];
     return templates.map((t) => ({
       id: String(t.id),
