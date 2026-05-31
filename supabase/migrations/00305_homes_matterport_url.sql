@@ -1,5 +1,16 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- 0030_homes_matterport_url.sql
+-- 00305_homes_matterport_url.sql
+--
+-- Renumbered from 0030_homes_matterport_url.sql → 00305 to remove a DUPLICATE
+-- migration version: there were two `0030_` files (this one and
+-- 0030_configurable_beds_baths.sql), which collide on the schema_migrations
+-- primary key when a fresh database replays them in order — breaking branch
+-- creation, `supabase db reset`, and any new environment. Version `00305`
+-- sorts after `0030` and before `0031`, so it still runs before 0036 (which
+-- depends on the matterport_url column). On prod this version is marked
+-- applied-without-running (the column already exists; its view-recreate below
+-- is superseded by 0036), so the stale view definition is never executed there.
+--
 -- Adds an optional Matterport 3D-tour URL to each home. When set, the public
 -- detail page renders a "View 3D Tour" button that opens the embed in a modal.
 --
@@ -8,7 +19,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 alter table public.homes
-  add column matterport_url text;
+  add column if not exists matterport_url text;
 
 -- Recreate public_homes view to expose matterport_url.
 -- Column list mirrors 0027_addons_setup_markup.sql; only addition is matterport_url.
