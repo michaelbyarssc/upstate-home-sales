@@ -4,10 +4,22 @@ import { useEffect, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { advanceSigner } from './actions';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+type SignWellEmbedInstance = { open: () => void; close?: () => void };
+type SignWellEmbedOptions = {
+  url: string;
+  containerId?: string;
+  allowDownload?: boolean;
+  events?: {
+    completed?: (e: unknown) => void;
+    declined?: (e: unknown) => void;
+    closed?: (e: unknown) => void;
+  };
+};
+type SignWellEmbedCtor = new (opts: SignWellEmbedOptions) => SignWellEmbedInstance;
+
 declare global {
   interface Window {
-    SignWellEmbed?: any;
+    SignWellEmbed?: SignWellEmbedCtor;
   }
 }
 
@@ -53,7 +65,7 @@ export function SignKiosk({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const embedRef = useRef<any>(null);
+  const embedRef = useRef<SignWellEmbedInstance | null>(null);
 
   function advance() {
     startTransition(async () => {
