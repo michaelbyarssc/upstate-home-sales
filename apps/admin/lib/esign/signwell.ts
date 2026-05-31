@@ -94,7 +94,8 @@ export class SignWellProvider implements EsignProvider {
         return {
           role: r.role,
           recipientId: r.id,
-          // TODO(verify): exact field name for the embedded URL (embedded_signing_url).
+          // Confirmed against the live API: each response recipient carries
+          // `embedded_signing_url` when created with embedded_signing: true.
           embeddedUrl: (match?.embedded_signing_url as string | undefined) ?? null,
         };
       }),
