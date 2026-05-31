@@ -1,5 +1,28 @@
 /* Full-screen in-person signing kiosk. */
 
+/* Hide the global public-site chrome while signing (mirrors kiosk/portal). */
+body.sign-mode .uhs-topbar,
+body.sign-mode .uhs-nav,
+body.sign-mode .uhs-footer,
+body.sign-mode .compare-bar {
+  display: none !important;
+}
+body.sign-mode {
+  margin: 0;
+}
+
+/* SignWell embedded.js mounts its iframe into this container. */
+.kiosk-embed {
+  width: 100%;
+  height: 100%;
+}
+.kiosk-embed iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: 0;
+  border-radius: 10px;
+}
+
 .kiosk {
   position: fixed;
   inset: 0;
