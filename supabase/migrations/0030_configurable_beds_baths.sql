@@ -6,12 +6,24 @@
 -- Adds nullable array columns alongside the existing scalar beds/baths.
 -- The scalar remains the primary/default value for sorting and SEO.
 -- NULL arrays = home has a single fixed configuration (no change in behavior).
+--
+-- NOTE: The `matterport_url` column add (below) was folded in here from a former
+-- DUPLICATE migration also numbered 0030 (0030_homes_matterport_url.sql). Two
+-- files sharing version 0030 collided on the schema_migrations primary key,
+-- breaking fresh-database replays (branch creation, `supabase db reset`, new
+-- environments). Merging the column into this single 0030 file removes the
+-- duplicate version. The former file's public_homes view-recreate was dropped
+-- because it is fully superseded by 0036 (which exposes matterport_url +
+-- beds_options/baths_options on the view). On prod this 0030 is already applied,
+-- so this edit never re-runs there; it only affects fresh replays.
 -- ============================================================================
 
--- 1. Add array columns to homes
+-- 1. Add array columns to homes (+ matterport_url, folded in from the former
+--    duplicate 0030; 0036 later exposes it on public_homes).
 ALTER TABLE public.homes
-  ADD COLUMN IF NOT EXISTS beds_options  int[],
-  ADD COLUMN IF NOT EXISTS baths_options numeric(3,1)[];
+  ADD COLUMN IF NOT EXISTS beds_options   int[],
+  ADD COLUMN IF NOT EXISTS baths_options  numeric(3,1)[],
+  ADD COLUMN IF NOT EXISTS matterport_url text;
 
 -- 2. Add array columns to home_models (catalog templates)
 ALTER TABLE public.home_models
