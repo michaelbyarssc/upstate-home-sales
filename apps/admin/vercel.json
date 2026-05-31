@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/gmb-sync",
       "schedule": "30 13 * * *"
+    },
+    {
+      "path": "/api/cron/esign-reconcile",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

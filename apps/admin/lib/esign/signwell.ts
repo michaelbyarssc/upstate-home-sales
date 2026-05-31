@@ -17,6 +17,7 @@ import type {
   EsignCreateArgs,
   EsignCreateResult,
   EsignEnvelopeStatus,
+  EsignEnvelopeDetails,
   EsignWebhookEvent,
 } from './types';
 import type { DocSignerRole } from '@uhs/db';
@@ -146,11 +147,38 @@ export class SignWellProvider implements EsignProvider {
   }
 
   async downloadSignedPdf(envelopeId: string): Promise<Uint8Array> {
-    // SignWell appends the audit trail as the final page of the completed PDF.
+    // Prefer the document's completed_pdf_url (a signed download URL that already
+    // includes SignWell's appended audit page); fall back to the direct endpoint.
+    const doc = await this.json(`/documents/${envelopeId}/`);
+    const url = doc.completed_pdf_url as string | undefined;
+    if (url) {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`SignWell completed_pdf_url → ${res.status}`);
+      return new Uint8Array(await res.arrayBuffer());
+    }
     const res = await this.req(`/documents/${envelopeId}/completed_pdf/?audit_page=true`, {
       headers: { Accept: 'application/pdf' },
     });
     return new Uint8Array(await res.arrayBuffer());
+  }
+
+  async getEnvelopeDetails(envelopeId: string): Promise<EsignEnvelopeDetails> {
+    const doc = await this.json(`/documents/${envelopeId}/`);
+    const recipients = (doc.recipients as Json[] | undefined) ?? [];
+    return {
+      status: mapStatus(String(doc.status ?? '')),
+      completedPdfUrl: (doc.completed_pdf_url as string | undefined) ?? null,
+      signers: recipients.map((r) => {
+        const status = String(r.status ?? '');
+        return {
+          placeholderName: (r.placeholder_name as string | undefined) ?? null,
+          name: String(r.name ?? ''),
+          email: (r.email as string | undefined) ?? null,
+          signedAt: (r.completed_at as string | undefined) ?? (r.signed_at as string | undefined) ?? null,
+          completed: status.toLowerCase() === 'completed' || status.toLowerCase() === 'signed',
+        };
+      }),
+    };
   }
 
   async downloadAuditTrail(): Promise<Uint8Array | null> {

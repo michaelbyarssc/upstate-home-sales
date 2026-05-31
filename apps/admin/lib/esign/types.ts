@@ -33,6 +33,21 @@ export type EsignWebhookEvent = {
   rawType: string;
 };
 
+export type EsignSignerDetail = {
+  placeholderName: string | null;
+  name: string;
+  email: string | null;
+  signedAt: string | null;
+  completed: boolean;
+};
+
+export type EsignEnvelopeDetails = {
+  status: EsignEnvelopeStatus;
+  /** Signed flattened PDF URL (includes SignWell's audit page); null until complete. */
+  completedPdfUrl: string | null;
+  signers: EsignSignerDetail[];
+};
+
 export type EsignRecipientInput = {
   role: DocSignerRole;
   /** The vendor template placeholder this recipient fills (e.g. SignWell "Customer #1"). */
@@ -117,6 +132,9 @@ export interface EsignProvider {
 
   /** Poll an envelope's normalized status (used by the reconciliation cron). */
   getStatus(envelopeId: string): Promise<EsignEnvelopeStatus>;
+
+  /** Full envelope detail for store-back: status, completed-PDF URL, per-signer info. */
+  getEnvelopeDetails(envelopeId: string): Promise<EsignEnvelopeDetails>;
 
   /** Verify a webhook's signature and return a normalized event, or null if invalid. */
   verifyAndParseWebhook(rawBody: string, headers: Headers): EsignWebhookEvent | null;
