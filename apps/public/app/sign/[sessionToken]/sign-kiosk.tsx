@@ -70,7 +70,10 @@ export function SignKiosk({
   function advance() {
     startTransition(async () => {
       await advanceSigner({ sessionToken });
-      router.refresh();
+      // Hard reload (not router.refresh): SignWell's embedded.js doesn't re-mount
+      // cleanly into a soft-refreshed page — the next signer's iframe loads but
+      // isn't interactive. A full reload gives each signer a clean, clickable embed.
+      window.location.reload();
     });
   }
 
