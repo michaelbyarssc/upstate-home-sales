@@ -15,7 +15,7 @@
  * never alter an already-generated document.
  */
 
-import type { Lead, Buyer, Home, TradeIn, Org } from '@uhs/db';
+import type { Lead, Buyer, Home, TradeIn, Org, LeadPreferences } from '@uhs/db';
 
 export type BindingKey =
   // Lead (the inquiry contact)
@@ -44,6 +44,18 @@ export type BindingKey =
   | 'trade_in.make'
   | 'trade_in.model'
   | 'trade_in.offer_cents'
+  // Requested (the buyer's criteria from the lead CRM — build-to-order)
+  | 'requested.types'
+  | 'requested.manufacturers'
+  | 'requested.beds'
+  | 'requested.baths'
+  | 'requested.sqft'
+  | 'requested.size'
+  | 'requested.year'
+  | 'requested.budget'
+  | 'requested.must_have_features'
+  | 'requested.timeline'
+  | 'requested.notes'
   // Dealer
   | 'org.name'
   // Computed
@@ -54,7 +66,7 @@ export type BindingKind = 'text' | 'currency' | 'date' | 'number';
 export type BindingDef = {
   key: BindingKey;
   label: string;
-  group: 'Customer' | 'Home' | 'Pricing' | 'Trade-in' | 'Dealer' | 'Computed';
+  group: 'Customer' | 'Home' | 'Pricing' | 'Trade-in' | 'Requested' | 'Dealer' | 'Computed';
   kind: BindingKind;
 };
 
@@ -81,6 +93,17 @@ export const BINDINGS: BindingDef[] = [
   { key: 'trade_in.make', label: 'Trade-in make', group: 'Trade-in', kind: 'text' },
   { key: 'trade_in.model', label: 'Trade-in model', group: 'Trade-in', kind: 'text' },
   { key: 'trade_in.offer_cents', label: 'Trade-in allowance', group: 'Trade-in', kind: 'currency' },
+  { key: 'requested.types', label: 'Requested type(s)', group: 'Requested', kind: 'text' },
+  { key: 'requested.manufacturers', label: 'Requested manufacturer(s)', group: 'Requested', kind: 'text' },
+  { key: 'requested.beds', label: 'Requested bedrooms', group: 'Requested', kind: 'text' },
+  { key: 'requested.baths', label: 'Requested bathrooms', group: 'Requested', kind: 'text' },
+  { key: 'requested.sqft', label: 'Requested square feet', group: 'Requested', kind: 'text' },
+  { key: 'requested.size', label: 'Requested size (W×L)', group: 'Requested', kind: 'text' },
+  { key: 'requested.year', label: 'Requested year', group: 'Requested', kind: 'text' },
+  { key: 'requested.budget', label: 'Requested budget', group: 'Requested', kind: 'text' },
+  { key: 'requested.must_have_features', label: 'Requested must-have features', group: 'Requested', kind: 'text' },
+  { key: 'requested.timeline', label: 'Requested timeline', group: 'Requested', kind: 'text' },
+  { key: 'requested.notes', label: 'Requested notes', group: 'Requested', kind: 'text' },
   { key: 'org.name', label: 'Dealer name', group: 'Dealer', kind: 'text' },
   { key: 'today', label: "Today's date", group: 'Computed', kind: 'date' },
 ];
@@ -104,6 +127,18 @@ export type BindingContext = {
   quote?: { total_cents: number } | null;
   tradeIn?: Pick<TradeIn, 'year' | 'make' | 'model' | 'offer_cents'> | null;
   org?: Pick<Org, 'name'> | null;
+  /** Buyer requirements from the lead CRM. manufacturer_names is resolved from
+   *  manufacturer_ids by the generate action (this module stays DB-free). */
+  preferences?:
+    | (Pick<
+        LeadPreferences,
+        | 'preferred_types' | 'preferred_models'
+        | 'min_beds' | 'max_beds' | 'min_baths' | 'max_baths' | 'min_sqft' | 'max_sqft'
+        | 'min_width_ft' | 'max_width_ft' | 'min_length_ft' | 'max_length_ft'
+        | 'min_year' | 'max_year' | 'min_price_cents' | 'max_price_cents'
+        | 'must_have_features' | 'timeline'
+      > & { manufacturer_names?: string[] | null; notes?: string | null })
+    | null;
   /** ISO timestamp for `today` — passed in so resolution is deterministic/testable. */
   nowIso: string;
 };
@@ -145,6 +180,34 @@ function money(cents: number | null | undefined): ResolvedBinding {
   const display = fmtUSD(cents);
   return { value: display, valueCents: cents, display };
 }
+
+/** Format a numeric range → "3–4", "3+", "up to 4", or "". */
+function fmtRange(min: number | null | undefined, max: number | null | undefined): string {
+  const lo = min ?? null;
+  const hi = max ?? null;
+  if (lo == null && hi == null) return '';
+  if (lo != null && hi != null) return lo === hi ? String(lo) : `${lo}–${hi}`;
+  if (lo != null) return `${lo}+`;
+  return `up to ${hi}`;
+}
+
+/** Format a money range using fmtUSD on each bound. */
+function fmtMoneyRange(min: number | null | undefined, max: number | null | undefined): string {
+  const lo = min ?? null;
+  const hi = max ?? null;
+  if (lo == null && hi == null) return '';
+  if (lo != null && hi != null) return `${fmtUSD(lo)}–${fmtUSD(hi)}`;
+  if (lo != null) return `${fmtUSD(lo)}+`;
+  return `up to ${fmtUSD(hi)}`;
+}
+
+const HOME_TYPE_LABEL: Record<string, string> = {
+  single: 'Single-wide', double: 'Double-wide', modular: 'Modular',
+};
+const REQUEST_TIMELINE_LABEL: Record<string, string> = {
+  asap: 'ASAP', '1_3_months': '1–3 months', '3_6_months': '3–6 months',
+  '6_12_months': '6–12 months', exploring: 'Just exploring',
+};
 
 /** Resolve one binding against a loaded context. Pure + deterministic. */
 export function resolveBinding(key: BindingKey, ctx: BindingContext): ResolvedBinding {
@@ -194,6 +257,32 @@ export function resolveBinding(key: BindingKey, ctx: BindingContext): ResolvedBi
       return text(ctx.tradeIn?.model);
     case 'trade_in.offer_cents':
       return money(ctx.tradeIn?.offer_cents ?? null);
+    case 'requested.types':
+      return text((ctx.preferences?.preferred_types ?? []).map((t) => HOME_TYPE_LABEL[t] ?? t).join(', ') || null);
+    case 'requested.manufacturers':
+      return text((ctx.preferences?.manufacturer_names ?? []).join(', ') || null);
+    case 'requested.beds':
+      return text(fmtRange(ctx.preferences?.min_beds, ctx.preferences?.max_beds) || null);
+    case 'requested.baths':
+      return text(fmtRange(ctx.preferences?.min_baths, ctx.preferences?.max_baths) || null);
+    case 'requested.sqft':
+      return text(fmtRange(ctx.preferences?.min_sqft, ctx.preferences?.max_sqft) || null);
+    case 'requested.size': {
+      const w = fmtRange(ctx.preferences?.min_width_ft, ctx.preferences?.max_width_ft);
+      const l = fmtRange(ctx.preferences?.min_length_ft, ctx.preferences?.max_length_ft);
+      const s = w && l ? `${w} × ${l}` : w || l;
+      return text(s || null);
+    }
+    case 'requested.year':
+      return text(fmtRange(ctx.preferences?.min_year, ctx.preferences?.max_year) || null);
+    case 'requested.budget':
+      return text(fmtMoneyRange(ctx.preferences?.min_price_cents, ctx.preferences?.max_price_cents) || null);
+    case 'requested.must_have_features':
+      return text((ctx.preferences?.must_have_features ?? []).join(', ') || null);
+    case 'requested.timeline':
+      return text(ctx.preferences?.timeline ? (REQUEST_TIMELINE_LABEL[ctx.preferences.timeline] ?? ctx.preferences.timeline) : null);
+    case 'requested.notes':
+      return text(ctx.preferences?.notes ?? null);
     case 'org.name':
       return text(ctx.org?.name);
     case 'today': {

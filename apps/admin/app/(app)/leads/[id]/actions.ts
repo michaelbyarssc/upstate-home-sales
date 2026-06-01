@@ -3,8 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@uhs/db/server';
 import { createServiceClient } from '@uhs/db/service';
-import type { CollabRole, LeadMessage, LeadStage, LineItem, MessageChannel, MessageKind, MilestoneStatus, PaymentMethod } from '@uhs/db';
+import type { CollabRole, LeadMessage, LeadPreferences, LeadPreferencesInput, LeadStage, LineItem, MessageChannel, MessageKind, MilestoneStatus, PaymentMethod } from '@uhs/db';
 import { sendEmail, sendSms } from '../../../../lib/notify';
+import { matchHomes, type HomeMatch, type MatchableHome } from '../../../../lib/match-homes';
 import { renderQuotePdf, type QuotePdfData } from '../../../../lib/quote-pdf';
 import { renderInvoicePdf, type InvoicePdfData } from '../../../../lib/invoice-pdf';
 import { renderPoPdf, type PoPdfData } from '../../../../lib/po-pdf';
@@ -1319,4 +1320,72 @@ export async function getQuotePdfUrl(quoteId: string): Promise<string> {
     .createSignedUrl(quote.pdf_storage_path, 60 * 60);
   if (error || !data?.signedUrl) throw new Error('Could not generate PDF link');
   return data.signedUrl;
+}
+
+// ─── CRM: buyer requirements + inventory matcher (0041) ─────────────────────
+
+/** Columns the matcher needs from homes. Keep in sync with MatchableHome. */
+const MATCH_HOME_COLUMNS =
+  'id, name, stock_no, type, manufacturer_id, model, beds, beds_options, baths, baths_options, sqft, width_ft, length_ft, year_built, listed_price_cents, headline, description';
+
+/** Upsert the lead's buyer requirements (one row per lead). created_by/updated_by
+ *  are filled by the lead_preferences actor trigger. */
+export async function saveLeadPreferences(
+  leadId: string,
+  input: LeadPreferencesInput,
+): Promise<LeadPreferences> {
+  const supabase = createClient();
+  // org_id comes from the lead (RLS lets an org member read it).
+  const { data: lead, error: leadErr } = await supabase
+    .from('leads')
+    .select('org_id')
+    .eq('id', leadId)
+    .single();
+  if (leadErr || !lead) throw new Error('Lead not found');
+
+  const { data, error } = await supabase
+    .from('lead_preferences')
+    .upsert({ lead_id: leadId, org_id: lead.org_id, ...input }, { onConflict: 'lead_id' })
+    .select('*')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Could not save requirements');
+
+  revalidatePath(`/leads/${leadId}`);
+  return data as LeadPreferences;
+}
+
+/** Rank published inventory against the lead's saved requirements (top 24). */
+export async function findMatchingHomes(leadId: string): Promise<HomeMatch[]> {
+  const supabase = createClient();
+  const { data: prefs } = await supabase
+    .from('lead_preferences')
+    .select('*')
+    .eq('lead_id', leadId)
+    .maybeSingle();
+  if (!prefs) return [];
+
+  const { data: homes, error } = await supabase
+    .from('homes')
+    .select(MATCH_HOME_COLUMNS)
+    .eq('status', 'published')
+    .is('deleted_at', null);
+  if (error) throw new Error(error.message);
+
+  return matchHomes(prefs as LeadPreferences, (homes ?? []) as unknown as MatchableHome[]).slice(0, 24);
+}
+
+/** Set (or clear) the home attached to a lead — the unit that fills its documents. */
+export async function assignHomeToLead(leadId: string, homeId: string | null) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('leads')
+    .update({ home_id: homeId })
+    .eq('id', leadId)
+    .select('id, home_id')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Could not assign home');
+
+  revalidatePath('/leads');
+  revalidatePath(`/leads/${leadId}`);
+  return data;
 }

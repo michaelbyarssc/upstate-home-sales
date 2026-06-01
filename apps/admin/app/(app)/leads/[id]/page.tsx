@@ -2,19 +2,21 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@uhs/db/server';
 import { createServiceClient } from '@uhs/db/service';
-import type { BuyerDocument, Lead, LeadCollaborator, LeadMessage, LeadMilestone, LineItem } from '@uhs/db';
+import type { BuyerDocument, Lead, LeadCollaborator, LeadMessage, LeadMilestone, LeadPreferences, LineItem } from '@uhs/db';
 import { LeadDetailClient } from './detail-client';
+import { RequirementsPanel } from './requirements-panel';
 import { BuyerPortalPanel } from './portal-panel';
 import { BuyerUploadsPanel } from './buyer-uploads-panel';
 import { DealerDocsPanel, type DealerDocRow } from './dealer-docs-panel';
 import { LeadSignDocsPanel } from './lead-sign-docs-panel';
 import { buildDefaultLineItems } from '../../../../lib/default-line-items';
+import { matchHomes, type MatchableHome } from '../../../../lib/match-homes';
 import '../leads.css';
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }, collabRes, { data: quotes }, { data: buyerUploads }, { data: invoicesData }, { data: posData }] = await Promise.all([
+  const [leadRes, { data: messages }, { data: members }, { data: campaigns }, { data: enrollments }, { data: buyerLink }, { data: milestones }, { data: homesForSuggest }, collabRes, { data: quotes }, { data: buyerUploads }, { data: invoicesData }, { data: posData }, { data: leadPrefs }, { data: manufacturers }, { data: homesForMatch }] = await Promise.all([
     supabase
       .from('leads')
       .select('*, homes(name, stock_no, listed_price_cents, setup_cents, setup_markup_pct, include_setup_in_price, addons_cents, addons_markup_pct, addons_jsonb)')
@@ -83,6 +85,21 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .select('id, home_id, po_number, listed_price_cents, line_items_jsonb, delivery_date, created_at, public_token, pdf_storage_path, visible_to_buyer, homes(name, stock_no)')
       .eq('lead_id', params.id)
       .order('created_at', { ascending: false }),
+    // CRM buyer requirements + match candidates (0041).
+    supabase
+      .from('lead_preferences')
+      .select('*')
+      .eq('lead_id', params.id)
+      .maybeSingle(),
+    supabase
+      .from('manufacturers')
+      .select('id, name')
+      .order('name'),
+    supabase
+      .from('homes')
+      .select('id, name, stock_no, type, manufacturer_id, model, beds, beds_options, baths, baths_options, sqft, width_ft, length_ft, year_built, listed_price_cents, headline, description')
+      .eq('status', 'published')
+      .is('deleted_at', null),
   ]);
   const collaborators = collabRes?.data;
 
@@ -128,6 +145,12 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   }
   const lead = leadRes.data;
   if (!lead) notFound();
+
+  // CRM: rank published inventory against the saved buyer requirements.
+  const leadPreferences = (leadPrefs ?? null) as LeadPreferences | null;
+  const initialMatches = leadPreferences
+    ? matchHomes(leadPreferences, (homesForMatch ?? []) as unknown as MatchableHome[]).slice(0, 24)
+    : [];
 
   // Build default line items from home pricing for the quote/invoice modals.
   const homeRel = Array.isArray(lead.homes) ? lead.homes[0] : lead.homes;
@@ -179,6 +202,15 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         defaultLineItems={defaultLineItems}
         homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number; beds: number | null; baths: number | null; beds_options: number[] | null; baths_options: number[] | null; sqft: number | null }>}
         supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+      />
+
+      <RequirementsPanel
+        leadId={params.id}
+        initialPreferences={leadPreferences}
+        manufacturers={(manufacturers ?? []) as Array<{ id: string; name: string }>}
+        initialMatches={initialMatches}
+        assignedHomeId={lead.home_id ?? null}
+        buyerLinked={!!buyerLink?.buyer_id}
       />
 
       <BuyerPortalPanel
