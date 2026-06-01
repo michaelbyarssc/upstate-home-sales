@@ -299,3 +299,68 @@ export async function generateAndStartSigning(args: {
   revalidatePath(`/leads/${args.leadId}`);
   return { ok: true, sessionToken: session.session_token, instanceId: instance.id, mode };
 }
+
+/**
+ * Void an in-flight document the dealer no longer wants signed. Best-effort at the
+ * provider (SignWell deletes the envelope); we always mark our instance voided and
+ * cancel its open session so it stops showing as signable. A COMPLETED document
+ * can't be voided — its sealed copy is already our record.
+ */
+export async function voidDocument(args: {
+  instanceId: string;
+  reason?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = createClient();
+  const orgId = cookies().get(ACTIVE_ORG_COOKIE)?.value;
+  if (!orgId) return { ok: false, error: 'No active org.' };
+
+  const { data: instance } = await supabase
+    .from('document_instances')
+    .select('id, lead_id, status, provider_envelope_id, doc_number')
+    .eq('id', args.instanceId)
+    .maybeSingle();
+  if (!instance) return { ok: false, error: 'Document not found.' };
+  if (instance.status === 'completed') return { ok: false, error: 'A completed document can’t be voided.' };
+  if (instance.status === 'voided') return { ok: true };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const reason = args.reason?.trim() || 'Voided by dealer';
+
+  if (instance.provider_envelope_id) {
+    try {
+      await getEsignProvider().voidEnvelope(instance.provider_envelope_id, reason);
+    } catch (e) {
+      console.error('[voidDocument] provider void failed (continuing):', e);
+    }
+  }
+
+  await supabase
+    .from('document_instances')
+    .update({
+      status: 'voided',
+      voided_at: new Date().toISOString(),
+      voided_by: user?.id ?? null,
+      void_reason: reason,
+    })
+    .eq('id', args.instanceId);
+
+  const svc = createServiceClient();
+  await svc
+    .from('signing_sessions')
+    .update({ status: 'canceled' })
+    .eq('instance_id', args.instanceId)
+    .neq('status', 'completed');
+
+  await supabase.from('lead_messages').insert({
+    lead_id: instance.lead_id,
+    org_id: orgId,
+    kind: 'system',
+    channel: null,
+    body: `Document #${instance.doc_number ?? ''} voided — ${reason}.`,
+  });
+
+  revalidatePath(`/leads/${instance.lead_id}`);
+  return { ok: true };
+}

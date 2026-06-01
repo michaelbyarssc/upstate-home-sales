@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { createClient } from '@uhs/db/browser';
 import { DOC_INSTANCES_BUCKET } from '@uhs/db';
-import { generateAndStartSigning } from '../../documents/generate-actions';
+import { generateAndStartSigning, voidDocument } from '../../documents/generate-actions';
 
 type TemplateOpt = { id: string; name: string };
 type InstanceRow = {
@@ -55,6 +55,15 @@ export function LeadSignDocsPanel({
       if (!res.ok) setErr(res.error);
       else if (res.mode === 'remote') setRemoteSent(true);
       else setJustGenerated(res.sessionToken);
+    });
+  }
+
+  function voidDoc(instanceId: string) {
+    if (!confirm('Void this document? It cancels signing and can’t be undone.')) return;
+    setErr(null);
+    startTransition(async () => {
+      const res = await voidDocument({ instanceId });
+      if (!res.ok) setErr(res.error);
     });
   }
 
@@ -184,6 +193,24 @@ export function LeadSignDocsPanel({
                     >
                       Resume signing →
                     </a>
+                  )}
+                  {d.status !== 'completed' && d.status !== 'voided' && (
+                    <button
+                      type="button"
+                      onClick={() => voidDoc(d.id)}
+                      disabled={pending}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        color: '#a53a2c',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      Void
+                    </button>
                   )}
                   {d.status === 'completed' && d.signed_pdf_path && (
                     <button
