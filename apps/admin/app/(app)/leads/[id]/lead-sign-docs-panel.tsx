@@ -36,17 +36,20 @@ export function LeadSignDocsPanel({
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [justGenerated, setJustGenerated] = useState<string | null>(null);
+  const [remoteSent, setRemoteSent] = useState(false);
 
-  function generate() {
+  function generate(mode: 'in_person' | 'remote') {
     setErr(null);
     setJustGenerated(null);
+    setRemoteSent(false);
     if (!templateId) {
       setErr('Pick a template.');
       return;
     }
     startTransition(async () => {
-      const res = await generateAndStartSigning({ leadId, templateId });
+      const res = await generateAndStartSigning({ leadId, templateId, mode });
       if (!res.ok) setErr(res.error);
+      else if (res.mode === 'remote') setRemoteSent(true);
       else setJustGenerated(res.sessionToken);
     });
   }
@@ -77,13 +80,33 @@ export function LeadSignDocsPanel({
               </option>
             ))}
           </select>
-          <button type="button" className="btn-primary" onClick={generate} disabled={pending}>
-            {pending ? 'Generating…' : 'Generate & sign'}
+          <button type="button" className="btn-primary" onClick={() => generate('in_person')} disabled={pending}>
+            {pending ? 'Working…' : 'Generate & sign in person'}
+          </button>
+          <button type="button" className="btn-secondary" onClick={() => generate('remote')} disabled={pending}>
+            Email for remote signing
           </button>
         </div>
       )}
 
       {err && <div style={{ color: '#a53a2c', fontSize: 13, marginTop: 10 }}>{err}</div>}
+
+      {remoteSent && (
+        <div
+          style={{
+            marginTop: 14,
+            padding: 14,
+            background: '#e7f0fb',
+            border: '1px solid #bcd4f0',
+            borderRadius: 8,
+            fontSize: 13,
+            color: '#2b5f9e',
+          }}
+        >
+          <strong>Sent for remote signing.</strong> The customer will get an email from SignWell with
+          a secure link to review and sign. You’ll see the status update here when they’re done.
+        </div>
+      )}
 
       {justGenerated && (
         <div

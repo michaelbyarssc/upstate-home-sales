@@ -44,7 +44,13 @@ const ROLE_ORDER: DocSignerRole[] = ['buyer', 'co_buyer', 'seller', 'witness'];
 export async function generateAndStartSigning(args: {
   leadId: string;
   templateId: string;
-}): Promise<{ ok: true; sessionToken: string; instanceId: string } | { ok: false; error: string }> {
+  /** 'in_person' (default) embeds signing on the tablet; 'remote' has SignWell email the signers. */
+  mode?: 'in_person' | 'remote';
+}): Promise<
+  | { ok: true; sessionToken: string; instanceId: string; mode: 'in_person' | 'remote' }
+  | { ok: false; error: string }
+> {
+  const mode: 'in_person' | 'remote' = args.mode === 'remote' ? 'remote' : 'in_person';
   const supabase = createClient();
   const orgId = cookies().get(ACTIVE_ORG_COOKIE)?.value;
   if (!orgId) return { ok: false, error: 'No active org.' };
@@ -207,7 +213,7 @@ export async function generateAndStartSigning(args: {
       providerTemplateId: template.provider_template_id,
       recipients,
       prefill,
-      inPerson: true,
+      inPerson: mode === 'in_person',
       testMode: process.env.ESIGN_TEST_MODE !== 'false',
       redirectUrl: `${publicBase}/sign/return`,
       name: `Doc #${(nextNum as number) ?? ''} · ${lead.contact_name ?? 'Lead'}`,
@@ -235,11 +241,12 @@ export async function generateAndStartSigning(args: {
     .insert({
       instance_id: instance.id,
       org_id: orgId,
-      mode: 'in_person',
+      mode,
       status: 'pending',
       signer_roles: orderedRoles,
       current_role_idx: 0,
       recipient_map_jsonb: recipientMap,
+      remote_email: mode === 'remote' ? lead.email : null,
       created_by: user?.id ?? null,
     })
     .select('session_token')
@@ -252,9 +259,12 @@ export async function generateAndStartSigning(args: {
     org_id: orgId,
     kind: 'system',
     channel: null,
-    body: `Document #${(nextNum as number) ?? ''} generated and ready for in-person signing.`,
+    body:
+      mode === 'remote'
+        ? `Document #${(nextNum as number) ?? ''} emailed${lead.email ? ` to ${lead.email}` : ''} for remote signing.`
+        : `Document #${(nextNum as number) ?? ''} generated and ready for in-person signing.`,
   });
 
   revalidatePath(`/leads/${args.leadId}`);
-  return { ok: true, sessionToken: session.session_token, instanceId: instance.id };
+  return { ok: true, sessionToken: session.session_token, instanceId: instance.id, mode };
 }
