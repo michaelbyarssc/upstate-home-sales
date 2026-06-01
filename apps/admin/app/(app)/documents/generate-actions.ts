@@ -15,10 +15,17 @@ import {
 
 const NOREPLY = 'noreply.upstatehomecenter.com';
 
-/** Default signer name/email per role (embedded in-person signing — emails are labels only). */
+/**
+ * Default signer name/email per role. For in-person embedded signing the emails
+ * are labels only (SignWell sends nothing). For remote signing SignWell emails
+ * these addresses, so we use the real buyer (lead) email and the real seller
+ * (salesperson) email; co-buyer/witness have no address in our data model yet and
+ * fall back to noreply — a remote doc that requires them can't fully complete by
+ * email until those addresses are captured.
+ */
 function recipientIdentity(
   role: DocSignerRole,
-  ctx: { leadName: string | null; leadEmail: string | null; orgName: string | null },
+  ctx: { leadName: string | null; leadEmail: string | null; orgName: string | null; sellerEmail: string | null },
   leadId: string,
 ): { name: string; email: string } {
   switch (role) {
@@ -27,7 +34,7 @@ function recipientIdentity(
     case 'co_buyer':
       return { name: 'Co-buyer', email: `cobuyer+${leadId}@${NOREPLY}` };
     case 'seller':
-      return { name: ctx.orgName || 'Seller', email: `seller+${leadId}@${NOREPLY}` };
+      return { name: ctx.orgName || 'Seller', email: ctx.sellerEmail || `seller+${leadId}@${NOREPLY}` };
     case 'witness':
       return { name: 'Witness', email: `witness+${leadId}@${NOREPLY}` };
   }
@@ -168,6 +175,12 @@ export async function generateAndStartSigning(args: {
     });
   }
 
+  // Current signed-in salesperson — signs as the seller, and (remote mode) is the
+  // real email SignWell delivers the seller's counter-signing link to.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   // ── Build recipients from signer rows, in signing order ─────────────────
   const signerRows = fieldMap.filter((f) => f.source === 'signer' && f.signer_role);
   const orderedRoles = ROLE_ORDER.filter((role) => signerRows.some((s) => s.signer_role === role));
@@ -177,15 +190,16 @@ export async function generateAndStartSigning(args: {
     .slice()
     .sort((a, b) => ROLE_ORDER.indexOf(a.signer_role!) - ROLE_ORDER.indexOf(b.signer_role!))
     .map((s) => {
-      const id = recipientIdentity(s.signer_role!, { leadName: lead.contact_name, leadEmail: lead.email, orgName: org?.name ?? null }, args.leadId);
+      const id = recipientIdentity(
+        s.signer_role!,
+        { leadName: lead.contact_name, leadEmail: lead.email, orgName: org?.name ?? null, sellerEmail: user?.email ?? null },
+        args.leadId,
+      );
       return { role: s.signer_role!, placeholderName: s.provider_field_id, name: id.name, email: id.email };
     });
 
   // ── Insert the instance (snapshot frozen here) ──────────────────────────
   const { data: nextNum } = await supabase.rpc('next_document_number', { p_org_id: orgId });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const { data: instance, error: insErr } = await supabase
     .from('document_instances')
