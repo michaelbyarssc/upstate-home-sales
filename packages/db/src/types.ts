@@ -640,6 +640,7 @@ export interface Lead {
 export type RequirementTimeline = 'asap' | '1_3_months' | '3_6_months' | '6_12_months' | 'exploring';
 export type LandStatus = 'owns_land' | 'needs_land' | 'in_park' | 'unsure';
 export type FinancingPref = 'cash' | 'financing' | 'unsure';
+export type ConditionPref = 'new' | 'used' | 'either';
 
 /** CRM buyer requirements for a lead (0041). One row per lead. */
 export interface LeadPreferences {
@@ -647,8 +648,10 @@ export interface LeadPreferences {
   org_id: string;
   lead_id: string;
   preferred_types: HomeType[] | null;
+  condition: ConditionPref | null;
   manufacturer_ids: string[] | null;
   preferred_models: string[] | null;
+  preferred_colors: string[] | null;
   min_beds: number | null;
   max_beds: number | null;
   min_baths: number | null;

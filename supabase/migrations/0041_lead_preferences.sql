@@ -16,11 +16,15 @@ create table public.lead_preferences (
   lead_id               uuid not null unique references public.leads(id) on delete cascade,
 
   -- Type & make (multi-select; arrays so "single OR double" is expressible)
+  -- EV500SC field mappings noted inline.
   preferred_types       public.home_type[],          -- single / double / modular
-  manufacturer_ids      uuid[],                       -- → manufacturers.id (validated app-side)
-  preferred_models      text[],
+  condition             text check (condition in ('new','used','either')),  -- EV500SC: THIS UNIT IS NEW/USED
+  manufacturer_ids      uuid[],                       -- → manufacturers.id (validated app-side); EV500SC: MAKE
+  preferred_models      text[],                       -- EV500SC: MODEL
+  preferred_colors      text[],                       -- EV500SC: COLOR
 
-  -- Size / layout ranges (null bound = no constraint on that side)
+  -- Size / layout ranges (null bound = no constraint on that side).
+  -- EV500SC: BEDROOMS, BATHS, FLOOR SIZE (W×L → width/length), derived sqft, YEAR.
   min_beds              int,
   max_beds              int,
   min_baths             numeric(3,1),
@@ -34,7 +38,8 @@ create table public.lead_preferences (
   min_year              int,
   max_year              int,
 
-  -- Budget (cents, matching the pricing convention used across the schema)
+  -- Budget (cents, matching the pricing convention used across the schema).
+  -- EV500SC: BASE PRICE OF UNIT / CASH PURCHASE PRICE.
   min_price_cents       bigint,
   max_price_cents       bigint,
 

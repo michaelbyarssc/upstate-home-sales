@@ -46,7 +46,9 @@ export type BindingKey =
   | 'trade_in.offer_cents'
   // Requested (the buyer's criteria from the lead CRM — build-to-order)
   | 'requested.types'
+  | 'requested.condition'
   | 'requested.manufacturers'
+  | 'requested.colors'
   | 'requested.beds'
   | 'requested.baths'
   | 'requested.sqft'
@@ -94,7 +96,9 @@ export const BINDINGS: BindingDef[] = [
   { key: 'trade_in.model', label: 'Trade-in model', group: 'Trade-in', kind: 'text' },
   { key: 'trade_in.offer_cents', label: 'Trade-in allowance', group: 'Trade-in', kind: 'currency' },
   { key: 'requested.types', label: 'Requested type(s)', group: 'Requested', kind: 'text' },
+  { key: 'requested.condition', label: 'Requested condition (new/used)', group: 'Requested', kind: 'text' },
   { key: 'requested.manufacturers', label: 'Requested manufacturer(s)', group: 'Requested', kind: 'text' },
+  { key: 'requested.colors', label: 'Requested color(s)', group: 'Requested', kind: 'text' },
   { key: 'requested.beds', label: 'Requested bedrooms', group: 'Requested', kind: 'text' },
   { key: 'requested.baths', label: 'Requested bathrooms', group: 'Requested', kind: 'text' },
   { key: 'requested.sqft', label: 'Requested square feet', group: 'Requested', kind: 'text' },
@@ -132,7 +136,7 @@ export type BindingContext = {
   preferences?:
     | (Pick<
         LeadPreferences,
-        | 'preferred_types' | 'preferred_models'
+        | 'preferred_types' | 'condition' | 'preferred_models' | 'preferred_colors'
         | 'min_beds' | 'max_beds' | 'min_baths' | 'max_baths' | 'min_sqft' | 'max_sqft'
         | 'min_width_ft' | 'max_width_ft' | 'min_length_ft' | 'max_length_ft'
         | 'min_year' | 'max_year' | 'min_price_cents' | 'max_price_cents'
@@ -204,6 +208,9 @@ function fmtMoneyRange(min: number | null | undefined, max: number | null | unde
 const HOME_TYPE_LABEL: Record<string, string> = {
   single: 'Single-wide', double: 'Double-wide', modular: 'Modular',
 };
+const CONDITION_LABEL: Record<string, string> = {
+  new: 'New', used: 'Used', either: 'New or used',
+};
 const REQUEST_TIMELINE_LABEL: Record<string, string> = {
   asap: 'ASAP', '1_3_months': '1–3 months', '3_6_months': '3–6 months',
   '6_12_months': '6–12 months', exploring: 'Just exploring',
@@ -259,8 +266,12 @@ export function resolveBinding(key: BindingKey, ctx: BindingContext): ResolvedBi
       return money(ctx.tradeIn?.offer_cents ?? null);
     case 'requested.types':
       return text((ctx.preferences?.preferred_types ?? []).map((t) => HOME_TYPE_LABEL[t] ?? t).join(', ') || null);
+    case 'requested.condition':
+      return text(ctx.preferences?.condition ? (CONDITION_LABEL[ctx.preferences.condition] ?? ctx.preferences.condition) : null);
     case 'requested.manufacturers':
       return text((ctx.preferences?.manufacturer_names ?? []).join(', ') || null);
+    case 'requested.colors':
+      return text((ctx.preferences?.preferred_colors ?? []).join(', ') || null);
     case 'requested.beds':
       return text(fmtRange(ctx.preferences?.min_beds, ctx.preferences?.max_beds) || null);
     case 'requested.baths':

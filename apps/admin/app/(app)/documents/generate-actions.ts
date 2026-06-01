@@ -169,7 +169,9 @@ export async function generateAndStartSigning(args: {
     preferences: prefRow
       ? {
           preferred_types: prefRow.preferred_types,
+          condition: prefRow.condition,
           preferred_models: prefRow.preferred_models,
+          preferred_colors: prefRow.preferred_colors,
           min_beds: prefRow.min_beds, max_beds: prefRow.max_beds,
           min_baths: prefRow.min_baths, max_baths: prefRow.max_baths,
           min_sqft: prefRow.min_sqft, max_sqft: prefRow.max_sqft,

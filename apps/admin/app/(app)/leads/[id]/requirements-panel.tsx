@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatCents, type FinancingPref, type HomeType, type LandStatus, type LeadPreferences, type LeadPreferencesInput, type RequirementTimeline } from '@uhs/db';
+import { formatCents, type ConditionPref, type FinancingPref, type HomeType, type LandStatus, type LeadPreferences, type LeadPreferencesInput, type RequirementTimeline } from '@uhs/db';
 import type { HomeMatch } from '../../../../lib/match-homes';
 import {
   assignHomeToLead,
@@ -48,6 +48,12 @@ const FINANCING_OPTIONS: Array<{ value: FinancingPref; label: string }> = [
   { value: 'unsure', label: 'Unsure' },
 ];
 
+const CONDITION_OPTIONS: Array<{ value: ConditionPref; label: string }> = [
+  { value: 'new', label: 'New' },
+  { value: 'used', label: 'Used' },
+  { value: 'either', label: 'Either' },
+];
+
 const FEATURE_SUGGESTIONS = [
   'Island kitchen', 'Walk-in closet', 'Garden tub', 'Drywall finish', 'Fireplace',
   'Front porch', 'Covered deck', 'Office / flex room', 'Open floor plan', 'Mudroom',
@@ -56,8 +62,10 @@ const FEATURE_SUGGESTIONS = [
 
 const EMPTY: LeadPreferencesInput = {
   preferred_types: null,
+  condition: null,
   manufacturer_ids: null,
   preferred_models: null,
+  preferred_colors: null,
   min_beds: null, max_beds: null,
   min_baths: null, max_baths: null,
   min_sqft: null, max_sqft: null,
@@ -78,8 +86,10 @@ function toForm(p: LeadPreferences | null): LeadPreferencesInput {
   if (!p) return { ...EMPTY };
   return {
     preferred_types: p.preferred_types,
+    condition: p.condition,
     manufacturer_ids: p.manufacturer_ids,
     preferred_models: p.preferred_models,
+    preferred_colors: p.preferred_colors,
     min_beds: p.min_beds, max_beds: p.max_beds,
     min_baths: p.min_baths, max_baths: p.max_baths,
     min_sqft: p.min_sqft, max_sqft: p.max_sqft,
@@ -233,6 +243,25 @@ export function RequirementsPanel({
           </div>
 
           <div className="req-block">
+            <h3 className="req-h3">Condition</h3>
+            <div className="req-checks">
+              {CONDITION_OPTIONS.map((c) => {
+                const on = form.condition === c.value;
+                return (
+                  <label key={c.value} className={`req-check${on ? ' on' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={() => set('condition', on ? null : c.value)}
+                    />
+                    {c.label}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="req-block">
             <h3 className="req-h3">Manufacturer</h3>
             <div className="req-checks">
               {manufacturers.map((m) => {
@@ -257,6 +286,15 @@ export function RequirementsPanel({
               values={form.preferred_models}
               placeholder="Add a model name and press Enter"
               onChange={(v) => set('preferred_models', v)}
+            />
+          </div>
+
+          <div className="req-block">
+            <h3 className="req-h3">Preferred colors</h3>
+            <TagInput
+              values={form.preferred_colors}
+              placeholder="Add a color and press Enter"
+              onChange={(v) => set('preferred_colors', v)}
             />
           </div>
 
