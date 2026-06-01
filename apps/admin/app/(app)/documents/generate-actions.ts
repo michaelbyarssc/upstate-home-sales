@@ -186,7 +186,7 @@ export async function generateAndStartSigning(args: {
   const orderedRoles = ROLE_ORDER.filter((role) => signerRows.some((s) => s.signer_role === role));
   if (orderedRoles.length === 0) return { ok: false, error: 'No signers mapped on this template. Map at least one.' };
 
-  const recipients: EsignRecipientInput[] = signerRows
+  const rawRecipients: EsignRecipientInput[] = signerRows
     .slice()
     .sort((a, b) => ROLE_ORDER.indexOf(a.signer_role!) - ROLE_ORDER.indexOf(b.signer_role!))
     .map((s) => {
@@ -197,6 +197,23 @@ export async function generateAndStartSigning(args: {
       );
       return { role: s.signer_role!, placeholderName: s.provider_field_id, name: id.name, email: id.email };
     });
+
+  // SignWell rejects an envelope with duplicate recipient emails. When two roles
+  // resolve to the same address (e.g. a salesperson testing against their own lead,
+  // or buyer and seller sharing an inbox), keep the first occurrence and route later
+  // collisions through a Gmail-style "+role" tag so each recipient is unique to the
+  // provider while still reaching the same mailbox. Buyer is ordered first, so the
+  // customer always keeps the clean address.
+  const usedEmails = new Set<string>();
+  const recipients: EsignRecipientInput[] = rawRecipients.map((r) => {
+    let email = r.email ?? '';
+    if (email && usedEmails.has(email.toLowerCase())) {
+      const at = email.indexOf('@');
+      if (at > 0) email = `${email.slice(0, at)}+${r.role}@${email.slice(at + 1)}`;
+    }
+    if (email) usedEmails.add(email.toLowerCase());
+    return { ...r, email };
+  });
 
   // ── Insert the instance (snapshot frozen here) ──────────────────────────
   const { data: nextNum } = await supabase.rpc('next_document_number', { p_org_id: orgId });
