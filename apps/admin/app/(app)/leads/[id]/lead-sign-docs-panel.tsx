@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { generateAndStartSigning } from '../../documents/generate-actions';
+import { createClient } from '@uhs/db/browser';
+import { DOC_INSTANCES_BUCKET } from '@uhs/db';
+import { generateAndStartSigning, voidDocument } from '../../documents/generate-actions';
 
 type TemplateOpt = { id: string; name: string };
 type InstanceRow = {
@@ -10,6 +12,8 @@ type InstanceRow = {
   status: string;
   created_at: string;
   session_token: string | null;
+  signed_pdf_path: string | null;
+  public_token: string | null;
 };
 
 const STATUS_COLOR: Record<string, { bg: string; fg: string }> = {
@@ -36,19 +40,43 @@ export function LeadSignDocsPanel({
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [justGenerated, setJustGenerated] = useState<string | null>(null);
+  const [remoteSent, setRemoteSent] = useState(false);
 
-  function generate() {
+  function generate(mode: 'in_person' | 'remote') {
     setErr(null);
     setJustGenerated(null);
+    setRemoteSent(false);
     if (!templateId) {
       setErr('Pick a template.');
       return;
     }
     startTransition(async () => {
-      const res = await generateAndStartSigning({ leadId, templateId });
+      const res = await generateAndStartSigning({ leadId, templateId, mode });
       if (!res.ok) setErr(res.error);
+      else if (res.mode === 'remote') setRemoteSent(true);
       else setJustGenerated(res.sessionToken);
     });
+  }
+
+  function voidDoc(instanceId: string) {
+    if (!confirm('Void this document? It cancels signing and can’t be undone.')) return;
+    setErr(null);
+    startTransition(async () => {
+      const res = await voidDocument({ instanceId });
+      if (!res.ok) setErr(res.error);
+    });
+  }
+
+  // Open the sealed, audit-stamped PDF from our own storage (the store-back copy).
+  async function downloadSigned(path: string) {
+    setErr(null);
+    const sb = createClient();
+    const { data, error } = await sb.storage.from(DOC_INSTANCES_BUCKET).createSignedUrl(path, 120);
+    if (error || !data) {
+      setErr(`Couldn't open signed PDF: ${error?.message ?? 'unknown error'}`);
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
   }
 
   return (
@@ -77,13 +105,33 @@ export function LeadSignDocsPanel({
               </option>
             ))}
           </select>
-          <button type="button" className="btn-primary" onClick={generate} disabled={pending}>
-            {pending ? 'Generating…' : 'Generate & sign'}
+          <button type="button" className="btn-primary" onClick={() => generate('in_person')} disabled={pending}>
+            {pending ? 'Working…' : 'Generate & sign in person'}
+          </button>
+          <button type="button" className="btn-secondary" onClick={() => generate('remote')} disabled={pending}>
+            Email for remote signing
           </button>
         </div>
       )}
 
       {err && <div style={{ color: '#a53a2c', fontSize: 13, marginTop: 10 }}>{err}</div>}
+
+      {remoteSent && (
+        <div
+          style={{
+            marginTop: 14,
+            padding: 14,
+            background: '#e7f0fb',
+            border: '1px solid #bcd4f0',
+            borderRadius: 8,
+            fontSize: 13,
+            color: '#2b5f9e',
+          }}
+        >
+          <strong>Sent for remote signing.</strong> The customer will get an email from SignWell with
+          a secure link to review and sign. You’ll see the status update here when they’re done.
+        </div>
+      )}
 
       {justGenerated && (
         <div
@@ -144,6 +192,51 @@ export function LeadSignDocsPanel({
                       style={{ fontSize: 13, color: 'var(--adm-accent)' }}
                     >
                       Resume signing →
+                    </a>
+                  )}
+                  {d.status !== 'completed' && d.status !== 'voided' && (
+                    <button
+                      type="button"
+                      onClick={() => voidDoc(d.id)}
+                      disabled={pending}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        color: '#a53a2c',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      Void
+                    </button>
+                  )}
+                  {d.status === 'completed' && d.signed_pdf_path && (
+                    <button
+                      type="button"
+                      onClick={() => downloadSigned(d.signed_pdf_path!)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        color: 'var(--adm-accent)',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      Download signed PDF ↓
+                    </button>
+                  )}
+                  {d.status === 'completed' && d.public_token && (
+                    <a
+                      href={`${publicBaseUrl}/sd/${d.public_token}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 13, color: 'var(--adm-ink-mute)' }}
+                    >
+                      Share link →
                     </a>
                   )}
                   <span

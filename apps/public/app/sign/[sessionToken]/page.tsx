@@ -1,5 +1,6 @@
 import { createServiceClient } from '@uhs/db/service';
 import type { DocSignerRole, SigningSessionRecipient } from '@uhs/db';
+import { freshEmbeddedSigningUrl } from '../../../lib/signwell';
 import { SignKiosk } from './sign-kiosk';
 import './sign.css';
 
@@ -31,7 +32,11 @@ export default async function SignPage({ params }: { params: { sessionToken: str
   }
 
   const [{ data: instance }, { data: org }] = await Promise.all([
-    svc.from('document_instances').select('doc_number, status, template_id').eq('id', session.instance_id).maybeSingle(),
+    svc
+      .from('document_instances')
+      .select('doc_number, status, template_id, provider_envelope_id')
+      .eq('id', session.instance_id)
+      .maybeSingle(),
     svc.from('orgs').select('name, brand_color').eq('id', session.org_id).maybeSingle(),
   ]);
   const { data: template } = instance?.template_id
@@ -65,7 +70,14 @@ export default async function SignPage({ params }: { params: { sessionToken: str
   const recipientMap = (session.recipient_map_jsonb ?? {}) as Partial<
     Record<DocSignerRole, SigningSessionRecipient>
   >;
-  const embeddedUrl = recipientMap[currentRole]?.embeddedUrl ?? null;
+  const recipient = recipientMap[currentRole];
+  // Always prefer a freshly-fetched embedded URL — the stored one expires. Fall
+  // back to the stored URL only if SignWell is unreachable.
+  const freshUrl = await freshEmbeddedSigningUrl(
+    instance?.provider_envelope_id ?? null,
+    recipient?.recipientId ?? null,
+  );
+  const embeddedUrl = freshUrl ?? recipient?.embeddedUrl ?? null;
 
   if (!embeddedUrl) {
     return (

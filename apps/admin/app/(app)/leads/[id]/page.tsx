@@ -140,7 +140,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     supabase.from('document_templates').select('id, name').eq('status', 'active').order('name'),
     supabase
       .from('document_instances')
-      .select('id, doc_number, status, created_at')
+      .select('id, doc_number, status, created_at, signed_pdf_path, public_token')
       .eq('lead_id', params.id)
       .order('created_at', { ascending: false }),
   ]);
@@ -156,7 +156,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   for (const s of (signSessions ?? []) as Array<{ instance_id: string; session_token: string }>) {
     if (!tokenByInstance.has(s.instance_id)) tokenByInstance.set(s.instance_id, s.session_token);
   }
-  const signInstances = ((docInstances ?? []) as Array<{ id: string; doc_number: number | null; status: string; created_at: string }>).map(
+  const signInstances = ((docInstances ?? []) as Array<{ id: string; doc_number: number | null; status: string; created_at: string; signed_pdf_path: string | null; public_token: string | null }>).map(
     (d) => ({ ...d, session_token: tokenByInstance.get(d.id) ?? null }),
   );
 

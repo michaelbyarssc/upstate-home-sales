@@ -1,6 +1,6 @@
 import { createClient } from '@uhs/db/server';
 import { DocumentsClient, type DealerDoc, type LinkedLeadOption } from './documents-client';
-import type { BuyerDocument } from '@uhs/db';
+import { DOC_INSTANCES_BUCKET, type BuyerDocument } from '@uhs/db';
 
 export const metadata = { title: 'Documents · Buyer portal' };
 export const dynamic = 'force-dynamic';
@@ -40,7 +40,7 @@ export default async function DocumentsPage() {
   // Dealer-issued docs: quotes, invoices, purchase_orders for those leads
   let dealerDocs: DealerDoc[] = [];
   if (leadIds.length > 0) {
-    const [quotesRes, invoicesRes, posRes] = await Promise.all([
+    const [quotesRes, invoicesRes, posRes, signedRes] = await Promise.all([
       sb
         .from('quotes')
         .select('id, lead_id, pdf_storage_path, public_token, listed_price_cents, created_at, expires_at, homes(name, stock_no)')
@@ -56,6 +56,15 @@ export default async function DocumentsPage() {
         .select('id, lead_id, pdf_storage_path, public_token, po_number, listed_price_cents, created_at, delivery_date, homes(name, stock_no)')
         .in('lead_id', leadIds)
         .order('created_at', { ascending: false }),
+      // Signed documents from the e-sign engine. RLS exposes only COMPLETED
+      // instances for the buyer's linked leads; the sealed PDF lives in our own
+      // doc-instances bucket (the store-back copy), not the quote-pdfs bucket.
+      sb
+        .from('document_instances')
+        .select('id, lead_id, doc_number, signed_pdf_path, public_token, listed_price_cents, completed_at, created_at')
+        .in('lead_id', leadIds)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false }),
     ]);
 
     const quoteRows = (quotesRes.data ?? []).map((q: any) => {
@@ -116,7 +125,24 @@ export default async function DocumentsPage() {
       };
     });
 
-    dealerDocs = [...quoteRows, ...invoiceRows, ...poRows].sort(
+    const signedRows = (signedRes.data ?? []).map((s: any) => ({
+      kind: 'signed' as const,
+      id: s.id,
+      leadId: s.lead_id,
+      leadLabel: leadLabelById.get(s.lead_id) ?? 'Your inquiry',
+      homeName: null,
+      title: `Signed document #${s.doc_number ?? ''} · ${leadLabelById.get(s.lead_id) ?? 'Home'}`,
+      publicToken: s.public_token ?? '',
+      publicHref: s.public_token ? `/sd/${s.public_token}` : '',
+      pdfStoragePath: s.signed_pdf_path,
+      bucket: DOC_INSTANCES_BUCKET,
+      totalCents: s.listed_price_cents,
+      createdAt: s.completed_at ?? s.created_at,
+      secondaryDate: null,
+      secondaryLabel: 'Signed',
+    }));
+
+    dealerDocs = [...quoteRows, ...invoiceRows, ...poRows, ...signedRows].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   }

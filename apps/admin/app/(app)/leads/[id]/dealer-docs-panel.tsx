@@ -5,7 +5,6 @@ import { createClient } from '@uhs/db/browser';
 import type { LineItem } from '@uhs/db';
 import { setDocVisibility, deleteDealerDoc } from './actions';
 import { InvoiceFormModal } from './invoice-form-modal';
-import { PurchaseOrderFormModal } from './po-form-modal';
 import { PdfCanvasViewer, type HomeOption } from './quote-form-modal';
 
 export type DealerDocRow = {
@@ -53,7 +52,7 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
   const [docs, setDocs] = useState(initialDocs);
   const [, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const [convertSource, setConvertSource] = useState<{ kind: 'invoice' | 'po'; from: DealerDocRow } | null>(null);
+  const [convertSource, setConvertSource] = useState<{ kind: 'invoice'; from: DealerDocRow } | null>(null);
   const [viewingDoc, setViewingDoc] = useState<DealerDocRow | null>(null);
   const [viewerPdfBytes, setViewerPdfBytes] = useState<ArrayBuffer | null>(null);
   const [viewerLoading, setViewerLoading] = useState(false);
@@ -128,7 +127,7 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
     URL.revokeObjectURL(url);
   }
 
-  function startConvert(target: 'invoice' | 'po', from: DealerDocRow) {
+  function startConvert(target: 'invoice', from: DealerDocRow) {
     if (from.kind !== 'quote') return;
     setConvertSource({ kind: target, from });
   }
@@ -164,7 +163,8 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
 
         {docs.length === 0 ? (
           <div style={{ padding: 16, textAlign: 'center', color: 'var(--adm-ink-mute)', background: 'var(--adm-bg)', borderRadius: 6, fontSize: 13 }}>
-            No documents yet. Use the &ldquo;+ Quote&rdquo;, &ldquo;+ Invoice&rdquo;, or &ldquo;+ PO&rdquo; buttons up top.
+            No documents yet. Use the &ldquo;+ Quote&rdquo; or &ldquo;+ Invoice&rdquo; buttons up top. Purchase
+            orders now go through &ldquo;Sign-ready documents&rdquo; below, so they&rsquo;re signed and stored.
           </div>
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
@@ -234,13 +234,6 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
                         >
                           → Invoice
                         </button>
-                        <button
-                          onClick={() => startConvert('po', row)}
-                          title="Convert this quote into a purchase order"
-                          style={btnSecondary}
-                        >
-                          → PO
-                        </button>
                       </>
                     )}
                     <button onClick={() => viewPdf(row)} style={btnSecondary} title="Open PDF in a new tab">
@@ -266,20 +259,6 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
 
       {convertSource?.kind === 'invoice' && (
         <InvoiceFormModal
-          leadId={leadId}
-          orgId={orgId}
-          homeId={convertSource.from.homeId}
-          homeName={convertSource.from.homeName}
-          defaultLineItems={convertSource.from.lineItems.length > 0 ? convertSource.from.lineItems : defaultLineItems}
-          homes={homes}
-          quoteId={convertSource.from.id}
-          onClose={() => setConvertSource(null)}
-          onCreated={() => setConvertSource(null)}
-        />
-      )}
-
-      {convertSource?.kind === 'po' && (
-        <PurchaseOrderFormModal
           leadId={leadId}
           orgId={orgId}
           homeId={convertSource.from.homeId}

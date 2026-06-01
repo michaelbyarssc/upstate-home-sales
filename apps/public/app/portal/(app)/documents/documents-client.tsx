@@ -16,6 +16,7 @@ const DEALER_DOC_LABELS: Record<DealerDoc['kind'], string> = {
   quote: 'Quote',
   invoice: 'Invoice',
   po: 'Purchase Order',
+  signed: 'Signed document',
 };
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -30,7 +31,7 @@ export type LinkedLeadOption = {
 };
 
 export type DealerDoc = {
-  kind: 'quote' | 'invoice' | 'po';
+  kind: 'quote' | 'invoice' | 'po' | 'signed';
   id: string;
   leadId: string;
   leadLabel: string;
@@ -39,6 +40,8 @@ export type DealerDoc = {
   publicToken: string;
   publicHref: string;
   pdfStoragePath: string | null;
+  /** Storage bucket the pdfStoragePath lives in. Defaults to quote-pdfs. */
+  bucket?: string;
   totalCents: number | null;
   createdAt: string;
   secondaryDate: string | null;
@@ -145,7 +148,7 @@ export function DocumentsClient({ initialDocs, userId, linkedLeads, dealerDocs }
     }
     const sb = createClient();
     const { data, error } = await sb.storage
-      .from(QUOTE_PDFS_BUCKET)
+      .from(d.bucket ?? QUOTE_PDFS_BUCKET)
       .createSignedUrl(d.pdfStoragePath, 60);
     if (error || !data) {
       alert(`Couldn't load PDF: ${error?.message ?? 'unknown'}`);
@@ -213,8 +216,8 @@ export function DocumentsClient({ initialDocs, userId, linkedLeads, dealerDocs }
                         fontWeight: 600,
                         textTransform: 'uppercase',
                         letterSpacing: 0.04,
-                        background: d.kind === 'quote' ? '#dbeafe' : d.kind === 'invoice' ? '#fef3c7' : '#dcfce7',
-                        color: d.kind === 'quote' ? '#1e40af' : d.kind === 'invoice' ? '#854d0e' : '#166534',
+                        background: d.kind === 'quote' ? '#dbeafe' : d.kind === 'invoice' ? '#fef3c7' : d.kind === 'signed' ? '#e9e3fb' : '#dcfce7',
+                        color: d.kind === 'quote' ? '#1e40af' : d.kind === 'invoice' ? '#854d0e' : d.kind === 'signed' ? '#5b3fa6' : '#166534',
                       }}
                     >
                       {DEALER_DOC_LABELS[d.kind]}

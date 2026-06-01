@@ -15,10 +15,17 @@ import {
 
 const NOREPLY = 'noreply.upstatehomecenter.com';
 
-/** Default signer name/email per role (embedded in-person signing — emails are labels only). */
+/**
+ * Default signer name/email per role. For in-person embedded signing the emails
+ * are labels only (SignWell sends nothing). For remote signing SignWell emails
+ * these addresses, so we use the real buyer (lead) email and the real seller
+ * (salesperson) email; co-buyer/witness have no address in our data model yet and
+ * fall back to noreply — a remote doc that requires them can't fully complete by
+ * email until those addresses are captured.
+ */
 function recipientIdentity(
   role: DocSignerRole,
-  ctx: { leadName: string | null; leadEmail: string | null; orgName: string | null },
+  ctx: { leadName: string | null; leadEmail: string | null; orgName: string | null; sellerEmail: string | null },
   leadId: string,
 ): { name: string; email: string } {
   switch (role) {
@@ -27,7 +34,7 @@ function recipientIdentity(
     case 'co_buyer':
       return { name: 'Co-buyer', email: `cobuyer+${leadId}@${NOREPLY}` };
     case 'seller':
-      return { name: ctx.orgName || 'Seller', email: `seller+${leadId}@${NOREPLY}` };
+      return { name: ctx.orgName || 'Seller', email: ctx.sellerEmail || `seller+${leadId}@${NOREPLY}` };
     case 'witness':
       return { name: 'Witness', email: `witness+${leadId}@${NOREPLY}` };
   }
@@ -44,7 +51,13 @@ const ROLE_ORDER: DocSignerRole[] = ['buyer', 'co_buyer', 'seller', 'witness'];
 export async function generateAndStartSigning(args: {
   leadId: string;
   templateId: string;
-}): Promise<{ ok: true; sessionToken: string; instanceId: string } | { ok: false; error: string }> {
+  /** 'in_person' (default) embeds signing on the tablet; 'remote' has SignWell email the signers. */
+  mode?: 'in_person' | 'remote';
+}): Promise<
+  | { ok: true; sessionToken: string; instanceId: string; mode: 'in_person' | 'remote' }
+  | { ok: false; error: string }
+> {
+  const mode: 'in_person' | 'remote' = args.mode === 'remote' ? 'remote' : 'in_person';
   const supabase = createClient();
   const orgId = cookies().get(ACTIVE_ORG_COOKIE)?.value;
   if (!orgId) return { ok: false, error: 'No active org.' };
@@ -162,24 +175,48 @@ export async function generateAndStartSigning(args: {
     });
   }
 
+  // Current signed-in salesperson — signs as the seller, and (remote mode) is the
+  // real email SignWell delivers the seller's counter-signing link to.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   // ── Build recipients from signer rows, in signing order ─────────────────
   const signerRows = fieldMap.filter((f) => f.source === 'signer' && f.signer_role);
   const orderedRoles = ROLE_ORDER.filter((role) => signerRows.some((s) => s.signer_role === role));
   if (orderedRoles.length === 0) return { ok: false, error: 'No signers mapped on this template. Map at least one.' };
 
-  const recipients: EsignRecipientInput[] = signerRows
+  const rawRecipients: EsignRecipientInput[] = signerRows
     .slice()
     .sort((a, b) => ROLE_ORDER.indexOf(a.signer_role!) - ROLE_ORDER.indexOf(b.signer_role!))
     .map((s) => {
-      const id = recipientIdentity(s.signer_role!, { leadName: lead.contact_name, leadEmail: lead.email, orgName: org?.name ?? null }, args.leadId);
+      const id = recipientIdentity(
+        s.signer_role!,
+        { leadName: lead.contact_name, leadEmail: lead.email, orgName: org?.name ?? null, sellerEmail: user?.email ?? null },
+        args.leadId,
+      );
       return { role: s.signer_role!, placeholderName: s.provider_field_id, name: id.name, email: id.email };
     });
 
+  // SignWell rejects an envelope with duplicate recipient emails. When two roles
+  // resolve to the same address (e.g. a salesperson testing against their own lead,
+  // or buyer and seller sharing an inbox), keep the first occurrence and route later
+  // collisions through a Gmail-style "+role" tag so each recipient is unique to the
+  // provider while still reaching the same mailbox. Buyer is ordered first, so the
+  // customer always keeps the clean address.
+  const usedEmails = new Set<string>();
+  const recipients: EsignRecipientInput[] = rawRecipients.map((r) => {
+    let email = r.email ?? '';
+    if (email && usedEmails.has(email.toLowerCase())) {
+      const at = email.indexOf('@');
+      if (at > 0) email = `${email.slice(0, at)}+${r.role}@${email.slice(at + 1)}`;
+    }
+    if (email) usedEmails.add(email.toLowerCase());
+    return { ...r, email };
+  });
+
   // ── Insert the instance (snapshot frozen here) ──────────────────────────
   const { data: nextNum } = await supabase.rpc('next_document_number', { p_org_id: orgId });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const { data: instance, error: insErr } = await supabase
     .from('document_instances')
@@ -207,7 +244,7 @@ export async function generateAndStartSigning(args: {
       providerTemplateId: template.provider_template_id,
       recipients,
       prefill,
-      inPerson: true,
+      inPerson: mode === 'in_person',
       testMode: process.env.ESIGN_TEST_MODE !== 'false',
       redirectUrl: `${publicBase}/sign/return`,
       name: `Doc #${(nextNum as number) ?? ''} · ${lead.contact_name ?? 'Lead'}`,
@@ -235,11 +272,12 @@ export async function generateAndStartSigning(args: {
     .insert({
       instance_id: instance.id,
       org_id: orgId,
-      mode: 'in_person',
+      mode,
       status: 'pending',
       signer_roles: orderedRoles,
       current_role_idx: 0,
       recipient_map_jsonb: recipientMap,
+      remote_email: mode === 'remote' ? lead.email : null,
       created_by: user?.id ?? null,
     })
     .select('session_token')
@@ -252,9 +290,77 @@ export async function generateAndStartSigning(args: {
     org_id: orgId,
     kind: 'system',
     channel: null,
-    body: `Document #${(nextNum as number) ?? ''} generated and ready for in-person signing.`,
+    body:
+      mode === 'remote'
+        ? `Document #${(nextNum as number) ?? ''} emailed${lead.email ? ` to ${lead.email}` : ''} for remote signing.`
+        : `Document #${(nextNum as number) ?? ''} generated and ready for in-person signing.`,
   });
 
   revalidatePath(`/leads/${args.leadId}`);
-  return { ok: true, sessionToken: session.session_token, instanceId: instance.id };
+  return { ok: true, sessionToken: session.session_token, instanceId: instance.id, mode };
+}
+
+/**
+ * Void an in-flight document the dealer no longer wants signed. Best-effort at the
+ * provider (SignWell deletes the envelope); we always mark our instance voided and
+ * cancel its open session so it stops showing as signable. A COMPLETED document
+ * can't be voided — its sealed copy is already our record.
+ */
+export async function voidDocument(args: {
+  instanceId: string;
+  reason?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = createClient();
+  const orgId = cookies().get(ACTIVE_ORG_COOKIE)?.value;
+  if (!orgId) return { ok: false, error: 'No active org.' };
+
+  const { data: instance } = await supabase
+    .from('document_instances')
+    .select('id, lead_id, status, provider_envelope_id, doc_number')
+    .eq('id', args.instanceId)
+    .maybeSingle();
+  if (!instance) return { ok: false, error: 'Document not found.' };
+  if (instance.status === 'completed') return { ok: false, error: 'A completed document can’t be voided.' };
+  if (instance.status === 'voided') return { ok: true };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const reason = args.reason?.trim() || 'Voided by dealer';
+
+  if (instance.provider_envelope_id) {
+    try {
+      await getEsignProvider().voidEnvelope(instance.provider_envelope_id, reason);
+    } catch (e) {
+      console.error('[voidDocument] provider void failed (continuing):', e);
+    }
+  }
+
+  await supabase
+    .from('document_instances')
+    .update({
+      status: 'voided',
+      voided_at: new Date().toISOString(),
+      voided_by: user?.id ?? null,
+      void_reason: reason,
+    })
+    .eq('id', args.instanceId);
+
+  const svc = createServiceClient();
+  await svc
+    .from('signing_sessions')
+    .update({ status: 'canceled' })
+    .eq('instance_id', args.instanceId)
+    .neq('status', 'completed');
+
+  await supabase.from('lead_messages').insert({
+    lead_id: instance.lead_id,
+    org_id: orgId,
+    kind: 'system',
+    channel: null,
+    body: `Document #${instance.doc_number ?? ''} voided — ${reason}.`,
+  });
+
+  revalidatePath(`/leads/${instance.lead_id}`);
+  return { ok: true };
 }
