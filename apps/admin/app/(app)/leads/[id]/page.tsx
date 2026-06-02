@@ -152,6 +152,23 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     ? matchHomes(leadPreferences, (homesForMatch ?? []) as unknown as MatchableHome[]).slice(0, 24)
     : [];
 
+  // CRM: homes shortlisted to this lead (multi-assign) + their draft-quote tokens.
+  // Degrades to empty if the 0042 migration hasn't been applied yet.
+  const { data: assignedRows } = await supabase
+    .from('lead_assigned_homes')
+    .select('home_id, quote_id, quotes(public_token)')
+    .eq('lead_id', params.id)
+    .then((r) => ({ data: r.data }), () => ({ data: null }));
+  const assignedHomeIds = ((assignedRows ?? []) as Array<{ home_id: string }>).map((a) => a.home_id);
+  const assignedQuoteTokens: Record<string, string | null> = {};
+  for (const a of (assignedRows ?? []) as Array<{
+    home_id: string;
+    quotes: { public_token: string } | { public_token: string }[] | null;
+  }>) {
+    const rel = a.quotes;
+    assignedQuoteTokens[a.home_id] = (Array.isArray(rel) ? rel[0]?.public_token : rel?.public_token) ?? null;
+  }
+
   // Build default line items from home pricing for the quote/invoice modals.
   const homeRel = Array.isArray(lead.homes) ? lead.homes[0] : lead.homes;
   const defaultLineItems = homeRel
@@ -209,7 +226,8 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         initialPreferences={leadPreferences}
         manufacturers={(manufacturers ?? []) as Array<{ id: string; name: string }>}
         initialMatches={initialMatches}
-        assignedHomeId={lead.home_id ?? null}
+        assignedHomeIds={assignedHomeIds}
+        assignedQuoteTokens={assignedQuoteTokens}
         buyerLinked={!!buyerLink?.buyer_id}
       />
 

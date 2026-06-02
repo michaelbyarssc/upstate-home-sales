@@ -738,6 +738,21 @@ export interface Quote {
   created_at: string;
 }
 
+/**
+ * A home shortlisted ("assigned") to a lead from the inventory matcher. A lead
+ * can have many. `quote_id` points at the draft quote auto-created on assignment.
+ * The lead's single `leads.home_id` remains the "primary" home for documents.
+ */
+export interface LeadAssignedHome {
+  id: string;
+  org_id: string;
+  lead_id: string;
+  home_id: string;
+  quote_id: string | null;
+  assigned_by: string | null;
+  created_at: string;
+}
+
 export type PaymentMethod = 'check' | 'wire' | 'cash' | 'financing' | 'other';
 
 export interface Invoice {

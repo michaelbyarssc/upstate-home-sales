@@ -1,14 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { formatCents, type ConditionPref, type FinancingPref, type HomeType, type LandStatus, type LeadPreferences, type LeadPreferencesInput, type RequirementTimeline } from '@uhs/db';
 import type { HomeMatch } from '../../../../lib/match-homes';
 import {
   assignHomeToLead,
+  unassignHomeFromLead,
   findMatchingHomes,
   saveLeadPreferences,
   suggestHomeForLead,
 } from './actions';
+import { HomeDetailModal } from './home-detail-modal';
 
 type ManufacturerOption = { id: string; name: string };
 
@@ -17,7 +20,10 @@ type Props = {
   initialPreferences: LeadPreferences | null;
   manufacturers: ManufacturerOption[];
   initialMatches: HomeMatch[];
-  assignedHomeId: string | null;
+  /** All homes currently shortlisted to this lead (multi-assign). */
+  assignedHomeIds: string[];
+  /** home_id → public token of its auto-created draft quote (for "View quote"). */
+  assignedQuoteTokens: Record<string, string | null>;
   buyerLinked: boolean;
 };
 
@@ -130,17 +136,24 @@ export function RequirementsPanel({
   initialPreferences,
   manufacturers,
   initialMatches,
-  assignedHomeId: initialAssigned,
+  assignedHomeIds: initialAssignedIds,
+  assignedQuoteTokens: initialTokens,
   buyerLinked,
 }: Props) {
+  const router = useRouter();
   const [form, setForm] = useState<LeadPreferencesInput>(toForm(initialPreferences));
   const [matches, setMatches] = useState<HomeMatch[]>(initialMatches);
-  const [assignedHomeId, setAssignedHomeId] = useState<string | null>(initialAssigned);
+  const [assignedHomeIds, setAssignedHomeIds] = useState<Set<string>>(() => new Set(initialAssignedIds));
+  const [quoteTokens, setQuoteTokens] = useState<Record<string, string | null>>(initialTokens);
+  const [modalHome, setModalHome] = useState<HomeMatch | null>(null);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busyHome, setBusyHome] = useState<string | null>(null);
+
+  const manufacturerName = (id: string | null): string | null =>
+    id ? manufacturers.find((m) => m.id === id)?.name ?? null : null;
 
   function set<K extends keyof LeadPreferencesInput>(key: K, val: LeadPreferencesInput[K]) {
     setForm((f) => ({ ...f, [key]: val }));
@@ -177,10 +190,31 @@ export function RequirementsPanel({
     setErr(null);
     setBusyHome(homeId);
     try {
-      await assignHomeToLead(leadId, homeId);
-      setAssignedHomeId(homeId);
+      const res = await assignHomeToLead(leadId, homeId);
+      setAssignedHomeIds((prev) => new Set(prev).add(homeId));
+      setQuoteTokens((prev) => ({ ...prev, [homeId]: res.quoteToken }));
+      // Refresh server data so the draft quote shows in the Documents panel.
+      router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not assign home');
+    } finally {
+      setBusyHome(null);
+    }
+  }
+
+  async function onUnassign(homeId: string) {
+    setErr(null);
+    setBusyHome(homeId);
+    try {
+      await unassignHomeFromLead(leadId, homeId);
+      setAssignedHomeIds((prev) => {
+        const next = new Set(prev);
+        next.delete(homeId);
+        return next;
+      });
+      router.refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not unassign home');
     } finally {
       setBusyHome(null);
     }
@@ -414,11 +448,24 @@ export function RequirementsPanel({
         ) : (
           <div className="req-matches">
             {matches.map((m) => {
-              const isAssigned = m.home.id === assignedHomeId;
+              const isAssigned = assignedHomeIds.has(m.home.id);
               const busy = busyHome === m.home.id;
               return (
                 <div key={m.home.id} className={`req-match${isAssigned ? ' assigned' : ''}`}>
-                  <div className="topline">
+                  <div
+                    className="topline"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setModalHome(m)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setModalHome(m);
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                    title="Click to view photos & details"
+                  >
                     <div>
                       <div className="hname">{m.home.name}</div>
                       <div className="hsub">
@@ -446,11 +493,19 @@ export function RequirementsPanel({
                   )}
 
                   <div className="req-actions-row">
+                    <button type="button" className="req-mini-btn" onClick={() => setModalHome(m)}>
+                      View photos
+                    </button>
                     {isAssigned ? (
-                      <span className="req-mini-btn" style={{ borderColor: 'var(--adm-accent)', color: 'var(--adm-accent)', cursor: 'default' }}>✓ Assigned to lead</span>
+                      <>
+                        <span className="req-mini-btn" style={{ borderColor: 'var(--adm-accent)', color: 'var(--adm-accent)', cursor: 'default' }}>✓ Assigned</span>
+                        <button type="button" className="req-mini-btn" onClick={() => onUnassign(m.home.id)} disabled={busy} title="Remove from this lead">
+                          {busy ? '…' : 'Unassign'}
+                        </button>
+                      </>
                     ) : (
                       <button type="button" className="req-mini-btn primary" onClick={() => onAssign(m.home.id)} disabled={busy}>
-                        {busy ? '…' : 'Assign to lead'}
+                        {busy ? '…' : 'Assign + quote'}
                       </button>
                     )}
                     <button
@@ -474,6 +529,18 @@ export function RequirementsPanel({
           </div>
         )}
       </div>
+
+      {modalHome && (
+        <HomeDetailModal
+          home={modalHome.home}
+          manufacturerName={manufacturerName(modalHome.home.manufacturer_id)}
+          isAssigned={assignedHomeIds.has(modalHome.home.id)}
+          assigning={busyHome === modalHome.home.id}
+          quoteToken={quoteTokens[modalHome.home.id] ?? null}
+          onAssign={onAssign}
+          onClose={() => setModalHome(null)}
+        />
+      )}
     </section>
   );
 }
