@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@uhs/db/browser';
 import { formatCents, type Lead, type LeadMessage, type LeadStage, type LineItem, type MessageChannel, type MessageKind } from '@uhs/db';
 import {
@@ -11,6 +12,7 @@ import {
   toggleLeadHot,
   getQuotePdfUrl,
   getQuoteForEdit,
+  deleteDealerDoc,
   setLeadSmsConsent,
   sendSmsOptInLink,
 } from './actions';
@@ -77,6 +79,7 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   const [viewerPdfBytes, setViewerPdfBytes] = useState<ArrayBuffer | null>(null);
   const [viewerLoading, setViewerLoading] = useState(false);
   const [, startTransition] = useTransition();
+  const router = useRouter();
   const timelineRef = useRef<HTMLDivElement>(null);
 
   async function handleEnroll(campaignId: string) {
@@ -242,6 +245,20 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
     alert(`Quote created and link copied:\n${url}`);
   }
 
+  async function onDeleteQuote(q: QuoteRow) {
+    const label = q.homes?.name ?? 'this quote';
+    if (!confirm(`Delete the quote for "${label}"? This removes the PDF and can't be undone.`)) return;
+    const prev = quotes;
+    setQuotes((cur) => cur.filter((x) => x.id !== q.id)); // optimistic
+    const res = await deleteDealerDoc({ kind: 'quote', id: q.id, leadId: lead.id });
+    if (!res.ok) {
+      setQuotes(prev); // rollback on failure
+      alert(res.error || 'Could not delete the quote.');
+      return;
+    }
+    router.refresh(); // keep the Documents panel + server state in sync
+  }
+
   function handleInvoiceCreated(token: string, invoiceNumber: number) {
     const publicBase = window.location.origin.replace(':3001', ':3000');
     const url = `${publicBase}/inv/${token}`;
@@ -310,13 +327,24 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
                       fontSize: 13,
                     }}
                   >
-                    <div style={{ fontWeight: 500, marginBottom: 4 }}>
-                      {q.homes?.name ?? 'Unknown home'}
-                      {q.homes?.stock_no && (
-                        <span style={{ fontWeight: 400, color: 'var(--adm-ink-mute)', marginLeft: 6 }}>
-                          #{q.homes.stock_no}
-                        </span>
-                      )}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                      <div style={{ fontWeight: 500 }}>
+                        {q.homes?.name ?? 'Unknown home'}
+                        {q.homes?.stock_no && (
+                          <span style={{ fontWeight: 400, color: 'var(--adm-ink-mute)', marginLeft: 6 }}>
+                            #{q.homes.stock_no}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onDeleteQuote(q); }}
+                        title="Delete this quote"
+                        aria-label="Delete quote"
+                        style={{ background: 'none', border: 'none', color: 'var(--adm-ink-mute)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                      >
+                        ×
+                      </button>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--adm-ink-mute)' }}>
                       <span>{new Date(q.created_at).toLocaleDateString()}</span>
