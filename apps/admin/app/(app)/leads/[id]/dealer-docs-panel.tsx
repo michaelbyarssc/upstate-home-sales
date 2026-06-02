@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { createClient } from '@uhs/db/browser';
 import type { LineItem } from '@uhs/db';
 import { setDocVisibility, deleteDealerDoc } from './actions';
@@ -50,6 +50,13 @@ function fmtCents(c: number): string {
 
 export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initialDocs }: Props) {
   const [docs, setDocs] = useState(initialDocs);
+  // Re-sync from the server after a router.refresh() — e.g. when a home is
+  // assigned from the matcher elsewhere on the page and a draft quote is
+  // auto-created. Without this, useState(initialDocs) keeps the stale list
+  // and the new draft quote wouldn't appear until a full page reload.
+  useEffect(() => {
+    setDocs(initialDocs);
+  }, [initialDocs]);
   const [, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [convertSource, setConvertSource] = useState<{ kind: 'invoice'; from: DealerDocRow } | null>(null);

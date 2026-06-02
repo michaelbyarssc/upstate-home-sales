@@ -153,7 +153,13 @@ function AmountInput({
   }
 
   function handleChange(value: string) {
-    setRaw(value.replace(/[^0-9.]/g, ''));
+    // Allow an optional leading minus so dealers can enter a discount as a
+    // negative amount (e.g. -8000). Strip other characters; keep a single
+    // leading "-" and drop any others.
+    let v = value.replace(/[^0-9.-]/g, '');
+    const negative = v.startsWith('-');
+    v = v.replace(/-/g, '');
+    setRaw(negative ? '-' + v : v);
   }
 
   function handleBlur() {

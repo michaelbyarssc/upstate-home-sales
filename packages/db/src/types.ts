@@ -577,7 +577,8 @@ export const DOC_INSTANCES_BUCKET = 'doc-instances';
 export function formatCents(cents: number | null | undefined): string {
   if (cents == null) return '—';
   const dollars = Math.round(cents / 100);
-  return '$' + dollars.toLocaleString();
+  // Put the minus before the $ (e.g. discount line items): "-$8,000", not "$-8,000".
+  return (dollars < 0 ? '-$' : '$') + Math.abs(dollars).toLocaleString();
 }
 
 /** Format beds/baths with configurable options → "3", "3 or 4", "2, 2.5, or 3". */
@@ -735,6 +736,21 @@ export interface Quote {
   expires_at: string;
   visible_to_buyer: boolean;
   created_by: string | null;
+  created_at: string;
+}
+
+/**
+ * A home shortlisted ("assigned") to a lead from the inventory matcher. A lead
+ * can have many. `quote_id` points at the draft quote auto-created on assignment.
+ * The lead's single `leads.home_id` remains the "primary" home for documents.
+ */
+export interface LeadAssignedHome {
+  id: string;
+  org_id: string;
+  lead_id: string;
+  home_id: string;
+  quote_id: string | null;
+  assigned_by: string | null;
   created_at: string;
 }
 

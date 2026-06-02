@@ -33,7 +33,7 @@ test.describe('public site smoke', () => {
   test('home page renders with hero', async ({ page }) => {
     const errors = attachConsoleAssertions(page);
     await page.goto('/');
-    await expect(page).toHaveTitle(/Upstate Home Sales/);
+    await expect(page).toHaveTitle(/Upstate Home Center/);
     await expect(page.getByRole('heading', { name: /Manufactured homes/i })).toBeVisible();
     expect(errors).toEqual([]);
   });

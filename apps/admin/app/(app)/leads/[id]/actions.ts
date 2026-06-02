@@ -10,6 +10,7 @@ import { renderQuotePdf, type QuotePdfData } from '../../../../lib/quote-pdf';
 import { renderInvoicePdf, type InvoicePdfData } from '../../../../lib/invoice-pdf';
 import { renderPoPdf, type PoPdfData } from '../../../../lib/po-pdf';
 import { dispatchWorkflowEvent } from '../../../../lib/workflows';
+import { buildDefaultLineItems } from '../../../../lib/default-line-items';
 
 /** Extract a plain-English reason from an API error string. */
 function parseDeliveryError(raw: string | undefined): string {
@@ -161,9 +162,16 @@ export async function createQuote(args: {
   sendEmail?: boolean;
   selectedPhotoIds?: string[];
   pricingMode?: 'flat' | 'itemized';
+  /**
+   * Draft mode (e.g. auto-created when a home is assigned to a lead): never
+   * emails the customer, doesn't advance the lead stage, isn't shown in the
+   * buyer portal, and doesn't fire the `quote.sent` automation. The dealer
+   * reviews/sends it later from the quotes list.
+   */
+  draft?: boolean;
 }): Promise<{ id: string; public_token: string; expires_at: string; listed_price_cents: number; created_at: string; home_id: string }> {
   const supabase = createClient();
-  const shouldEmail = args.sendEmail ?? true;
+  const shouldEmail = args.draft ? false : (args.sendEmail ?? true);
 
   const [{ data: home, error: hErr }, { data: lead }, { data: org }, { data: { user } }] = await Promise.all([
     supabase
@@ -224,13 +232,17 @@ export async function createQuote(args: {
       addons_jsonb: args.lineItems,
       notes_jsonb: args.notes,
       expires_at: expires,
+      // Draft quotes are staged privately until the dealer reviews + sends.
+      visible_to_buyer: args.draft ? false : true,
     })
     .select('id, public_token, expires_at, listed_price_cents, created_at')
     .single();
   if (error || !quote) throw new Error(error?.message ?? 'Quote insert failed');
 
-  // Advance lead stage to 'quoted'.
-  await supabase.from('leads').update({ stage: 'quoted' }).eq('id', args.leadId);
+  // Advance lead stage to 'quoted' — only when actually quoting (not a draft).
+  if (!args.draft) {
+    await supabase.from('leads').update({ stage: 'quoted' }).eq('id', args.leadId);
+  }
 
   const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com';
   const publicUrl = `${publicBase}/q/${quote.public_token}`;
@@ -289,7 +301,9 @@ export async function createQuote(args: {
     org_id: args.orgId,
     kind: 'system',
     channel: null,
-    body: `Quote created · ${publicUrl} · expires ${new Date(quote.expires_at).toLocaleDateString()}`,
+    body: args.draft
+      ? `Draft quote auto-created on home assignment · expires ${new Date(quote.expires_at).toLocaleDateString()}`
+      : `Quote created · ${publicUrl} · expires ${new Date(quote.expires_at).toLocaleDateString()}`,
   });
 
   // Email the customer if requested and we have an address.
@@ -318,17 +332,20 @@ export async function createQuote(args: {
     }).catch((e) => console.error('[quote] customer email failed:', e));
   }
 
-  await dispatchWorkflowEvent({
-    event: 'quote.sent',
-    orgId: args.orgId,
-    payload: {
-      quote_id: quote.id,
-      lead_id: args.leadId,
-      home_id: args.homeId,
-      listed_price_cents: quote.listed_price_cents,
-      public_token: quote.public_token,
-    },
-  }).catch((e) => console.error('[quote] workflow dispatch failed:', e));
+  // A draft isn't "sent" — don't trigger quote.sent automations.
+  if (!args.draft) {
+    await dispatchWorkflowEvent({
+      event: 'quote.sent',
+      orgId: args.orgId,
+      payload: {
+        quote_id: quote.id,
+        lead_id: args.leadId,
+        home_id: args.homeId,
+        listed_price_cents: quote.listed_price_cents,
+        public_token: quote.public_token,
+      },
+    }).catch((e) => console.error('[quote] workflow dispatch failed:', e));
+  }
 
   revalidatePath(`/leads/${args.leadId}`);
   return {
@@ -1374,18 +1391,144 @@ export async function findMatchingHomes(leadId: string): Promise<HomeMatch[]> {
   return matchHomes(prefs as LeadPreferences, (homes ?? []) as unknown as MatchableHome[]).slice(0, 24);
 }
 
-/** Set (or clear) the home attached to a lead — the unit that fills its documents. */
-export async function assignHomeToLead(leadId: string, homeId: string | null) {
+/**
+ * Auto-create a private DRAFT quote for a home, reusing the home's default
+ * pricing line items. Returns the new quote, or null if the home couldn't be
+ * resolved (assignment still succeeds — the dealer can quote it later).
+ */
+async function createDraftQuoteForHome(
+  leadId: string,
+  orgId: string,
+  homeId: string,
+): Promise<{ id: string; public_token: string } | null> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  const { data: home } = await supabase
+    .from('homes')
+    .select(
+      'name, stock_no, listed_price_cents, setup_cents, setup_markup_pct, include_setup_in_price, addons_cents, addons_markup_pct, addons_jsonb',
+    )
+    .eq('id', homeId)
+    .maybeSingle();
+  if (!home) return null;
+
+  const lineItems = buildDefaultLineItems({
+    name: home.name,
+    stock_no: home.stock_no,
+    listed_price_cents: home.listed_price_cents ?? 0,
+    setup_cents: home.setup_cents ?? null,
+    setup_markup_pct: home.setup_markup_pct ?? null,
+    include_setup_in_price: home.include_setup_in_price ?? null,
+    addons_cents: home.addons_cents ?? null,
+    addons_markup_pct: home.addons_markup_pct ?? null,
+    addons_jsonb: home.addons_jsonb,
+  });
+
+  const quote = await createQuote({ leadId, orgId, homeId, lineItems, notes: [], draft: true });
+  return { id: quote.id, public_token: quote.public_token };
+}
+
+/**
+ * Add a home to a lead's shortlist (multi-assign) and auto-create a private
+ * draft quote for it. Idempotent: re-assigning an already-assigned home is a
+ * no-op (no duplicate row, no duplicate quote). Keeps `leads.home_id` pointed at
+ * a "primary" home for the lead list / kanban / document defaults.
+ */
+export async function assignHomeToLead(
+  leadId: string,
+  homeId: string,
+): Promise<{ homeId: string; quoteId: string | null; quoteToken: string | null; alreadyAssigned: boolean }> {
+  const supabase = createClient();
+
+  const { data: lead, error: leadErr } = await supabase
     .from('leads')
-    .update({ home_id: homeId })
+    .select('id, org_id, home_id')
     .eq('id', leadId)
-    .select('id, home_id')
-    .single();
-  if (error || !data) throw new Error(error?.message ?? 'Could not assign home');
+    .maybeSingle();
+  if (leadErr || !lead) throw new Error(leadErr?.message ?? 'Lead not found');
+
+  // Idempotent: already on the shortlist → return its existing draft quote.
+  const { data: existing } = await supabase
+    .from('lead_assigned_homes')
+    .select('quote_id, quotes(public_token)')
+    .eq('lead_id', leadId)
+    .eq('home_id', homeId)
+    .maybeSingle();
+  if (existing) {
+    const rel = (existing as { quotes?: { public_token: string } | { public_token: string }[] | null }).quotes;
+    const token = (Array.isArray(rel) ? rel[0]?.public_token : rel?.public_token) ?? null;
+    return { homeId, quoteId: existing.quote_id, quoteToken: token, alreadyAssigned: true };
+  }
+
+  // Insert the assignment first — the unique (lead_id, home_id) constraint is the
+  // race gate, so a double-click can't spawn two draft quotes.
+  const { error: insErr } = await supabase
+    .from('lead_assigned_homes')
+    .insert({ org_id: lead.org_id, lead_id: leadId, home_id: homeId });
+  if (insErr) {
+    if ((insErr as { code?: string }).code === '23505') {
+      return { homeId, quoteId: null, quoteToken: null, alreadyAssigned: true };
+    }
+    throw new Error(insErr.message);
+  }
+
+  // Auto-create the private draft quote, then link it to the assignment.
+  let quote: { id: string; public_token: string } | null = null;
+  try {
+    quote = await createDraftQuoteForHome(leadId, lead.org_id, homeId);
+  } catch (e) {
+    console.error('[assign] draft quote creation failed:', e);
+  }
+  if (quote) {
+    await supabase
+      .from('lead_assigned_homes')
+      .update({ quote_id: quote.id })
+      .eq('lead_id', leadId)
+      .eq('home_id', homeId);
+  }
+
+  // Backward-compatible "primary" home for single-home consumers.
+  if (!lead.home_id) {
+    await supabase.from('leads').update({ home_id: homeId }).eq('id', leadId);
+  }
 
   revalidatePath('/leads');
   revalidatePath(`/leads/${leadId}`);
-  return data;
+  return {
+    homeId,
+    quoteId: quote?.id ?? null,
+    quoteToken: quote?.public_token ?? null,
+    alreadyAssigned: false,
+  };
+}
+
+/**
+ * Remove a home from a lead's shortlist. The auto-created draft quote is kept as
+ * a record (just unlinked via the FK's `on delete set null`). Re-points the
+ * "primary" `leads.home_id` to another assigned home if this one was primary.
+ */
+export async function unassignHomeFromLead(leadId: string, homeId: string): Promise<{ homeId: string }> {
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from('lead_assigned_homes')
+    .delete()
+    .eq('lead_id', leadId)
+    .eq('home_id', homeId);
+  if (error) throw new Error(error.message);
+
+  const { data: lead } = await supabase.from('leads').select('home_id').eq('id', leadId).maybeSingle();
+  if (lead?.home_id === homeId) {
+    const { data: next } = await supabase
+      .from('lead_assigned_homes')
+      .select('home_id')
+      .eq('lead_id', leadId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    await supabase.from('leads').update({ home_id: next?.home_id ?? null }).eq('id', leadId);
+  }
+
+  revalidatePath('/leads');
+  revalidatePath(`/leads/${leadId}`);
+  return { homeId };
 }
