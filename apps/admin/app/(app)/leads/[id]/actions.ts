@@ -1471,12 +1471,28 @@ export async function assignHomeToLead(
     throw new Error(insErr.message);
   }
 
-  // Auto-create the private draft quote, then link it to the assignment.
+  // Reuse an existing auto-draft for this home if one was left behind by a prior
+  // assign → unassign (unassign keeps the quote on record). This avoids piling
+  // up duplicate draft quotes when a home is toggled. Otherwise create a fresh
+  // one. Only auto-drafts (visible_to_buyer = false) are candidates.
   let quote: { id: string; public_token: string } | null = null;
-  try {
-    quote = await createDraftQuoteForHome(leadId, lead.org_id, homeId);
-  } catch (e) {
-    console.error('[assign] draft quote creation failed:', e);
+  const { data: orphanDraft } = await supabase
+    .from('quotes')
+    .select('id, public_token')
+    .eq('lead_id', leadId)
+    .eq('home_id', homeId)
+    .eq('visible_to_buyer', false)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (orphanDraft) {
+    quote = { id: orphanDraft.id, public_token: orphanDraft.public_token };
+  } else {
+    try {
+      quote = await createDraftQuoteForHome(leadId, lead.org_id, homeId);
+    } catch (e) {
+      console.error('[assign] draft quote creation failed:', e);
+    }
   }
   if (quote) {
     await supabase
