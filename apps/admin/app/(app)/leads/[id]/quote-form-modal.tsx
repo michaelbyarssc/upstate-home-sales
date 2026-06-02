@@ -136,7 +136,7 @@ export function PdfCanvasViewer({ pdfBytes }: { pdfBytes: ArrayBuffer }) {
 }
 
 // ── Amount Input (edits raw text, parses on blur) ──────────────────────────
-function AmountInput({
+export function AmountInput({
   cents,
   onChange,
   placeholder,
