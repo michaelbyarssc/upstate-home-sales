@@ -155,6 +155,18 @@ export function RequirementsPanel({
   const manufacturerName = (id: string | null): string | null =>
     id ? manufacturers.find((m) => m.id === id)?.name ?? null : null;
 
+  // Whether any structured criterion is set — drives the empty-matches copy so
+  // "no homes match" (e.g. the budget filtered everything out) reads correctly
+  // vs. "no criteria entered yet".
+  const hasCriteria =
+    !!(form.preferred_types?.length || form.manufacturer_ids?.length || form.preferred_models?.length) ||
+    [
+      form.min_beds, form.max_beds, form.min_baths, form.max_baths,
+      form.min_sqft, form.max_sqft, form.min_width_ft, form.max_width_ft,
+      form.min_length_ft, form.max_length_ft, form.min_year, form.max_year,
+      form.min_price_cents, form.max_price_cents,
+    ].some((v) => v != null);
+
   function set<K extends keyof LeadPreferencesInput>(key: K, val: LeadPreferencesInput[K]) {
     setForm((f) => ({ ...f, [key]: val }));
     setSaved(false);
@@ -443,7 +455,9 @@ export function RequirementsPanel({
 
         {matches.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--adm-ink-mute)', padding: '14px 0' }}>
-            Set some criteria above and Save to see ranked inventory.
+            {hasCriteria
+              ? 'No homes match these requirements — try widening the budget or other criteria, then Save.'
+              : 'Set some criteria above and Save to see ranked inventory.'}
           </div>
         ) : (
           <div className="req-matches">
