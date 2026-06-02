@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { createClient } from '@uhs/db/browser';
 import type { LineItem } from '@uhs/db';
 import { setDocVisibility, deleteDealerDoc } from './actions';
+import { generateAndStartSigning } from '../../documents/generate-actions';
 import { InvoiceFormModal } from './invoice-form-modal';
 import { PdfCanvasViewer, type HomeOption } from './quote-form-modal';
 
@@ -32,6 +33,9 @@ type Props = {
   homes: HomeOption[];
   defaultLineItems: LineItem[];
   initialDocs: DealerDocRow[];
+  /** Active PO/purchase-agreement template id for invoice → PO (null if none configured). */
+  poTemplateId?: string | null;
+  publicBaseUrl: string;
 };
 
 const KIND_LABELS: Record<DealerDocRow['kind'], string> = {
@@ -50,8 +54,9 @@ function fmtCents(c: number): string {
   return (c / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 }
 
-export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initialDocs }: Props) {
+export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initialDocs, poTemplateId, publicBaseUrl }: Props) {
   const [docs, setDocs] = useState(initialDocs);
+  const [poBusyId, setPoBusyId] = useState<string | null>(null);
   // Re-sync from the server after a router.refresh() — e.g. when a home is
   // assigned from the matcher elsewhere on the page and a draft quote is
   // auto-created. Without this, useState(initialDocs) keeps the stale list
@@ -129,6 +134,35 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
   function closeViewer() {
     setViewingDoc(null);
     setViewerPdfBytes(null);
+  }
+
+  // Invoice → PO: generate the Form 500 purchase order (document engine),
+  // prefilled from this invoice, and open the in-person signing session.
+  async function startPo(row: DealerDocRow) {
+    if (row.kind !== 'invoice') return;
+    if (!poTemplateId) {
+      setErr('No purchase-order template is configured yet (Documents → Templates).');
+      return;
+    }
+    setErr(null);
+    setPoBusyId(row.id);
+    try {
+      const res = await generateAndStartSigning({
+        leadId,
+        templateId: poTemplateId,
+        mode: 'in_person',
+        fromInvoiceId: row.id,
+      });
+      if (!res.ok) {
+        setErr(res.error);
+        return;
+      }
+      window.open(`${publicBaseUrl}/sign/${res.sessionToken}`, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not generate the PO.');
+    } finally {
+      setPoBusyId(null);
+    }
   }
 
   function downloadCurrent() {
@@ -264,6 +298,16 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
                           → Invoice
                         </button>
                       </>
+                    )}
+                    {row.kind === 'invoice' && poTemplateId && (
+                      <button
+                        onClick={() => startPo(row)}
+                        disabled={poBusyId === row.id}
+                        title="Generate the Form 500 purchase order from this invoice and start signing"
+                        style={btnSecondary}
+                      >
+                        {poBusyId === row.id ? '…' : '→ PO'}
+                      </button>
                     )}
                     <button onClick={() => viewPdf(row)} style={btnSecondary} title="Open PDF in a new tab">
                       PDF

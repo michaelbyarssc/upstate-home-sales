@@ -36,6 +36,7 @@ export type BindingKey =
   | 'home.baths'
   | 'home.size'
   | 'home.sqft'
+  | 'home.serial_no'
   // Pricing (snapshotted)
   | 'home.listed_price_cents'
   | 'quote.total_cents'
@@ -44,6 +45,18 @@ export type BindingKey =
   | 'trade_in.make'
   | 'trade_in.model'
   | 'trade_in.offer_cents'
+  | 'deal.trade_in_balance_cents'
+  // PO / Form 500 (collected at the invoice phase)
+  | 'deal.co_buyer_name'
+  | 'delivery.address'
+  | 'delivery.city'
+  | 'delivery.state'
+  | 'delivery.zip'
+  | 'mailing.address'
+  | 'deal.sales_tax_cents'
+  | 'deal.fees_cents'
+  | 'deal.cash_deposit_cents'
+  | 'deal.cash_as_agreed_cents'
   // Requested (the buyer's criteria from the lead CRM — build-to-order)
   | 'requested.types'
   | 'requested.condition'
@@ -68,7 +81,7 @@ export type BindingKind = 'text' | 'currency' | 'date' | 'number';
 export type BindingDef = {
   key: BindingKey;
   label: string;
-  group: 'Customer' | 'Home' | 'Pricing' | 'Trade-in' | 'Requested' | 'Dealer' | 'Computed';
+  group: 'Customer' | 'Home' | 'Pricing' | 'Trade-in' | 'Requested' | 'Dealer' | 'PO' | 'Computed';
   kind: BindingKind;
 };
 
@@ -89,12 +102,24 @@ export const BINDINGS: BindingDef[] = [
   { key: 'home.baths', label: 'Bathrooms', group: 'Home', kind: 'number' },
   { key: 'home.size', label: 'Size (W×L)', group: 'Home', kind: 'text' },
   { key: 'home.sqft', label: 'Square feet', group: 'Home', kind: 'number' },
+  { key: 'home.serial_no', label: 'Serial number', group: 'Home', kind: 'text' },
   { key: 'home.listed_price_cents', label: 'Listed price', group: 'Pricing', kind: 'currency' },
   { key: 'quote.total_cents', label: 'Quote total', group: 'Pricing', kind: 'currency' },
   { key: 'trade_in.year', label: 'Trade-in year', group: 'Trade-in', kind: 'number' },
   { key: 'trade_in.make', label: 'Trade-in make', group: 'Trade-in', kind: 'text' },
   { key: 'trade_in.model', label: 'Trade-in model', group: 'Trade-in', kind: 'text' },
   { key: 'trade_in.offer_cents', label: 'Trade-in allowance', group: 'Trade-in', kind: 'currency' },
+  { key: 'deal.trade_in_balance_cents', label: 'Trade-in balance owed', group: 'Trade-in', kind: 'currency' },
+  { key: 'deal.co_buyer_name', label: 'Co-buyer name', group: 'PO', kind: 'text' },
+  { key: 'delivery.address', label: 'Delivery address', group: 'PO', kind: 'text' },
+  { key: 'delivery.city', label: 'Delivery city', group: 'PO', kind: 'text' },
+  { key: 'delivery.state', label: 'Delivery state', group: 'PO', kind: 'text' },
+  { key: 'delivery.zip', label: 'Delivery ZIP', group: 'PO', kind: 'text' },
+  { key: 'mailing.address', label: 'Mailing address', group: 'PO', kind: 'text' },
+  { key: 'deal.sales_tax_cents', label: 'Sales tax', group: 'PO', kind: 'currency' },
+  { key: 'deal.fees_cents', label: 'Fees', group: 'PO', kind: 'currency' },
+  { key: 'deal.cash_deposit_cents', label: 'Cash deposit', group: 'PO', kind: 'currency' },
+  { key: 'deal.cash_as_agreed_cents', label: 'Cash as agreed', group: 'PO', kind: 'currency' },
   { key: 'requested.types', label: 'Requested type(s)', group: 'Requested', kind: 'text' },
   { key: 'requested.condition', label: 'Requested condition (new/used)', group: 'Requested', kind: 'text' },
   { key: 'requested.manufacturers', label: 'Requested manufacturer(s)', group: 'Requested', kind: 'text' },
@@ -125,11 +150,22 @@ export type BindingContext = {
   home?:
     | (Pick<
         Home,
-        'name' | 'stock_no' | 'model' | 'year_built' | 'beds' | 'baths' | 'width_ft' | 'length_ft' | 'sqft' | 'listed_price_cents'
+        'name' | 'stock_no' | 'model' | 'year_built' | 'beds' | 'baths' | 'width_ft' | 'length_ft' | 'sqft' | 'listed_price_cents' | 'serial_no'
       > & { manufacturer_name?: string | null })
     | null;
   quote?: { total_cents: number } | null;
   tradeIn?: Pick<TradeIn, 'year' | 'make' | 'model' | 'offer_cents'> | null;
+  /** Delivery + mailing address (from the lead, 0043). */
+  delivery?: { address: string | null; city: string | null; state: string | null; zip: string | null; mailing: string | null } | null;
+  /** PO / Form-500 financials (invoice) + co-buyer (lead) + trade-in balance. */
+  deal?: {
+    coBuyerName: string | null;
+    salesTaxCents: number;
+    feesCents: number;
+    cashDepositCents: number;
+    cashAsAgreedCents: number;
+    tradeInBalanceCents: number;
+  } | null;
   org?: Pick<Org, 'name'> | null;
   /** Buyer requirements from the lead CRM. manufacturer_names is resolved from
    *  manufacturer_ids by the generate action (this module stays DB-free). */
@@ -294,6 +330,30 @@ export function resolveBinding(key: BindingKey, ctx: BindingContext): ResolvedBi
       return text(ctx.preferences?.timeline ? (REQUEST_TIMELINE_LABEL[ctx.preferences.timeline] ?? ctx.preferences.timeline) : null);
     case 'requested.notes':
       return text(ctx.preferences?.notes ?? null);
+    case 'home.serial_no':
+      return text(ctx.home?.serial_no);
+    case 'deal.co_buyer_name':
+      return text(ctx.deal?.coBuyerName ?? null);
+    case 'delivery.address':
+      return text(ctx.delivery?.address ?? null);
+    case 'delivery.city':
+      return text(ctx.delivery?.city ?? null);
+    case 'delivery.state':
+      return text(ctx.delivery?.state ?? null);
+    case 'delivery.zip':
+      return text(ctx.delivery?.zip ?? null);
+    case 'mailing.address':
+      return text(ctx.delivery?.mailing ?? null);
+    case 'deal.sales_tax_cents':
+      return money(ctx.deal?.salesTaxCents ?? null);
+    case 'deal.fees_cents':
+      return money(ctx.deal?.feesCents ?? null);
+    case 'deal.cash_deposit_cents':
+      return money(ctx.deal?.cashDepositCents ?? null);
+    case 'deal.cash_as_agreed_cents':
+      return money(ctx.deal?.cashAsAgreedCents ?? null);
+    case 'deal.trade_in_balance_cents':
+      return money(ctx.deal?.tradeInBalanceCents ?? null);
     case 'org.name':
       return text(ctx.org?.name);
     case 'today': {

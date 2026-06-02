@@ -53,6 +53,8 @@ export async function generateAndStartSigning(args: {
   templateId: string;
   /** 'in_person' (default) embeds signing on the tablet; 'remote' has SignWell email the signers. */
   mode?: 'in_person' | 'remote';
+  /** When set (invoice → PO), pull the Form-500 financials from this invoice. */
+  fromInvoiceId?: string;
 }): Promise<
   | { ok: true; sessionToken: string; instanceId: string; mode: 'in_person' | 'remote' }
   | { ok: false; error: string }
@@ -85,7 +87,7 @@ export async function generateAndStartSigning(args: {
   // ── Load binding context (lead, home, buyer, trade-in, quote, org) ──────
   const { data: lead } = await supabase
     .from('leads')
-    .select('id, org_id, contact_name, email, phone, home_id')
+    .select('id, org_id, contact_name, email, phone, home_id, delivery_address, delivery_city, delivery_state, delivery_zip, mailing_address, co_buyer_name')
     .eq('id', args.leadId)
     .maybeSingle();
   if (!lead) return { ok: false, error: 'Lead not found.' };
@@ -96,7 +98,7 @@ export async function generateAndStartSigning(args: {
         ? supabase
             .from('homes')
             .select(
-              'name, stock_no, model, year_built, beds, baths, width_ft, length_ft, sqft, listed_price_cents, manufacturers(name)',
+              'name, stock_no, model, year_built, beds, baths, width_ft, length_ft, sqft, listed_price_cents, serial_no, manufacturers(name)',
             )
             .eq('id', lead.home_id)
             .maybeSingle()
@@ -109,7 +111,7 @@ export async function generateAndStartSigning(args: {
         .maybeSingle(),
       supabase
         .from('trade_ins')
-        .select('year, make, model, offer_cents')
+        .select('year, make, model, offer_cents, balance_owed_cents')
         .eq('lead_id', args.leadId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -143,6 +145,18 @@ export async function generateAndStartSigning(args: {
       .filter((n): n is string => !!n);
   }
 
+  // PO / Form-500 financials come from the source invoice (invoice → PO).
+  type InvoiceFin = { sales_tax_cents: number; fees_cents: number; cash_deposit_cents: number; cash_as_agreed_cents: number };
+  let invoiceFin: InvoiceFin | null = null;
+  if (args.fromInvoiceId) {
+    const { data } = await supabase
+      .from('invoices')
+      .select('sales_tax_cents, fees_cents, cash_deposit_cents, cash_as_agreed_cents')
+      .eq('id', args.fromInvoiceId)
+      .maybeSingle();
+    invoiceFin = (data as InvoiceFin | null) ?? null;
+  }
+
   const ctx: BindingContext = {
     lead: { contact_name: lead.contact_name, email: lead.email, phone: lead.phone },
     buyer: buyer ? { full_name: buyer.full_name, email: buyer.email, phone: buyer.phone } : null,
@@ -158,6 +172,7 @@ export async function generateAndStartSigning(args: {
           length_ft: home.length_ft,
           sqft: home.sqft,
           listed_price_cents: home.listed_price_cents,
+          serial_no: (home as { serial_no?: string | null }).serial_no ?? null,
           manufacturer_name: (Array.isArray(mfr) ? mfr[0]?.name : mfr?.name) ?? null,
         }
       : null,
@@ -165,6 +180,21 @@ export async function generateAndStartSigning(args: {
     tradeIn: tradeIn
       ? { year: tradeIn.year, make: tradeIn.make, model: tradeIn.model, offer_cents: tradeIn.offer_cents }
       : null,
+    delivery: {
+      address: lead.delivery_address ?? null,
+      city: lead.delivery_city ?? null,
+      state: lead.delivery_state ?? null,
+      zip: lead.delivery_zip ?? null,
+      mailing: lead.mailing_address ?? null,
+    },
+    deal: {
+      coBuyerName: lead.co_buyer_name ?? null,
+      salesTaxCents: invoiceFin?.sales_tax_cents ?? 0,
+      feesCents: invoiceFin?.fees_cents ?? 0,
+      cashDepositCents: invoiceFin?.cash_deposit_cents ?? 0,
+      cashAsAgreedCents: invoiceFin?.cash_as_agreed_cents ?? 0,
+      tradeInBalanceCents: (tradeIn as { balance_owed_cents?: number } | null)?.balance_owed_cents ?? 0,
+    },
     org: org ? { name: org.name } : null,
     preferences: prefRow
       ? {

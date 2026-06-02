@@ -177,7 +177,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
 
   // ── Document engine: active templates + this lead's document instances ──
   const [{ data: signTemplates }, { data: docInstances }] = await Promise.all([
-    supabase.from('document_templates').select('id, name').eq('status', 'active').order('name'),
+    supabase.from('document_templates').select('id, name, kind').eq('status', 'active').order('name'),
     supabase
       .from('document_instances')
       .select('id, doc_number, status, created_at, signed_pdf_path, public_token')
@@ -210,6 +210,12 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .in('quote_id', quoteIds);
     signedQuoteIds = new Set(((sigs ?? []) as Array<{ quote_id: string }>).map((s) => s.quote_id));
   }
+
+  // PO / purchase-agreement template for invoice → PO (document engine).
+  const poTemplateId =
+    ((signTemplates ?? []) as Array<{ id: string; kind: string }>).find(
+      (t) => t.kind === 'purchase_order' || t.kind === 'purchase_agreement',
+    )?.id ?? null;
 
   return (
     <>
@@ -261,6 +267,8 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number; beds: number | null; baths: number | null; beds_options: number[] | null; baths_options: number[] | null; sqft: number | null }>}
         defaultLineItems={defaultLineItems}
         initialDocs={buildDealerDocs(quotes, invoicesData, posData, signedQuoteIds)}
+        poTemplateId={poTemplateId}
+        publicBaseUrl={process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com'}
       />
 
       <LeadSignDocsPanel
