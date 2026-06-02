@@ -577,7 +577,8 @@ export const DOC_INSTANCES_BUCKET = 'doc-instances';
 export function formatCents(cents: number | null | undefined): string {
   if (cents == null) return '—';
   const dollars = Math.round(cents / 100);
-  return '$' + dollars.toLocaleString();
+  // Put the minus before the $ (e.g. discount line items): "-$8,000", not "$-8,000".
+  return (dollars < 0 ? '-$' : '$') + Math.abs(dollars).toLocaleString();
 }
 
 /** Format beds/baths with configurable options → "3", "3 or 4", "2, 2.5, or 3". */
