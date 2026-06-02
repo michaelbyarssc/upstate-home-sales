@@ -7,9 +7,12 @@
  *
  * Score = (criteria satisfied) / (criteria specified), over the STRUCTURED
  * criteria only (type, manufacturer, beds, baths, sqft, dimensions, year,
- * price). Must-have *features* are a soft signal — there's no structured
- * feature column on homes, so we text-match them against the listing copy and
- * surface ✓/✗ chips, but they never filter a home out or change the score.
+ * price). BUDGET is additionally a HARD filter: homes priced outside the lead's
+ * range — or with no price set — are excluded from the results, not merely
+ * scored down (a home the customer can't afford isn't a match). Must-have
+ * *features* are a soft signal — there's no structured feature column on homes,
+ * so we text-match them against the listing copy and surface ✓/✗ chips, but
+ * they never filter a home out or change the score.
  */
 
 import type { HomeType, LeadPreferences } from '@uhs/db';
@@ -153,7 +156,13 @@ export function scoreHome(prefs: LeadPreferences, home: MatchableHome): HomeMatc
  * matched must-have features, then cheaper, then name — all deterministic.
  */
 export function matchHomes(prefs: LeadPreferences, homes: MatchableHome[]): HomeMatch[] {
+  // Budget is a HARD filter: when the lead specifies a price range, only homes
+  // whose listed price falls inside it survive. Unpriced homes (null/0) can't be
+  // confirmed affordable, so they're excluded too. Every other criterion stays a
+  // soft signal (scored, with ✓/✗ chips).
+  const hasBudget = prefs.min_price_cents != null || prefs.max_price_cents != null;
   return homes
+    .filter((h) => !hasBudget || inRange(h.listed_price_cents, prefs.min_price_cents, prefs.max_price_cents))
     .map((h) => scoreHome(prefs, h))
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
