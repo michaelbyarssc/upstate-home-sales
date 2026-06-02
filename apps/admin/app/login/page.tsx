@@ -22,7 +22,7 @@ export default function LoginPage({
         <div className="brand">
           <div className="mark">U</div>
           <div className="name">
-            Upstate Home <em>Sales</em>
+            Upstate Home <em>Center</em>
           </div>
         </div>
         <div>

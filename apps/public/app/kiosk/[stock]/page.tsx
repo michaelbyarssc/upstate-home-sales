@@ -33,7 +33,7 @@ export default async function KioskHomeDetail({ params }: { params: Params }) {
   return (
     <>
       <div className="kiosk-bar">
-        <Link href="/kiosk" className="brand">Upstate Home <em>Sales</em></Link>
+        <Link href="/kiosk" className="brand">Upstate Home <em>Center</em></Link>
         <div className="right">
           <Link href="/kiosk" style={{ opacity: 0.85, fontSize: 16 }}>← Back to all homes</Link>
           <a className="phone" href="tel:864-680-4030">(864) 680-4030</a>

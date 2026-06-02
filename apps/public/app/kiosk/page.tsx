@@ -81,7 +81,7 @@ function KioskBar() {
   return (
     <div className="kiosk-bar">
       <Link href="/kiosk" className="brand">
-        Upstate Home <em>Sales</em>
+        Upstate Home <em>Center</em>
       </Link>
       <div className="right">
         <span style={{ opacity: 0.7, fontSize: 14 }}>Need help? Find a salesperson.</span>
