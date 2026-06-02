@@ -22,6 +22,8 @@ export type DealerDocRow = {
   publicToken: string;
   publicHref: string;
   lineItems: LineItem[];
+  /** Quote was accepted & signed online by the customer. */
+  acceptedOnline?: boolean;
 };
 
 type Props = {
@@ -92,22 +94,29 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
 
   async function viewPdf(row: DealerDocRow) {
     setErr(null);
-    if (!row.pdfStoragePath) {
-      setErr('No PDF available for this document.');
-      return;
-    }
     setViewingDoc(row);
     setViewerPdfBytes(null);
     setViewerLoading(true);
     try {
-      const sb = createClient();
-      const { data, error } = await sb.storage
-        .from('quote-pdfs')
-        .createSignedUrl(row.pdfStoragePath, 120);
-      if (error || !data) throw new Error(error?.message ?? 'signed URL failed');
-      const res = await fetch(data.signedUrl);
-      if (!res.ok) throw new Error(`fetch ${res.status}`);
-      const buf = await res.arrayBuffer();
+      let buf: ArrayBuffer;
+      if (row.pdfStoragePath) {
+        const sb = createClient();
+        const { data, error } = await sb.storage
+          .from('quote-pdfs')
+          .createSignedUrl(row.pdfStoragePath, 120);
+        if (error || !data) throw new Error(error?.message ?? 'signed URL failed');
+        const res = await fetch(data.signedUrl);
+        if (!res.ok) throw new Error(`fetch ${res.status}`);
+        buf = await res.arrayBuffer();
+      } else if (row.kind === 'quote' || row.kind === 'invoice') {
+        // No stored PDF (e.g. an invoice auto-created when the customer accepted
+        // the quote online) — render it on demand from the snapshotted data.
+        const res = await fetch(`/api/pdf/${row.kind}/${row.id}`);
+        if (!res.ok) throw new Error(`render ${res.status}`);
+        buf = await res.arrayBuffer();
+      } else {
+        throw new Error('No PDF available for this document.');
+      }
       setViewerPdfBytes(buf);
     } catch (e) {
       setErr(`Couldn't load PDF: ${e instanceof Error ? e.message : 'unknown'}`);
@@ -220,6 +229,19 @@ export function DealerDocsPanel({ leadId, orgId, homes, defaultLineItems, initia
                           color: '#a00',
                         }}>
                           Hidden from buyer
+                        </span>
+                      )}
+                      {row.acceptedOnline && (
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: 10,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          background: '#e7f5ec',
+                          color: '#1a7f4b',
+                        }}>
+                          ✓ Accepted online
                         </span>
                       )}
                     </div>

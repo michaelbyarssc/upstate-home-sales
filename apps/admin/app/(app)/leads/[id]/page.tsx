@@ -200,6 +200,17 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     (d) => ({ ...d, session_token: tokenByInstance.get(d.id) ?? null }),
   );
 
+  // Quotes the customer accepted & signed online → "Accepted online" badge.
+  const quoteIds = ((quotes ?? []) as Array<{ id: string }>).map((q) => q.id);
+  let signedQuoteIds = new Set<string>();
+  if (quoteIds.length > 0) {
+    const { data: sigs } = await supabase
+      .from('quote_signatures')
+      .select('quote_id')
+      .in('quote_id', quoteIds);
+    signedQuoteIds = new Set(((sigs ?? []) as Array<{ quote_id: string }>).map((s) => s.quote_id));
+  }
+
   return (
     <>
       <div style={{ marginBottom: 14 }}>
@@ -249,7 +260,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         orgId={lead.org_id}
         homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number; beds: number | null; baths: number | null; beds_options: number[] | null; baths_options: number[] | null; sqft: number | null }>}
         defaultLineItems={defaultLineItems}
-        initialDocs={buildDealerDocs(quotes, invoicesData, posData)}
+        initialDocs={buildDealerDocs(quotes, invoicesData, posData, signedQuoteIds)}
       />
 
       <LeadSignDocsPanel
@@ -268,6 +279,7 @@ function buildDealerDocs(
   quotes: any[] | null,
   invoices: any[] | null,
   pos: any[] | null,
+  signedQuoteIds: Set<string>,
 ): DealerDocRow[] {
   const homeFrom = (r: any) => (Array.isArray(r?.homes) ? r.homes[0] : r?.homes) ?? null;
 
@@ -289,6 +301,7 @@ function buildDealerDocs(
       publicToken: q.public_token,
       publicHref: `/q/${q.public_token}`,
       lineItems: items,
+      acceptedOnline: signedQuoteIds.has(q.id),
     };
   });
 
