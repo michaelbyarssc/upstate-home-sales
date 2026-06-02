@@ -177,7 +177,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
 
   // ── Document engine: active templates + this lead's document instances ──
   const [{ data: signTemplates }, { data: docInstances }] = await Promise.all([
-    supabase.from('document_templates').select('id, name').eq('status', 'active').order('name'),
+    supabase.from('document_templates').select('id, name, kind').eq('status', 'active').order('name'),
     supabase
       .from('document_instances')
       .select('id, doc_number, status, created_at, signed_pdf_path, public_token')
@@ -199,6 +199,23 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   const signInstances = ((docInstances ?? []) as Array<{ id: string; doc_number: number | null; status: string; created_at: string; signed_pdf_path: string | null; public_token: string | null }>).map(
     (d) => ({ ...d, session_token: tokenByInstance.get(d.id) ?? null }),
   );
+
+  // Quotes the customer accepted & signed online → "Accepted online" badge.
+  const quoteIds = ((quotes ?? []) as Array<{ id: string }>).map((q) => q.id);
+  let signedQuoteIds = new Set<string>();
+  if (quoteIds.length > 0) {
+    const { data: sigs } = await supabase
+      .from('quote_signatures')
+      .select('quote_id')
+      .in('quote_id', quoteIds);
+    signedQuoteIds = new Set(((sigs ?? []) as Array<{ quote_id: string }>).map((s) => s.quote_id));
+  }
+
+  // PO / purchase-agreement template for invoice → PO (document engine).
+  const poTemplateId =
+    ((signTemplates ?? []) as Array<{ id: string; kind: string }>).find(
+      (t) => t.kind === 'purchase_order' || t.kind === 'purchase_agreement',
+    )?.id ?? null;
 
   return (
     <>
@@ -249,7 +266,9 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
         orgId={lead.org_id}
         homes={(homesForSuggest ?? []) as Array<{ id: string; name: string; stock_no: string; listed_price_cents: number; beds: number | null; baths: number | null; beds_options: number[] | null; baths_options: number[] | null; sqft: number | null }>}
         defaultLineItems={defaultLineItems}
-        initialDocs={buildDealerDocs(quotes, invoicesData, posData)}
+        initialDocs={buildDealerDocs(quotes, invoicesData, posData, signedQuoteIds)}
+        poTemplateId={poTemplateId}
+        publicBaseUrl={process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com'}
       />
 
       <LeadSignDocsPanel
@@ -268,6 +287,7 @@ function buildDealerDocs(
   quotes: any[] | null,
   invoices: any[] | null,
   pos: any[] | null,
+  signedQuoteIds: Set<string>,
 ): DealerDocRow[] {
   const homeFrom = (r: any) => (Array.isArray(r?.homes) ? r.homes[0] : r?.homes) ?? null;
 
@@ -289,6 +309,7 @@ function buildDealerDocs(
       publicToken: q.public_token,
       publicHref: `/q/${q.public_token}`,
       lineItems: items,
+      acceptedOnline: signedQuoteIds.has(q.id),
     };
   });
 

@@ -372,6 +372,20 @@ export async function createInvoice(args: {
   paymentTerms: string;
   paymentInstructions: string | null;
   dueAt: string | null;
+  /** Form 500 / PO fields collected at the invoice phase (0043). */
+  poDetails?: {
+    deliveryAddress: string | null;
+    deliveryCity: string | null;
+    deliveryState: string | null;
+    deliveryZip: string | null;
+    mailingAddress: string | null;
+    coBuyerName: string | null;
+    serialNo: string | null;
+    salesTaxCents: number;
+    feesCents: number;
+    cashDepositCents: number;
+    cashAsAgreedCents: number;
+  };
   sendEmail?: boolean;
 }): Promise<{ public_token: string; invoice_number: number; listed_price_cents: number }> {
   const supabase = createClient();
@@ -416,10 +430,34 @@ export async function createInvoice(args: {
       payment_terms: args.paymentTerms,
       payment_instructions: args.paymentInstructions,
       due_at: args.dueAt ? new Date(args.dueAt).toISOString() : null,
+      sales_tax_cents: args.poDetails?.salesTaxCents ?? 0,
+      fees_cents: args.poDetails?.feesCents ?? 0,
+      cash_deposit_cents: args.poDetails?.cashDepositCents ?? 0,
+      cash_as_agreed_cents: args.poDetails?.cashAsAgreedCents ?? 0,
     })
     .select('id, public_token, invoice_number, listed_price_cents, created_at')
     .single();
   if (error || !invoice) throw new Error(error?.message ?? 'Invoice insert failed');
+
+  // Persist the PO/Form-500 fields back to the reusable lead + home records so
+  // they're ready when this invoice becomes a PO.
+  if (args.poDetails) {
+    const pd = args.poDetails;
+    await supabase
+      .from('leads')
+      .update({
+        delivery_address: pd.deliveryAddress,
+        delivery_city: pd.deliveryCity,
+        delivery_state: pd.deliveryState,
+        delivery_zip: pd.deliveryZip,
+        mailing_address: pd.mailingAddress,
+        co_buyer_name: pd.coBuyerName,
+      })
+      .eq('id', args.leadId);
+    if (pd.serialNo != null && pd.serialNo !== '') {
+      await supabase.from('homes').update({ serial_no: pd.serialNo }).eq('id', args.homeId);
+    }
+  }
 
   const publicBase = process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com';
   const publicUrl = `${publicBase}/inv/${invoice.public_token}`;

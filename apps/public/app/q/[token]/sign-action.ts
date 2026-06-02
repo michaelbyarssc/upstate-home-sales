@@ -82,7 +82,11 @@ export async function signQuote(args: SignArgs): Promise<{ ok: true } | { ok: fa
   if (sigErr) return { ok: false, error: `Signature record failed: ${sigErr.message}` };
 
   // System message on the lead timeline so the dealer sees the signature event.
-  const { data: leadRef } = await sb.from('quotes').select('lead_id').eq('id', quote.id).maybeSingle();
+  const { data: leadRef } = await sb
+    .from('quotes')
+    .select('lead_id, home_id, listed_price_cents, addons_jsonb')
+    .eq('id', quote.id)
+    .maybeSingle();
   if (leadRef?.lead_id) {
     await sb.from('lead_messages').insert({
       lead_id: leadRef.lead_id,
@@ -91,6 +95,49 @@ export async function signQuote(args: SignArgs): Promise<{ ok: true } | { ok: fa
       channel: null,
       body: `Quote signed by ${name} (${email}).`,
     });
+
+    // Customer approved online → auto-create the invoice from the quote.
+    // Idempotent: only if no invoice exists yet for this quote. The invoice PDF
+    // renders on demand (admin /api/pdf/invoice/[id]) so no PDF render is needed
+    // here in the public app.
+    try {
+      const { data: existing } = await sb
+        .from('invoices')
+        .select('id')
+        .eq('quote_id', quote.id)
+        .limit(1)
+        .maybeSingle();
+      if (!existing && leadRef.home_id) {
+        const { data: nextNum } = await sb.rpc('next_invoice_number', { p_org_id: quote.org_id });
+        const lineItems = Array.isArray(leadRef.addons_jsonb) ? leadRef.addons_jsonb : [];
+        const { data: inv, error: invErr } = await sb
+          .from('invoices')
+          .insert({
+            org_id: quote.org_id,
+            lead_id: leadRef.lead_id,
+            home_id: leadRef.home_id,
+            quote_id: quote.id,
+            invoice_number: (nextNum as number) ?? 1,
+            listed_price_cents: leadRef.listed_price_cents,
+            line_items_jsonb: lineItems,
+          })
+          .select('invoice_number')
+          .single();
+        if (invErr) {
+          console.error('[sign-quote] invoice auto-create failed:', invErr.message);
+        } else if (inv) {
+          await sb.from('lead_messages').insert({
+            lead_id: leadRef.lead_id,
+            org_id: quote.org_id,
+            kind: 'system',
+            channel: null,
+            body: `Invoice #${inv.invoice_number} auto-created from the accepted quote.`,
+          });
+        }
+      }
+    } catch (e) {
+      console.error('[sign-quote] invoice auto-create error:', e);
+    }
   }
 
   await dispatchWorkflowEvent({
