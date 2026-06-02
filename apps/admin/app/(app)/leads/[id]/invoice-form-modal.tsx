@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useRef } from 'react';
 import type { LineItem } from '@uhs/db';
 import { createInvoice } from './actions';
-import type { HomeOption } from './quote-form-modal';
+import { AmountInput, type HomeOption } from './quote-form-modal';
 
 type Props = {
   leadId: string;
@@ -181,15 +181,12 @@ export function InvoiceFormModal({
 
   const total = items.reduce((s, i) => s + (i.amount_cents ?? 0), 0);
 
-  function updateItem(index: number, field: 'description' | 'amount_cents', value: string) {
-    setItems((prev) =>
-      prev.map((item, i) => {
-        if (i !== index) return item;
-        if (field === 'description') return { ...item, description: value };
-        const trimmed = value.replace(/[^0-9.]/g, '');
-        return { ...item, amount_cents: trimmed === '' ? null : Math.round(parseFloat(trimmed) * 100) || 0 };
-      }),
-    );
+  function updateItemDescription(index: number, value: string) {
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, description: value } : item)));
+  }
+
+  function updateItemAmount(index: number, cents: number | null) {
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, amount_cents: cents } : item)));
   }
 
   function removeItem(index: number) {
@@ -273,16 +270,13 @@ export function InvoiceFormModal({
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 32px', gap: 8, marginBottom: 6 }}>
                   <input
                     type="text" value={item.description}
-                    onChange={(e) => updateItem(i, 'description', e.target.value)}
+                    onChange={(e) => updateItemDescription(i, e.target.value)}
                     placeholder="Item description"
                     style={{ padding: '7px 10px', fontSize: 13, border: '1px solid var(--adm-line)', borderRadius: 'var(--r-1)' }}
                   />
-                  <input
-                    type="text"
-                    value={item.amount_cents != null ? (item.amount_cents / 100).toFixed(2) : ''}
-                    onChange={(e) => updateItem(i, 'amount_cents', e.target.value)}
-                    placeholder="Included"
-                    style={{ padding: '7px 10px', fontSize: 13, border: '1px solid var(--adm-line)', borderRadius: 'var(--r-1)', textAlign: 'right' }}
+                  <AmountInput
+                    cents={item.amount_cents}
+                    onChange={(cents) => updateItemAmount(i, cents)}
                   />
                   <button type="button" onClick={() => removeItem(i)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--adm-ink-mute)', fontSize: 16 }}>×</button>
