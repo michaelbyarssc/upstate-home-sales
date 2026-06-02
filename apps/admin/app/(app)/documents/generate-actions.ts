@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { createClient } from '@uhs/db/server';
 import { createServiceClient } from '@uhs/db/service';
-import { ACTIVE_ORG_COOKIE, type DocSignerRole } from '@uhs/db';
+import { ACTIVE_ORG_COOKIE, type DocSignerRole, type LeadPreferences } from '@uhs/db';
 import { getEsignProvider, type EsignRecipientInput } from '../../../lib/esign';
 import {
   resolveBinding,
@@ -90,7 +90,7 @@ export async function generateAndStartSigning(args: {
     .maybeSingle();
   if (!lead) return { ok: false, error: 'Lead not found.' };
 
-  const [{ data: home }, { data: buyerLink }, { data: tradeIn }, { data: quote }, { data: org }] =
+  const [{ data: home }, { data: buyerLink }, { data: tradeIn }, { data: quote }, { data: org }, { data: prefs }] =
     await Promise.all([
       lead.home_id
         ? supabase
@@ -122,11 +122,26 @@ export async function generateAndStartSigning(args: {
         .limit(1)
         .maybeSingle(),
       supabase.from('orgs').select('name').eq('id', orgId).maybeSingle(),
+      supabase.from('lead_preferences').select('*').eq('lead_id', args.leadId).maybeSingle(),
     ]);
 
   const mfr = (home as { manufacturers?: { name: string } | { name: string }[] | null } | null)?.manufacturers;
   const buyerRel = (buyerLink as { buyers?: { full_name: string; email: string; phone: string | null } | { full_name: string; email: string; phone: string | null }[] | null } | null)?.buyers;
   const buyer = Array.isArray(buyerRel) ? buyerRel[0] : buyerRel;
+
+  // Resolve requested manufacturer names (the requested.* bindings render names, not IDs).
+  const prefRow = prefs as LeadPreferences | null;
+  let requestedManufacturerNames: string[] | null = null;
+  if (prefRow?.manufacturer_ids?.length) {
+    const { data: mfrs } = await supabase
+      .from('manufacturers')
+      .select('id, name')
+      .in('id', prefRow.manufacturer_ids);
+    const byId = new Map((mfrs ?? []).map((m: { id: string; name: string }) => [m.id, m.name]));
+    requestedManufacturerNames = prefRow.manufacturer_ids
+      .map((id) => byId.get(id))
+      .filter((n): n is string => !!n);
+  }
 
   const ctx: BindingContext = {
     lead: { contact_name: lead.contact_name, email: lead.email, phone: lead.phone },
@@ -151,6 +166,25 @@ export async function generateAndStartSigning(args: {
       ? { year: tradeIn.year, make: tradeIn.make, model: tradeIn.model, offer_cents: tradeIn.offer_cents }
       : null,
     org: org ? { name: org.name } : null,
+    preferences: prefRow
+      ? {
+          preferred_types: prefRow.preferred_types,
+          condition: prefRow.condition,
+          preferred_models: prefRow.preferred_models,
+          preferred_colors: prefRow.preferred_colors,
+          min_beds: prefRow.min_beds, max_beds: prefRow.max_beds,
+          min_baths: prefRow.min_baths, max_baths: prefRow.max_baths,
+          min_sqft: prefRow.min_sqft, max_sqft: prefRow.max_sqft,
+          min_width_ft: prefRow.min_width_ft, max_width_ft: prefRow.max_width_ft,
+          min_length_ft: prefRow.min_length_ft, max_length_ft: prefRow.max_length_ft,
+          min_year: prefRow.min_year, max_year: prefRow.max_year,
+          min_price_cents: prefRow.min_price_cents, max_price_cents: prefRow.max_price_cents,
+          must_have_features: prefRow.must_have_features,
+          timeline: prefRow.timeline,
+          notes: prefRow.notes,
+          manufacturer_names: requestedManufacturerNames,
+        }
+      : null,
     nowIso: new Date().toISOString(),
   };
 
