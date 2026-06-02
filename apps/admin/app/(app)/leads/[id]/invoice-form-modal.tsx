@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef } from 'react';
 import type { LineItem } from '@uhs/db';
+import { createClient } from '@uhs/db/browser';
 import { createInvoice } from './actions';
 import { AmountInput, type HomeOption } from './quote-form-modal';
 
@@ -176,6 +177,55 @@ export function InvoiceFormModal({
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
 
+  // ── Form 500 / PO details (0043) — prefilled from the lead/home, saved with
+  // the invoice and carried onto the PO. ──────────────────────────────────────
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryCity, setDeliveryCity] = useState('');
+  const [deliveryState, setDeliveryState] = useState('SC');
+  const [deliveryZip, setDeliveryZip] = useState('');
+  const [mailingSame, setMailingSame] = useState(true);
+  const [mailingAddress, setMailingAddress] = useState('');
+  const [coBuyerName, setCoBuyerName] = useState('');
+  const [serialNo, setSerialNo] = useState('');
+  const [salesTaxCents, setSalesTaxCents] = useState<number | null>(null);
+  const [feesCents, setFeesCents] = useState<number | null>(null);
+  const [cashDepositCents, setCashDepositCents] = useState<number | null>(null);
+  const [cashAsAgreedCents, setCashAsAgreedCents] = useState<number | null>(null);
+
+  // Prefill PO fields from the lead (address/co-buyer) once on open.
+  useEffect(() => {
+    const sb = createClient();
+    sb.from('leads')
+      .select('delivery_address, delivery_city, delivery_state, delivery_zip, mailing_address, co_buyer_name')
+      .eq('id', leadId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        if (data.delivery_address) setDeliveryAddress(data.delivery_address);
+        if (data.delivery_city) setDeliveryCity(data.delivery_city);
+        if (data.delivery_state) setDeliveryState(data.delivery_state);
+        if (data.delivery_zip) setDeliveryZip(data.delivery_zip);
+        if (data.co_buyer_name) setCoBuyerName(data.co_buyer_name);
+        if (data.mailing_address) {
+          setMailingAddress(data.mailing_address);
+          setMailingSame(false);
+        }
+      });
+  }, [leadId]);
+
+  // Prefill the serial # from the selected home.
+  useEffect(() => {
+    if (!selectedHomeId) return;
+    const sb = createClient();
+    sb.from('homes')
+      .select('serial_no')
+      .eq('id', selectedHomeId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.serial_no) setSerialNo(data.serial_no);
+      });
+  }, [selectedHomeId]);
+
   const selectedHome = homes.find((h) => h.id === selectedHomeId);
   const modalTitle = selectedHome ? `Create Invoice — ${selectedHome.name}` : 'Create Invoice';
 
@@ -234,6 +284,19 @@ export function InvoiceFormModal({
           paymentTerms,
           paymentInstructions: paymentInstructions || null,
           dueAt: dueAt || null,
+          poDetails: {
+            deliveryAddress: deliveryAddress.trim() || null,
+            deliveryCity: deliveryCity.trim() || null,
+            deliveryState: deliveryState.trim() || null,
+            deliveryZip: deliveryZip.trim() || null,
+            mailingAddress: mailingSame ? null : mailingAddress.trim() || null,
+            coBuyerName: coBuyerName.trim() || null,
+            serialNo: serialNo.trim() || null,
+            salesTaxCents: salesTaxCents ?? 0,
+            feesCents: feesCents ?? 0,
+            cashDepositCents: cashDepositCents ?? 0,
+            cashAsAgreedCents: cashAsAgreedCents ?? 0,
+          },
           sendEmail,
         });
         onCreated(inv.public_token, inv.invoice_number);
@@ -317,6 +380,52 @@ export function InvoiceFormModal({
                 rows={3}
               />
             </label>
+
+            {/* ── Purchase-order details (Form 500) — carried onto the PO ── */}
+            <details style={{ border: '1px solid var(--adm-line)', borderRadius: 'var(--r-1)', padding: '8px 12px' }}>
+              <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+                Purchase-order details (for the Form 500)
+              </summary>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+                <label className="field">
+                  <span className="field-label">Delivery address</span>
+                  <input type="text" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder="Street address where the home will be set" />
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 8 }}>
+                  <label className="field"><span className="field-label">City</span>
+                    <input type="text" value={deliveryCity} onChange={(e) => setDeliveryCity(e.target.value)} /></label>
+                  <label className="field"><span className="field-label">State</span>
+                    <input type="text" value={deliveryState} onChange={(e) => setDeliveryState(e.target.value)} /></label>
+                  <label className="field"><span className="field-label">ZIP</span>
+                    <input type="text" value={deliveryZip} onChange={(e) => setDeliveryZip(e.target.value)} /></label>
+                </div>
+                <label className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" checked={mailingSame} onChange={(e) => setMailingSame(e.target.checked)} />
+                  <span style={{ fontSize: 13 }}>Mailing address same as delivery</span>
+                </label>
+                {!mailingSame && (
+                  <label className="field"><span className="field-label">Mailing address</span>
+                    <input type="text" value={mailingAddress} onChange={(e) => setMailingAddress(e.target.value)} /></label>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <label className="field"><span className="field-label">Co-buyer name</span>
+                    <input type="text" value={coBuyerName} onChange={(e) => setCoBuyerName(e.target.value)} placeholder="If two buyers" /></label>
+                  <label className="field"><span className="field-label">Serial #</span>
+                    <input type="text" value={serialNo} onChange={(e) => setSerialNo(e.target.value)} placeholder="Manufacturer serial" /></label>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <label className="field"><span className="field-label">Sales tax</span>
+                    <AmountInput cents={salesTaxCents} onChange={setSalesTaxCents} placeholder="$0.00" /></label>
+                  <label className="field"><span className="field-label">Fees</span>
+                    <AmountInput cents={feesCents} onChange={setFeesCents} placeholder="$0.00" /></label>
+                  <label className="field"><span className="field-label">Cash deposit</span>
+                    <AmountInput cents={cashDepositCents} onChange={setCashDepositCents} placeholder="$0.00" /></label>
+                  <label className="field"><span className="field-label">Cash as agreed</span>
+                    <AmountInput cents={cashAsAgreedCents} onChange={setCashAsAgreedCents} placeholder="$0.00" /></label>
+                </div>
+              </div>
+            </details>
 
             {/* Notes */}
             <div>

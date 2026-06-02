@@ -485,6 +485,8 @@ export interface Home {
   length_ft: number | null;
   year_built: number | null;
   construction: string | null;
+  /** Manufacturer serial number (0043) — printed on the Form 500 PO. */
+  serial_no: string | null;
   base_price_cents: number;
   markup_pct: number;
   addons_cents: number;
@@ -634,6 +636,14 @@ export interface Lead {
   fbclid: string | null;
   referrer_url: string | null;
   landing_path: string | null;
+  // Purchase-order / Form 500 capture (0043) — customer delivery + mailing
+  // address and co-buyer, collected at the invoice phase, reused on the PO.
+  delivery_address: string | null;
+  delivery_city: string | null;
+  delivery_state: string | null;
+  delivery_zip: string | null;
+  mailing_address: string | null;
+  co_buyer_name: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -772,6 +782,11 @@ export interface Invoice {
   public_token: string;
   due_at: string | null;
   visible_to_buyer: boolean;
+  // Form 500 financial breakdown (0043) — collected at the invoice phase.
+  sales_tax_cents: number;
+  fees_cents: number;
+  cash_deposit_cents: number;
+  cash_as_agreed_cents: number;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -1243,6 +1258,8 @@ export interface TradeIn {
   condition_notes: string | null;
   photos_paths: string[] | null;
   offer_cents: number | null;
+  /** Balance still owed on the trade (0043); allowance = offer_cents. */
+  balance_owed_cents: number;
   status: 'submitted' | 'reviewed' | 'offered' | 'accepted' | 'declined';
   sms_consent: boolean;
   sms_consent_at: string | null;
