@@ -47,11 +47,11 @@ export async function POST(req: Request) {
   const sb = createServiceClient();
 
   // Resolve org.
-  let org: { id: string; name: string; ai_chat_enabled: boolean; ai_daily_token_cap: number; faq_markdown: string | null } | null = null;
+  let org: { id: string; name: string; ai_chat_enabled: boolean; ai_daily_token_cap: number; faq_markdown: string | null; prices_hidden: boolean } | null = null;
   if (org_slug) {
     const { data } = await sb
       .from('orgs')
-      .select('id, name, ai_chat_enabled, ai_daily_token_cap, faq_markdown')
+      .select('id, name, ai_chat_enabled, ai_daily_token_cap, faq_markdown, prices_hidden')
       .eq('slug', org_slug)
       .maybeSingle();
     org = data;
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
   if (!org) {
     const { data } = await sb
       .from('orgs')
-      .select('id, name, ai_chat_enabled, ai_daily_token_cap, faq_markdown')
+      .select('id, name, ai_chat_enabled, ai_daily_token_cap, faq_markdown, prices_hidden')
       .eq('status', 'active')
       .order('created_at')
       .limit(1)
@@ -109,6 +109,9 @@ export async function POST(req: Request) {
     'Use the searchInventory tool when they describe filters. Use getHomeDetail when they ask about a specific stock number.',
     'When the shopper signals real interest (asks about pricing, financing, or wants to see one in person), invite them to share their name, email, and phone — then call captureContact.',
     'Be concise. Don\'t invent inventory or prices.',
+    org.prices_hidden
+      ? 'This dealer does not display prices online — every home is priced on request. Never filter by price or quote a number; invite the shopper to share contact info for pricing.'
+      : '',
     org.faq_markdown ? `\n\n## FAQ context\n${org.faq_markdown}` : '',
   ].join(' ');
 
@@ -134,7 +137,9 @@ export async function POST(req: Request) {
           if (filters.beds != null) q = q.gte('beds', filters.beds);
           if (filters.baths != null) q = q.gte('baths', filters.baths);
           if (filters.type) q = q.eq('type', filters.type);
-          if (filters.max_price != null) q = q.lte('listed_price_cents', filters.max_price * 100);
+          // listed_price_cents is NULL for every row while the org hides prices —
+          // an lte() there would match nothing, so the cap only applies when visible.
+          if (filters.max_price != null && !org!.prices_hidden) q = q.lte('listed_price_cents', filters.max_price * 100);
           if (filters.min_sqft != null) q = q.gte('sqft', filters.min_sqft);
           if (filters.max_sqft != null) q = q.lte('sqft', filters.max_sqft);
           const { data } = await q.limit(10);

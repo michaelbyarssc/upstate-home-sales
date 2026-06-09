@@ -20,9 +20,11 @@ type Props = {
   mfr: string | undefined;
   price: string | undefined;
   manufacturers: Manufacturer[];
+  /** False when the org hides prices — the price select would only ever return zero results. */
+  showPriceFilter: boolean;
 };
 
-export function InventoryFilters({ type, mfr, price, manufacturers }: Props) {
+export function InventoryFilters({ type, mfr, price, manufacturers, showPriceFilter }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
@@ -61,16 +63,18 @@ export function InventoryFilters({ type, mfr, price, manufacturers }: Props) {
           </option>
         ))}
       </select>
-      <select
-        name="price"
-        value={price ?? ''}
-        onChange={(e) => pushWith('price', e.currentTarget.value)}
-      >
-        <option value="">Any price</option>
-        <option value="u100">Under $100k</option>
-        <option value="100-200">$100k – $200k</option>
-        <option value="o200">$200k+</option>
-      </select>
+      {showPriceFilter && (
+        <select
+          name="price"
+          value={price ?? ''}
+          onChange={(e) => pushWith('price', e.currentTarget.value)}
+        >
+          <option value="">Any price</option>
+          <option value="u100">Under $100k</option>
+          <option value="100-200">$100k – $200k</option>
+          <option value="o200">$200k+</option>
+        </select>
+      )}
     </>
   );
 }
