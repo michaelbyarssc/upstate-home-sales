@@ -41,6 +41,17 @@ export default async function InventoryListPage({ searchParams }: { searchParams
     mfrId = data?.id ?? null;
   }
 
+  // Org-wide price visibility. There's no public_orgs view — the flag rides on
+  // every public_homes row, so probe one. When the dealer hides prices the view
+  // nulls listed_price_cents for anon, and price filters would match nothing;
+  // skip them entirely and hide the price UI instead.
+  const { data: priceProbe } = await supabase
+    .from('public_homes')
+    .select('prices_hidden')
+    .limit(1)
+    .maybeSingle();
+  const pricesVisible = !(priceProbe?.prices_hidden ?? false);
+
   let query = supabase
     .from('public_homes')
     .select(
@@ -54,20 +65,24 @@ export default async function InventoryListPage({ searchParams }: { searchParams
   if (q) query = query.or(`name.ilike.%${q}%,model.ilike.%${q}%`);
 
   // Explicit min/max price (from the parser) wins over the legacy bucket dropdown.
-  const hasExplicitPrice = min_price != null || max_price != null;
-  if (hasExplicitPrice) {
-    if (min_price != null) {
-      const n = parseInt(min_price, 10);
-      if (Number.isFinite(n)) query = query.gte('listed_price_cents', n * 100);
-    }
-    if (max_price != null) {
-      const n = parseInt(max_price, 10);
-      if (Number.isFinite(n)) query = query.lte('listed_price_cents', n * 100);
-    }
-  } else if (price === 'u100') query = query.lt('listed_price_cents', 10_000_000);
-  else if (price === '100-200')
-    query = query.gte('listed_price_cents', 10_000_000).lt('listed_price_cents', 20_000_000);
-  else if (price === 'o200') query = query.gte('listed_price_cents', 20_000_000);
+  // Only applied while prices are visible — stale URLs / smart-search price terms
+  // must not strand visitors on zero results when the dealer hides prices.
+  if (pricesVisible) {
+    const hasExplicitPrice = min_price != null || max_price != null;
+    if (hasExplicitPrice) {
+      if (min_price != null) {
+        const n = parseInt(min_price, 10);
+        if (Number.isFinite(n)) query = query.gte('listed_price_cents', n * 100);
+      }
+      if (max_price != null) {
+        const n = parseInt(max_price, 10);
+        if (Number.isFinite(n)) query = query.lte('listed_price_cents', n * 100);
+      }
+    } else if (price === 'u100') query = query.lt('listed_price_cents', 10_000_000);
+    else if (price === '100-200')
+      query = query.gte('listed_price_cents', 10_000_000).lt('listed_price_cents', 20_000_000);
+    else if (price === 'o200') query = query.gte('listed_price_cents', 20_000_000);
+  }
 
   // Beds — match primary beds OR configurable beds_options array.
   if (beds != null) {
@@ -160,10 +175,12 @@ export default async function InventoryListPage({ searchParams }: { searchParams
             mfr={mfr}
             price={price}
             manufacturers={(manufacturers ?? []) as Array<{ id: string; slug: string; name: string }>}
+            showPriceFilter={pricesVisible}
           />
           <SmartSearchBar
             defaultValue={q ?? ''}
             manufacturers={(manufacturers ?? []).map((m) => ({ slug: m.slug, name: m.name }))}
+            pricesHidden={!pricesVisible}
           />
           {(type || mfr || q || price || beds || baths || min_price || max_price || min_sqft || max_sqft) && (
             <Link href="/inventory" className="btn btn-ghost btn-sm">Clear</Link>

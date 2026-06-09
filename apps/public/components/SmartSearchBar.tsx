@@ -20,6 +20,8 @@ type Manufacturer = { slug: string; name: string };
 type Props = {
   defaultValue?: string;
   manufacturers: Manufacturer[];
+  /** True when the org hides prices — don't suggest or emit price filters. */
+  pricesHidden?: boolean;
 };
 
 const FILTER_KEYS = [
@@ -34,7 +36,7 @@ const FILTER_KEYS = [
   'q',
 ] as const;
 
-export function SmartSearchBar({ defaultValue = '', manufacturers }: Props) {
+export function SmartSearchBar({ defaultValue = '', manufacturers, pricesHidden = false }: Props) {
   const router = useRouter();
   const [text, setText] = useState(defaultValue);
   const [, startTransition] = useTransition();
@@ -56,6 +58,7 @@ export function SmartSearchBar({ defaultValue = '', manufacturers }: Props) {
   function buildParams(query: string, filters: ParsedSearch): URLSearchParams {
     const params = readSiblingSelects();
     for (const key of FILTER_KEYS) {
+      if (pricesHidden && (key === 'min_price' || key === 'max_price')) continue;
       const v = filters[key];
       if (v != null && v !== '') params.set(key, String(v));
     }
@@ -103,7 +106,7 @@ export function SmartSearchBar({ defaultValue = '', manufacturers }: Props) {
       <input
         type="text"
         name="q"
-        placeholder="Search — try '3/2 Clayton under 80k'"
+        placeholder={pricesHidden ? "Search — try '3/2 Clayton'" : "Search — try '3/2 Clayton under 80k'"}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
