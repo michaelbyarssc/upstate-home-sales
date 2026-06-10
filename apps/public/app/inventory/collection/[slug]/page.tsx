@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { createPublicClient, publicPhotoUrl } from '../../../../lib/supabase';
+import { createPublicClient, publicPhotoUrl, fetchDesignReadyIds } from '../../../../lib/supabase';
 import { HomeCard } from '../../../../components/HomeCard';
 import { absoluteUrl, itemListSchema } from '../../../../lib/seo';
 import type { PublicHome } from '@uhs/db';
@@ -48,6 +48,7 @@ export default async function CollectionPage({ params }: { params: Params }) {
     const byId = new Map((data ?? []).map((h: any) => [h.id, h]));
     homes = homeIds.map((id) => byId.get(id)).filter(Boolean) as typeof homes;
   }
+  const designReady = await fetchDesignReadyIds(sb, homes.map((h) => h.id));
 
   const heroUrl = collection.hero_storage_path
     ? publicPhotoUrl(collection.hero_storage_path)
@@ -104,7 +105,7 @@ export default async function CollectionPage({ params }: { params: Params }) {
         ) : (
           <div className="inv-grid-public" style={{ marginTop: 24 }}>
             {homes.map((h, i) => (
-              <HomeCard key={h.id} home={h} index={i} />
+              <HomeCard key={h.id} home={h} index={i} designReady={designReady.has(h.id)} />
             ))}
           </div>
         )}

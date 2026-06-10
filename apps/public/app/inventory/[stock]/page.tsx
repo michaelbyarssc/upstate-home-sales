@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { createPublicClient, publicPhotoUrl } from '../../../lib/supabase';
+import { createPublicClient, publicPhotoUrl, fetchDesignReadyIds } from '../../../lib/supabase';
 import { QuoteForm } from './quote-form';
 import { Gallery } from './gallery';
 import { MatterportButton } from './matterport-button';
@@ -70,6 +70,11 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
     .lte('listed_price_cents', priceHi)
     .limit(20);
   const similarHomes = scoreAndRankSimilar(h, (candidates ?? []) as unknown as Array<PublicHome & { manufacturer_id: string | null; type: string }>).slice(0, 4);
+
+  // Design Studio gating: this home + the similar-home cards. One tolerant query
+  // (empty set if migration 0046 isn't applied yet — CTA simply stays hidden).
+  const designReadyIds = await fetchDesignReadyIds(supabase, [h.id, ...similarHomes.map((sh) => sh.id)]);
+  const designReady = designReadyIds.has(h.id);
 
   const productJsonLd = homeProductSchema(
     {
@@ -151,16 +156,22 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
               </div>
             )}
 
-            {/* Anchor target for HomeCard's "Design home" CTA. Phase C will replace
-                this placeholder with the real configurator. */}
-            <div id="design" style={{ marginTop: 'var(--s-10)', padding: 'var(--s-6)', background: 'var(--c-bg)', borderRadius: 'var(--r-2)', border: '1px dashed var(--c-line)' }}>
-              <div className="eyebrow">Coming soon</div>
-              <h3 style={{ marginTop: 6 }}>Design this home</h3>
-              <p style={{ marginTop: 8, color: 'var(--c-ink-soft)' }}>
-                Pick siding colors, cabinets, flooring, and appliances — see your real-time price as you build.
-                In the meantime, <Link href="/contact" style={{ color: 'var(--c-accent)' }}>tell us what you have in mind</Link>.
-              </p>
-            </div>
+            {designReady && (
+              <div style={{ marginTop: 'var(--s-10)', padding: 'var(--s-6)', background: 'var(--c-bg)', borderRadius: 'var(--r-2)', border: '1px solid var(--c-line)' }}>
+                <div className="eyebrow">Make it yours</div>
+                <h3 style={{ marginTop: 6 }}>Design this home</h3>
+                <p style={{ marginTop: 8, color: 'var(--c-ink-soft)' }}>
+                  Pick siding colors, trim, and finishes in 3D — see your price update as you build.
+                </p>
+                <Link
+                  href={`/inventory/${encodeURIComponent(h.stock_no)}/design`}
+                  className="btn btn-primary"
+                  style={{ marginTop: 'var(--s-4)', display: 'inline-flex' }}
+                >
+                  Open Design Studio
+                </Link>
+              </div>
+            )}
           </div>
 
           <aside className="detail-aside">
@@ -179,6 +190,7 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
               manufacturerName={h.manufacturers?.name ?? null}
               modelName={h.model}
               heroUrl={heroUrl}
+              designReady={designReady}
             />
           </aside>
         </div>
@@ -196,7 +208,7 @@ export default async function HomeDetailPage({ params }: { params: Promise<Param
             </div>
             <div className="inv-grid-public">
               {similarHomes.map((sh, i) => (
-                <HomeCard key={sh.id} home={sh as any} index={i} />
+                <HomeCard key={sh.id} home={sh as any} index={i} designReady={designReadyIds.has(sh.id)} />
               ))}
             </div>
           </section>

@@ -179,6 +179,9 @@
   display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2);
   margin-top: var(--s-2);
 }
+/* When a home's model has no Design Studio content, only "View details" shows —
+   let it span the full width instead of leaving a dead half-column. */
+.home-card-ctas.single { grid-template-columns: 1fr; }
 .home-card-btn {
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--c-ink); color: #fff;
