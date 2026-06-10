@@ -17,6 +17,74 @@ import {
  * here because the public app is the natural HTTP entry point and we don't
  * gain anything by adding a deno hop.
  */
+
+/**
+ * Customer-facing acknowledgment copy, per intake source. Returns null for
+ * sources that don't originate from a public form (phone/tradein/import) —
+ * those must never trigger an automated customer email.
+ */
+function confirmationCopy(
+  source: string,
+  args: { contactName: string; homeName: string | null; stockNo: string | null },
+): { subject: string; text: string } | null {
+  const firstName = args.contactName.split(/\s+/)[0] || args.contactName;
+  const homeLabel = args.homeName
+    ? `${args.homeName}${args.stockNo ? ` (${args.stockNo})` : ''}`
+    : args.stockNo;
+
+  if (source === 'quote_form') {
+    return {
+      subject: `We received your quote request${args.homeName ? ` for ${args.homeName}` : ''}`,
+      text: [
+        `Hi ${firstName},`,
+        '',
+        homeLabel
+          ? `Thanks for your quote request — we've received your info for ${homeLabel}.`
+          : `Thanks for your quote request — we've received your info.`,
+        '',
+        'A member of our team will be in touch within one business day with your written quote.',
+        '',
+        "Reply to this email any time — it goes straight to our sales team.",
+        '',
+        '— Upstate Home Center',
+      ].join('\n'),
+    };
+  }
+
+  if (source === 'contact_form') {
+    return {
+      subject: 'We received your message — Upstate Home Center',
+      text: [
+        `Hi ${firstName},`,
+        '',
+        "Thanks for reaching out — we've received your message and we'll be in touch within one business day.",
+        '',
+        "Reply to this email any time — it goes straight to our sales team.",
+        '',
+        '— Upstate Home Center',
+      ].join('\n'),
+    };
+  }
+
+  if (source === 'walkin') {
+    return {
+      subject: 'Thanks for visiting Upstate Home Center',
+      text: [
+        `Hi ${firstName},`,
+        '',
+        homeLabel
+          ? `Thanks for stopping by to see ${homeLabel} — a salesperson will follow up with you shortly.`
+          : 'Thanks for stopping by — a salesperson will follow up with you shortly.',
+        '',
+        "Reply to this email any time — it goes straight to our sales team.",
+        '',
+        '— Upstate Home Center',
+      ].join('\n'),
+    };
+  }
+
+  return null;
+}
 export async function POST(req: Request) {
   let body: {
     home_id?: string | null;
@@ -51,23 +119,27 @@ export async function POST(req: Request) {
 
   const contact_name = (body.contact_name ?? '').trim();
   const email = (body.email ?? '').trim();
-  if (!contact_name || !email) {
-    return NextResponse.json({ message: 'Name and email are required' }, { status: 400 });
+  const phone = (body.phone ?? '').trim();
+  // Email OR phone — the kiosk form legitimately collects phone-only walk-ins.
+  if (!contact_name || (!email && !phone)) {
+    return NextResponse.json({ message: 'Name and an email or phone are required' }, { status: 400 });
   }
 
   const sb = createServiceClient();
 
   let orgId: string | null = null;
   let homeId: string | null = null;
+  let homeName: string | null = null;
   if (body.home_id && body.home_id !== 'general') {
     const { data: home } = await sb
       .from('homes')
-      .select('id, org_id')
+      .select('id, org_id, name')
       .eq('id', body.home_id)
       .maybeSingle();
     if (home) {
       homeId = home.id;
       orgId = home.org_id;
+      homeName = home.name;
     }
   }
   if (!orgId) {
@@ -171,8 +243,8 @@ export async function POST(req: Request) {
       org_id: orgId,
       home_id: homeId,
       contact_name,
-      email,
-      phone: (body.phone ?? '').trim() || null,
+      email: email || null,
+      phone: phone || null,
       source,
       stage: 'new',
       assignee_id: assigneeId,
@@ -223,8 +295,8 @@ export async function POST(req: Request) {
       subject: `New ${subjectLabel} lead: ${contact_name}${body.stock_no ? ` re ${body.stock_no}` : ''}`,
       text: [
         `Name: ${contact_name}`,
-        `Email: ${email}`,
-        `Phone: ${(body.phone ?? '').trim() || '—'}`,
+        `Email: ${email || '—'}`,
+        `Phone: ${phone || '—'}`,
         body.stock_no ? `Home: ${body.stock_no}` : null,
         `Source: ${subjectLabel}`,
         '',
@@ -233,6 +305,34 @@ export async function POST(req: Request) {
         `Open in admin: ${inboxUrl}`,
       ].filter(Boolean).join('\n'),
     }).catch((e) => console.error('[lead-intake] notify failed:', e));
+  }
+
+  // Customer acknowledgment — the form promises "we'll be in touch"; this is
+  // the email that backs it up. Only for the public-originating sources so a
+  // future CSV import or phone-logged lead can never mass-email customers.
+  // Best-effort like the dealer notify: a Resend outage must not block intake.
+  const ack = email ? confirmationCopy(source, { contactName: contact_name, homeName, stockNo: body.stock_no ?? null }) : null;
+  if (ack) {
+    const sent = await sendEmail({
+      to: email,
+      subject: ack.subject,
+      text: ack.text,
+      replyToToken: lead.reply_token,
+    }).catch((e): { ok: boolean } => {
+      console.error('[lead-intake] customer ack failed:', e);
+      return { ok: false };
+    });
+    if (sent.ok && !('skipped' in sent && sent.skipped)) {
+      // Log it on the lead's timeline so the dealer sees the auto-ack went out
+      // (and the customer's eventual reply threads right under it).
+      await sb.from('lead_messages').insert({
+        lead_id: lead.id,
+        org_id: orgId,
+        kind: 'outbound',
+        channel: 'email',
+        body: ack.text,
+      });
+    }
   }
 
   // Fire workflow event so any matching org rules (auto-replies, drip enroll,
