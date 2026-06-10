@@ -1,5 +1,6 @@
 import { createClient as createJsClient } from '@supabase/supabase-js';
 import { HOME_PHOTO_BUCKET } from '@uhs/db';
+import { DESIGN_STUDIO_ENABLED } from './flags';
 
 /**
  * Anon-only client for the public site. Reads public_homes / public_home_photos.
@@ -34,6 +35,9 @@ export async function fetchDesignReadyIds(
   sb: ReturnType<typeof createPublicClient>,
   homeIds: string[],
 ): Promise<Set<string>> {
+  // Kill switch — every design CTA keys off this set, so an empty set hides
+  // the feature site-wide. See lib/flags.ts.
+  if (!DESIGN_STUDIO_ENABLED) return new Set();
   if (homeIds.length === 0) return new Set();
   const { data, error } = await sb
     .from('public_home_design')
