@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { createPublicClient, publicPhotoUrl } from '../../../../lib/supabase';
-import type { Home, ModelOption, ModelOptionValue, Model3dAsset } from '@uhs/db';
+import type { Home, ModelOption, ModelOptionValue } from '@uhs/db';
 import { DesignStudio } from './design-studio';
 import './design.css';
 
@@ -30,23 +30,9 @@ export default async function DesignPage({ params }: { params: { stock: string }
     .maybeSingle();
   const modelId = (designRow as { model_id: string | null } | null)?.model_id ?? null;
 
-  // Without a linked model, the studio still renders with a placeholder geometry
-  // and an empty option list — useful for the dealer demo / showroom kiosk.
-  let asset: Model3dAsset | null = null;
+  // Options + values for this model — the studio's whole content.
   let options: Array<ModelOption & { values: ModelOptionValue[] }> = [];
-
   if (modelId) {
-    // Latest asset for this model.
-    const { data: a } = await sb
-      .from('model_3d_assets')
-      .select('*')
-      .eq('home_model_id', modelId)
-      .order('version', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    asset = (a as Model3dAsset | null) ?? null;
-
-    // Options + values for this model.
     const { data: opts } = await sb
       .from('model_options')
       .select('*, values:model_option_values(*)')
@@ -55,20 +41,14 @@ export default async function DesignPage({ params }: { params: { stock: string }
     options = (opts ?? []) as unknown as Array<ModelOption & { values: ModelOptionValue[] }>;
   }
 
-  // Studio has nothing to configure (no model, or a model with neither a 3D
-  // asset nor options). Public cards only link here when design_ready, so this
-  // guards direct-URL hits — bounce back to the detail page rather than show an
-  // empty configurator.
-  if (!modelId || (!asset && options.length === 0)) {
+  // Studio has nothing to configure (no model, or no authored options).
+  // Public cards only link here when design_ready, so this guards direct-URL
+  // hits — bounce back to the detail page rather than show an empty configurator.
+  if (!modelId || options.length === 0) {
     redirect(`/inventory/${encodeURIComponent(home.stock_no)}`);
   }
 
-  // GLB delivery: route through /api/3d-asset/[id] which 302-redirects to
-  // a 60-min signed URL. Keeps the model-3d-assets bucket private; the
-  // browser still downloads bytes straight from Supabase's CDN.
-  const glbUrl: string | null = asset ? `/api/3d-asset/${asset.id}` : null;
-
-  // Primary photo for the photo-mode fallback (low-end mobile).
+  // Primary photo for the preview inset.
   const { data: heroPhoto } = await sb
     .from('public_home_photos')
     .select('storage_path')
@@ -92,8 +72,6 @@ export default async function DesignPage({ params }: { params: { stock: string }
         homeName={home.name}
         baseListedPriceCents={home.listed_price_cents}
         pricesHidden={home.prices_hidden}
-        glbUrl={glbUrl}
-        materialManifest={asset?.material_manifest ?? {}}
         options={options}
         heroPhotoUrl={heroPhotoUrl}
       />
