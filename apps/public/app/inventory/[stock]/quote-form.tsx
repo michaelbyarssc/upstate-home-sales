@@ -21,6 +21,8 @@ type Props = {
   manufacturerName: string | null;
   modelName: string | null;
   heroUrl: string | null;
+  /** True when the home's model has Design Studio content (gates the CTA). */
+  designReady?: boolean;
 };
 
 export function QuoteForm({
@@ -38,6 +40,7 @@ export function QuoteForm({
   manufacturerName,
   modelName,
   heroUrl,
+  designReady = false,
 }: Props) {
   const isHidden = pricesHidden || listedPriceCents == null;
   const [open, setOpen] = useState(false);
@@ -172,9 +175,11 @@ export function QuoteForm({
           </Link>
         </div>
 
-        <a href="#design" className="btn-primary-full">
-          Design home
-        </a>
+        {designReady && (
+          <Link href={`/inventory/${encodeURIComponent(stockNo)}/design`} className="btn-primary-full">
+            Design home
+          </Link>
+        )}
 
         <div style={{ marginTop: 4, fontSize: 12, color: 'var(--c-ink-mute)', lineHeight: 1.5 }}>
           Monthly est. assumes 10% down, 7% APR, 20-year chattel. Real rate set after pre-qual.

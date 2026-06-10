@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createPublicClient, publicPhotoUrl } from '../../lib/supabase';
+import { createPublicClient, publicPhotoUrl, fetchDesignReadyIds } from '../../lib/supabase';
 import { HomeCard } from '../../components/HomeCard';
 import type { Location, PublicHome } from '@uhs/db';
 
@@ -59,6 +59,7 @@ export default async function LocationHomePage({ params }: { params: { locationS
     .order('on_lot_since', { ascending: false, nullsFirst: false })
     .limit(6);
   const homes = (featured ?? []) as unknown as FeaturedHome[];
+  const designReady = await fetchDesignReadyIds(sb, homes.map((h) => h.id));
 
   const heroHome = homes.find((h) => (h.public_home_photos?.length ?? 0) > 0);
   const heroPhotoUrl = heroHome?.public_home_photos?.[0]?.storage_path
@@ -121,7 +122,7 @@ export default async function LocationHomePage({ params }: { params: { locationS
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--s-5)', marginTop: 'var(--s-6)' }}>
             {homes.slice(0, 6).map((h, i) => (
-              <HomeCard key={h.id} home={h} index={i} />
+              <HomeCard key={h.id} home={h} index={i} designReady={designReady.has(h.id)} />
             ))}
           </div>
         </div>

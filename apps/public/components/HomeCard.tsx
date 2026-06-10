@@ -10,18 +10,19 @@ type Props = {
     public_home_photos?: Array<{ storage_path: string; sort_order: number }> | null;
   };
   index?: number;
+  /** Show the "Design home" CTA — true when the home's model has Studio content. */
+  designReady?: boolean;
 };
 
 /**
  * Inventory card. Layout matches the BuildTrove dealer-site aesthetic:
- * large photo top, name + price/mo header, pipe-separated spec line,
- * dual CTAs (View details + Design home).
+ * large photo top, name + price/mo header, pipe-separated spec line, CTAs.
  *
- * The "Design home" route (Phase C) doesn't exist yet, so it deep-links
- * to the detail page with a #design hash that the detail page can later
- * scroll to.
+ * "Design home" opens the 3D Design Studio at /inventory/[stock]/design.
+ * It only renders when the home's model has authored content (designReady);
+ * otherwise "View details" spans the full width.
  */
-export function HomeCard({ home, index = 0 }: Props) {
+export function HomeCard({ home, index = 0, designReady = false }: Props) {
   const photo = home.public_home_photos?.[0];
   const phClass = `ph-${(index % 9) + 1}`;
   const isNew = home.on_lot_since
@@ -29,7 +30,7 @@ export function HomeCard({ home, index = 0 }: Props) {
     : false;
 
   const detailHref = `/inventory/${encodeURIComponent(home.stock_no)}`;
-  const designHref = `${detailHref}#design`;
+  const designHref = `${detailHref}/design`;
 
   const isConfigurable =
     (home.beds_options && home.beds_options.length > 1) ||
@@ -94,13 +95,15 @@ export function HomeCard({ home, index = 0 }: Props) {
           {specBits.length > 0 ? specBits.join(' | ') : '—'}
         </div>
 
-        <div className="home-card-ctas">
+        <div className={`home-card-ctas${designReady ? '' : ' single'}`}>
           <Link href={detailHref} className="home-card-btn">
             View details
           </Link>
-          <Link href={designHref} className="home-card-btn">
-            Design home
-          </Link>
+          {designReady && (
+            <Link href={designHref} className="home-card-btn">
+              Design home
+            </Link>
+          )}
         </div>
       </div>
     </article>

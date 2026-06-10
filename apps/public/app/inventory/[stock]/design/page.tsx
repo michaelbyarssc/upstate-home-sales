@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createPublicClient, publicPhotoUrl } from '../../../../lib/supabase';
 import type { Home, ModelOption, ModelOptionValue, Model3dAsset } from '@uhs/db';
 import { DesignStudio } from './design-studio';
@@ -10,23 +10,25 @@ export const dynamic = 'force-dynamic';
 
 export default async function DesignPage({ params }: { params: { stock: string } }) {
   const sb = createPublicClient();
-  // Look up the home + model + options + values + asset.
+  const stock = decodeURIComponent(params.stock);
+  // Look up the home's display fields from public_homes (anon-safe; no model_id).
   const { data: homeRaw } = await sb
     .from('public_homes')
     .select('id, org_id, name, stock_no, beds, baths, sqft, type, listed_price_cents, prices_hidden')
-    .eq('stock_no', decodeURIComponent(params.stock))
+    .eq('stock_no', stock)
     .maybeSingle();
   if (!homeRaw) notFound();
   const home = homeRaw as Pick<Home, 'id' | 'org_id' | 'name' | 'stock_no' | 'beds' | 'baths' | 'sqft' | 'type' | 'listed_price_cents'> & { prices_hidden: boolean };
 
-  // Look up the home's model. We use server-side data (a richer query),
-  // but for the public surface we only need the model_id + asset.
-  const { data: homeModelRow } = await sb
-    .from('homes')
+  // model_id rides on the public_home_design view (0046) — anon can't read the
+  // homes table directly. If the view is missing (migration not yet applied) or
+  // there's no model, we bounce to the detail page via the guard below.
+  const { data: designRow } = await sb
+    .from('public_home_design')
     .select('model_id')
-    .eq('id', home.id)
+    .eq('home_id', home.id)
     .maybeSingle();
-  const modelId = (homeModelRow as { model_id: string | null } | null)?.model_id ?? null;
+  const modelId = (designRow as { model_id: string | null } | null)?.model_id ?? null;
 
   // Without a linked model, the studio still renders with a placeholder geometry
   // and an empty option list — useful for the dealer demo / showroom kiosk.
@@ -51,6 +53,14 @@ export default async function DesignPage({ params }: { params: { stock: string }
       .eq('home_model_id', modelId)
       .order('sort_order');
     options = (opts ?? []) as unknown as Array<ModelOption & { values: ModelOptionValue[] }>;
+  }
+
+  // Studio has nothing to configure (no model, or a model with neither a 3D
+  // asset nor options). Public cards only link here when design_ready, so this
+  // guards direct-URL hits — bounce back to the detail page rather than show an
+  // empty configurator.
+  if (!modelId || (!asset && options.length === 0)) {
+    redirect(`/inventory/${encodeURIComponent(home.stock_no)}`);
   }
 
   // GLB delivery: route through /api/3d-asset/[id] which 302-redirects to

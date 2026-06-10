@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createPublicClient, publicPhotoUrl } from '../lib/supabase';
+import { createPublicClient, publicPhotoUrl, fetchDesignReadyIds } from '../lib/supabase';
 import { HomeCard } from '../components/HomeCard';
 import type { PublicHome } from '@uhs/db';
 import { absoluteUrl, itemListSchema, organizationSchema } from '../lib/seo';
@@ -23,6 +23,7 @@ export default async function HomePage() {
     .limit(6);
 
   const homes = (featured ?? []) as unknown as FeaturedHome[];
+  const designReady = await fetchDesignReadyIds(supabase, homes.map((h) => h.id));
 
   // Pick the first featured home that actually has a photo for the hero image.
   const heroHome = homes.find((h) => (h.public_home_photos?.length ?? 0) > 0);
@@ -98,7 +99,7 @@ export default async function HomePage() {
           ) : (
             <div className="inv-grid-public">
               {homes.map((h, i) => (
-                <HomeCard key={h.id} home={h} index={i} />
+                <HomeCard key={h.id} home={h} index={i} designReady={designReady.has(h.id)} />
               ))}
             </div>
           )}

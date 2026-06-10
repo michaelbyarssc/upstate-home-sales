@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createPublicClient } from '../../lib/supabase';
+import { createPublicClient, fetchDesignReadyIds } from '../../lib/supabase';
 import { HomeCard } from '../../components/HomeCard';
 import type { PublicHome } from '@uhs/db';
 import { absoluteUrl, itemListSchema } from '../../lib/seo';
@@ -116,6 +116,9 @@ export default async function InventoryListPage({ searchParams }: { searchParams
   const homes = (rows ?? []) as unknown as PublicHome[];
   const cols = (collections ?? []) as Array<{ slug: string; name: string; sort_order: number }>;
 
+  // Which of these homes' models have Design Studio content (gates the CTA).
+  const designReady = await fetchDesignReadyIds(supabase, homes.map((h) => h.id));
+
   // Group homes into sqft bands so the listing reads like Trove's catalog.
   const grouped = SQFT_BANDS.map((band) => ({
     band,
@@ -202,7 +205,7 @@ export default async function InventoryListPage({ searchParams }: { searchParams
                 <h3 className="inv-sqft-heading">{band.label}</h3>
                 <div className="inv-grid-public">
                   {bandHomes.map((h, i) => (
-                    <HomeCard key={h.id} home={h} index={i} />
+                    <HomeCard key={h.id} home={h} index={i} designReady={designReady.has(h.id)} />
                   ))}
                 </div>
               </section>
@@ -212,7 +215,7 @@ export default async function InventoryListPage({ searchParams }: { searchParams
                 <h3 className="inv-sqft-heading">Other</h3>
                 <div className="inv-grid-public">
                   {ungrouped.map((h, i) => (
-                    <HomeCard key={h.id} home={h} index={i} />
+                    <HomeCard key={h.id} home={h} index={i} designReady={designReady.has(h.id)} />
                   ))}
                 </div>
               </section>
