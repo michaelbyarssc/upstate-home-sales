@@ -1,235 +1,182 @@
-# Email setup — Resend (outbound) + Cloudflare Email Routing (inbound)
+# Email setup — Resend outbound on `mail.upstatehomecenter.com`
 
-End-to-end walkthrough for getting customer email working on `upstatehomesales.com`.
-Domain registration stays at GoDaddy; DNS moves to Cloudflare so Email Routing
-and Workers are available.
+How customer email works for **Upstate Home Center** (legal entity: Upstate Home
+Sales LLC). Everything below was verified on **2026-06-10** against the Resend
+API (`GET https://api.resend.com/domains`) and live DNS — if you suspect this
+doc has drifted again, re-check those two sources before trusting it.
 
-> ## Note on the web/email split
->
-> The dealer's **web domain** moved to `upstatehomecenter.com` (also at Cloudflare,
-> see `scripts/cloudflare-dns-apply-newdomain.sh`). **Email** still runs on
-> `upstatehomesales.com` (this doc) — the Resend sender, Cloudflare Email Routing
-> catch-all, and Worker bindings have not been migrated. Re-verifying a sending
-> domain in Resend requires new DKIM keys and DNS propagation, so we kept the
-> email stack stable while the web cutover happened. When you're ready to migrate
-> email too, repeat sections 2 and 3 of this doc against `mail.upstatehomecenter.com`
-> and `replies.upstatehomecenter.com`, then update `RESEND_FROM_EMAIL`,
-> `EMAIL_INBOUND_DOMAIN`, and the Worker secret `PUBLIC_APP_URL`.
+## Current state at a glance
+
+| Piece                                  | Value                                                          | Status |
+|----------------------------------------|----------------------------------------------------------------|--------|
+| Outbound provider                      | Resend                                                         | ✅ working |
+| Verified sending domain                | `mail.upstatehomecenter.com`                                   | ✅ `verified` in Resend |
+| From address (`RESEND_FROM_EMAIL`)     | `hello@mail.upstatehomecenter.com`                             | ✅ |
+| Reply domain (`EMAIL_INBOUND_DOMAIN`)  | `replies.upstatehomecenter.com`                                | ⚠ configured but **not receiving** — no MX records (see § Inbound replies) |
+| Dealer mailbox (apex MX)               | Google Workspace (`aspmx.l.google.com`)                        | managed outside this repo |
+| DNS, both domains                      | **GoDaddy nameservers** (`*.domaincontrol.com`) — edit records in the GoDaddy DNS dashboard | |
+| Legacy `mail.upstatehomesales.com`     | status **`failed`** in Resend                                  | ❌ dead — do not use |
+
+Env values live in **Vercel project settings** (projects **uhs-public** and
+**uhs-admin**, production *and* preview) and locally in **`.env.local` at the
+repo root** — `apps/public/.env.local` and `apps/admin/.env.local` are symlinks
+to it.
 
 > ## ⚠ DO NOT BUILD WITH SENDGRID
 >
 > SendGrid was the original choice in `handoff.html`, but was **retired** in
-> commit `81af731` in favor of Resend + Cloudflare Email Routing. Reasons:
->
-> - Resend is cheaper and has a saner API for transactional email at our scale.
-> - Cloudflare Email Routing handles inbound natively — no SendGrid Inbound
->   Parse, no MX/CNAME conflict on `replies.upstatehomesales.com`.
-> - Cloudflare DNS unlocks Workers, so the inbound parser can run at the edge
->   instead of inside our Next.js app.
->
-> **Do not** reintroduce `SENDGRID_API_KEY`, install `@sendgrid/*` packages, or
-> add SendGrid CNAMEs/DKIM records (`url1136`, `106931890`, `em9029`,
-> `s1._domainkey`, `s2._domainkey`). If a future session is asked to "set up
-> SendGrid", point at this notice and confirm with the operator first — they
-> may not realize the migration happened.
->
-> Likewise: **do not** push DNS through GoDaddy. Registration is at GoDaddy but
-> all records live at Cloudflare. The legacy `scripts/godaddy-dns-apply.sh`
-> exits 1 on run and is kept only for git history.
+> commit `81af731` in favor of Resend. **Do not** reintroduce
+> `SENDGRID_API_KEY`, install `@sendgrid/*` packages, add SendGrid Inbound
+> Parse webhooks, or add SendGrid CNAMEs/DKIM records (`url1136`, `106931890`,
+> `em9029`, `s1._domainkey`, `s2._domainkey`). If a future session is asked to
+> "set up SendGrid", point at this notice and confirm with the operator first —
+> they may not realize the migration happened. The same applies to re-pointing
+> email env at any `upstatehomesales.com` address: that domain's Resend
+> verification is dead.
 
-## Architecture
+## Environment variables
 
-```
-Outbound:  app  ──Resend API──>  Resend  ──SMTP──>  customer inbox
-                                  ↑
-                                  │ verified domain
-                                  │ mail.upstatehomesales.com
-                                  │
-Inbound:   customer  ──SMTP──>  Cloudflare Email Routing
-                                  ↓ catch-all → Worker
-                                Worker  ──HTTPS POST──>  /api/webhooks/inbound-email
-                                                          ↓
-                                                        lead_messages row
-                                                          ↓ realtime
-                                                        admin lead detail UI
-```
+| Var                      | Value / notes |
+|--------------------------|---------------|
+| `RESEND_API_KEY`         | From <https://resend.com/api-keys>. Set in both Vercel projects + `.env.local`. |
+| `RESEND_FROM_EMAIL`      | `hello@mail.upstatehomecenter.com`. **Must** be an address on the verified `mail.` subdomain — never the bare apex, never an `upstatehomesales.com` address. |
+| `LEAD_NOTIFY_EMAIL`      | Dealer inbox that receives new-lead alerts. Set in Vercel production; empty locally is fine (sends are skipped). |
+| `EMAIL_INBOUND_DOMAIN`   | `replies.upstatehomecenter.com`. Used to build `Reply-To: replies+{token}@…` headers. Receiving is not wired up — see § Inbound replies. |
+| `INBOUND_WEBHOOK_SECRET` | Shared secret between the inbound Worker and `/api/webhooks/inbound-email`. Only matters once inbound is re-enabled. |
 
-Two subdomains, two purposes:
+`scripts/vercel-env-resend.sh` pushes these to both Vercel projects
+(production + preview) in one go, then reminds you to redeploy.
 
-| Subdomain                            | Role                       | DNS provider |
-|--------------------------------------|----------------------------|--------------|
-| `mail.upstatehomesales.com`          | Outbound (Resend)          | Cloudflare   |
-| `replies.upstatehomesales.com`       | Inbound (Email Routing)    | Cloudflare   |
+## ⚠ After changing email env — verify sends
 
-Outbound `From:` is `hello@mail.upstatehomesales.com`.
-Outbound `Reply-To:` is `replies+{token}@replies.upstatehomesales.com`.
+`sendEmail` in `apps/*/lib/notify.ts` returns `ok: false` on failure instead of
+throwing, so a wrong env value fails **silently** — the app keeps working and
+email just quietly stops.
 
----
+> **Incident, 2026-06-09:** uhs-public production `RESEND_FROM_EMAIL` pointed
+> at the unverified apex `upstatehomecenter.com`. Resend returned 403 on every
+> send from the live site for **~34 days** — dealer new-lead alerts were dead
+> the entire time and nothing surfaced it (send results weren't logged until
+> commit `90e0e7d`). Fix was `vercel env add RESEND_FROM_EMAIL production
+> --force` with the correct `hello@mail.upstatehomecenter.com` + a redeploy.
 
-## Section 1 · Move DNS from GoDaddy to Cloudflare
+Checklist — run it every time you touch email env:
 
-1. Sign in at <https://dash.cloudflare.com> (free plan is fine).
-2. **Add a Site** → enter `upstatehomesales.com` → free plan.
-3. Cloudflare scans existing GoDaddy records and imports them. Review the list
-   and remove any stale SendGrid `CNAME`s (`url1136`, `106931890`, `em9029`,
-   `s1._domainkey`, `s2._domainkey`).
-4. Cloudflare shows two nameservers, e.g.
-   - `tara.ns.cloudflare.com`
-   - `walt.ns.cloudflare.com`
-5. Sign in at <https://dcc.godaddy.com>:
-   - Select `upstatehomesales.com` → **DNS** → **Nameservers** → **Change**.
-   - Choose **I'll use my own nameservers**.
-   - Paste the two Cloudflare nameservers.
-   - Save.
-6. Propagation usually completes in 1–4 hours. Verify with:
+1. Set the var with force-overwrite in **each** project that sends email
+   (both do — public sends lead alerts + customer confirmations, admin sends
+   replies/quotes/invoices):
    ```bash
-   dig NS upstatehomesales.com +short
+   cd apps/public    # then repeat in apps/admin
+   vercel env add RESEND_FROM_EMAIL production --force
+   # paste: hello@mail.upstatehomecenter.com
    ```
-   Expected output: the two Cloudflare hostnames.
-7. In Cloudflare → **Overview**, the zone status will flip to **Active**.
-
----
-
-## Section 2 · Configure Resend (outbound)
-
-1. Sign in at <https://resend.com>. Create an account if needed.
-2. **API Keys** → create one. Save it as `RESEND_API_KEY` in `.env.local` and in
-   Vercel project env (admin + public, both prod and preview).
-3. **Domains** → **Add Domain** → enter `mail.upstatehomesales.com` → **Add**.
-4. Resend shows several records to add. There will be:
-   - **TXT** SPF on `mail.upstatehomesales.com` — value `v=spf1 include:_spf.resend.com ~all`
-   - **MX** on `mail.upstatehomesales.com` → `feedback-smtp.us-east-1.amazonses.com` priority 10
-   - **CNAME** DKIM, e.g. `resend._domainkey.mail.upstatehomesales.com → resend.<unique>.dkim.amazonses.com`
-   - **TXT** DMARC on `_dmarc.upstatehomesales.com` (Resend will suggest one)
-
-   The DKIM selector + target are **unique to your Resend account** — they
-   cannot be hardcoded. Note them down.
-
-5. Apply records via the helper script:
+2. **Redeploy** — env edits do nothing until the next deployment:
    ```bash
-   # Edit scripts/cloudflare-dns-apply.sh first and fill in:
-   #   RESEND_DKIM_SELECTOR="resend"
-   #   RESEND_DKIM_TARGET="resend.<your-account>.dkim.amazonses.com"
-
-   CF_API_TOKEN=...  CF_ZONE_ID=...  ./scripts/cloudflare-dns-apply.sh
+   vercel redeploy <current-prod-deployment-url>
    ```
-   The `CF_API_TOKEN` needs `Zone:DNS:Edit` on this zone. Create at
-   <https://dash.cloudflare.com/profile/api-tokens>.
-
-6. Back in Resend → **Domains** → **Verify**. Should turn green within a couple
-   of minutes once DNS has propagated.
-
-7. Set the env vars:
-   ```env
-   RESEND_API_KEY=re_xxx
-   RESEND_FROM_EMAIL=hello@mail.upstatehomesales.com
-   LEAD_NOTIFY_EMAIL=marlena@upstatehomesales.com   # who gets new-lead alerts
-   ```
-
----
-
-## Section 3 · Configure Cloudflare Email Routing (inbound)
-
-> ⚠ Don't add MX records for `replies.upstatehomesales.com` manually.
-> Email Routing manages them automatically — adding your own will conflict.
-
-1. Cloudflare dashboard → select your zone → **Email** → **Email Routing**.
-2. **Get Started**. Cloudflare adds the required MX + SPF records on the apex.
-   Since we want inbound on the `replies` subdomain, do this:
-   - **Settings** → **Custom address** is for the apex; we want a subdomain.
-   - Click **Routes** → **Catch-all**.
-   - Cloudflare requires the zone-level routing to be enabled first; once the
-     wizard confirms `upstatehomesales.com` is verified, it lets you add a
-     **subdomain destination**. Add `replies.upstatehomesales.com`.
-   - If the dashboard does not expose subdomain routing yet, fall back to
-     enabling routing on the apex zone and use a wildcard pattern. The Worker
-     filters by `replies+TOKEN@…` either way.
-
-   (Cloudflare's UI for subdomain routing has changed several times; see
-   <https://developers.cloudflare.com/email-routing/setup/email-routing-addresses/>
-   for the current path.)
-
-3. Generate a strong shared secret (used by the Worker → app webhook):
+3. Trigger a real send: submit a quote/contact form on the live site (public),
+   or send a quote from the admin.
+4. Confirm in **Resend dashboard → Emails** that the send shows `delivered`,
+   and that it actually landed in the recipient inbox.
+5. Tail production logs and grep for send failures:
    ```bash
-   openssl rand -hex 32
-   ```
-   Save it.
-
-4. Set it in the public app's env (Vercel + `.env.local`):
-   ```env
-   EMAIL_INBOUND_DOMAIN=replies.upstatehomesales.com
-   INBOUND_WEBHOOK_SECRET=<the openssl output>
+   vercel logs https://upstatehomecenter.com   # long-running; background it (macOS has no `timeout`)
+   # look for "[lead-intake] … not sent:" lines
    ```
 
----
-
-## Section 4 · Deploy the Worker
-
-The Worker source lives at `workers/inbound-email-router/`.
-
-```bash
-cd workers/inbound-email-router
-pnpm install
-pnpm exec wrangler login
-
-# Set secrets (these go in the Worker's environment, not the app)
-pnpm exec wrangler secret put INBOUND_WEBHOOK_SECRET
-# paste the same value you set in the app's env
-
-pnpm exec wrangler secret put PUBLIC_APP_URL
-# e.g.  https://upstatehomesales.com   (no trailing slash)
-
-pnpm exec wrangler deploy
-```
-
-After deploy:
-
-5. Cloudflare dashboard → **Email** → **Email Routing** → **Routes** → either
-   the catch-all rule or the route for `replies+*@replies.upstatehomesales.com`
-   → **Action** → **Send to a Worker** → pick `uhs-inbound-email-router`.
-6. Save.
-
----
-
-## Section 5 · End-to-end test
-
-1. From the public site, submit a quote-form lead with your real email.
-2. In the admin, open the lead → reply via email tab → send.
-3. You should receive the email. The `From:` is `hello@mail.upstatehomesales.com`,
-   `Reply-To:` is `replies+abc123@replies.upstatehomesales.com`.
-4. Hit reply in your mail client and send.
-5. Within a few seconds the lead detail timeline should show your inbound
-   message via realtime. Check Worker logs if not:
-   ```bash
-   cd workers/inbound-email-router && pnpm exec wrangler tail
-   ```
-
-If a reply comes in but no row appears:
-- 401 in `wrangler tail` → secret mismatch between Worker and app.
-- 200 but no row → token missing from the address (verify outbound Reply-To
-  header in your mail client's "show original").
-- Token present but `ignored: no lead` → token doesn't exist in `leads.reply_token`.
-
----
-
-## Section 6 · DMARC tightening (after 30 days)
-
-Once you've confirmed legitimate mail isn't getting flagged for ~30 days, raise
-DMARC from monitoring to enforcement:
+## Outbound — how it's wired
 
 ```
-v=DMARC1; p=quarantine; rua=mailto:postmaster@upstatehomesales.com
+app (apps/public or apps/admin)
+  └── lib/notify.ts ──Resend API──> Resend ──SMTP──> recipient inbox
+                                      │
+                                      │ verified domain: mail.upstatehomecenter.com
+                                      │ From: hello@mail.upstatehomecenter.com
+                                      │ Reply-To: replies+{token}@replies.upstatehomecenter.com
+                                      │           (⚠ currently bounces — see § Inbound replies)
 ```
 
-…then to `p=reject` after another 30 days. Update via the Cloudflare dashboard
-or by re-running `cloudflare-dns-apply.sh` after editing the DMARC line.
+Resend's DNS records for the verified domain (all status `verified`, living in
+the **GoDaddy** zone for `upstatehomecenter.com`):
 
----
+| Type       | Name (relative to apex)       | Value |
+|------------|-------------------------------|-------|
+| TXT (DKIM) | `resend._domainkey.mail`      | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD03AKL…` (key is account-specific) |
+| MX         | `send.mail`                   | `feedback-smtp.us-east-1.amazonses.com`, priority 10 |
+| TXT (SPF)  | `send.mail`                   | `v=spf1 include:amazonses.com ~all` |
+
+To re-create from scratch: Resend → **Domains** → **Add Domain** →
+`mail.upstatehomecenter.com` → add the records Resend shows (they're
+account-specific) in the GoDaddy DNS dashboard → **Verify**.
+
+## Inbound replies — NOT currently operational
+
+The two-way email design: outbound mail carries
+`Reply-To: replies+{token}@replies.upstatehomecenter.com`; an inbound service
+receives the reply and POSTs it to
+`apps/public/app/api/webhooks/inbound-email/route.ts` (authed by
+`INBOUND_WEBHOOK_SECRET`), which writes a `lead_messages` row that appears in
+the admin lead timeline via realtime.
+
+**What exists:** the webhook route, the Cloudflare Worker source
+(`workers/inbound-email-router/`), and the env vars.
+
+**What's broken:** the original inbound transport was Cloudflare Email Routing,
+which requires the zone's DNS to be hosted on Cloudflare. Both domains now
+delegate to GoDaddy nameservers, so Email Routing is inactive and
+`replies.upstatehomecenter.com` has **no MX (or any) records**. Customer
+replies to `replies+{token}@…` addresses **bounce**. Mail sent directly to
+`hello@mail.upstatehomecenter.com` is also a dead end (its MX points at SES
+inbound, but the Resend domain has `receiving: disabled`).
+
+Until this is re-wired, treat app email as **outbound-only**: the admin "reply
+by email" thread can send but never receives the customer's answer.
+
+Options to re-enable (pick one, then update this doc):
+
+- **Resend Inbound** — enable receiving on a Resend domain and point its
+  webhook at `/api/webhooks/inbound-email`. Keeps everything in one vendor; no
+  DNS-host move; the Cloudflare Worker becomes unnecessary.
+- **Move DNS back to Cloudflare** and re-enable Email Routing → Worker → webhook
+  (the original design, see § History). Touches nameservers for the live web
+  domain, so coordinate carefully.
+
+## Known DNS quirks (cleanup candidates, GoDaddy dashboard)
+
+Verified by `dig` on 2026-06-10. Outbound deliverability currently rides on
+DKIM alignment, so these aren't breaking sends today, but they're wrong:
+
+- **Two SPF TXT records** on the apex (`include:amazonses.com` +
+  GoDaddy-forwarding `_spfm` include) **and** on `send.mail`. Multiple SPF
+  records at one name = SPF permerror.
+- **Two DMARC records** at `_dmarc.upstatehomecenter.com` (a GoDaddy default
+  pointing at `onsecureserver.net` + a `postmaster@` one). Receivers ignore
+  DMARC entirely when more than one record exists.
+- `mail.upstatehomecenter.com` has an MX to `inbound-smtp.us-east-1.amazonaws.com`
+  even though Resend receiving is disabled — mail to `hello@mail.…` vanishes.
+
+## History
+
+- **SendGrid era** — original `handoff.html` plan; retired in commit `81af731`.
+- **Resend + Cloudflare era (on `upstatehomesales.com`)** — outbound on
+  `mail.upstatehomesales.com`, inbound via Cloudflare Email Routing →
+  `replies.upstatehomesales.com` → Worker, with DNS hosted on Cloudflare.
+- **Brand/domain cutover (2026-05)** — the public brand became Upstate Home
+  Center. Web moved to `upstatehomecenter.com`, and email followed on
+  2026-05-14/15: `mail.upstatehomecenter.com` was verified in Resend and env
+  defaults flipped in commit `6a8cddd`. DNS for both domains ended up back on
+  GoDaddy nameservers, which silently killed the Cloudflare Email Routing
+  inbound path (never re-wired — see § Inbound replies).
+  `mail.upstatehomesales.com` now shows `failed` in Resend.
+- All DNS helper scripts from earlier eras — `scripts/cloudflare-dns-apply.sh`,
+  `scripts/cloudflare-dns-apply-newdomain.sh`, `scripts/godaddy-dns-apply.sh` —
+  are **deprecated** and exit 1; they're kept for git history only.
 
 ## Reference
 
-- Resend domain verification: <https://resend.com/docs/dashboard/domains/introduction>
-- Cloudflare Email Routing → Workers: <https://developers.cloudflare.com/email-routing/email-workers/>
-- Worker source: `workers/inbound-email-router/src/index.ts`
-- Inbound webhook handler: `apps/public/app/api/webhooks/inbound-email/route.ts`
+- Resend domains: <https://resend.com/domains> · API check:
+  `curl -s -H "Authorization: Bearer $RESEND_API_KEY" https://api.resend.com/domains`
 - Outbound notify helpers: `apps/admin/lib/notify.ts`, `apps/public/lib/notify.ts`
+- Inbound webhook handler: `apps/public/app/api/webhooks/inbound-email/route.ts`
+- Inbound Worker source (dormant): `workers/inbound-email-router/src/index.ts`
+- Env push helper: `scripts/vercel-env-resend.sh`

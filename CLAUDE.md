@@ -23,14 +23,15 @@ If Vercel deploy fails after push, surface the failure and investigate before de
 
 ## ⚠ Email + DNS stack — DO NOT REVERT
 
-This project's email stack was migrated from SendGrid to **Resend + Cloudflare Email Routing** (commit `81af731`, "Switch email to Resend"). DNS for `upstatehomesales.com` lives at **Cloudflare** (registration stays at GoDaddy; nameservers point at Cloudflare).
+Email is **Resend** (outbound), migrated from SendGrid in commit `81af731` and later moved from the legacy `upstatehomesales.com` domains to the current brand domain. State below was verified against the Resend API and live DNS on 2026-06-10:
 
-- **Outbound email:** Resend, sending domain `mail.upstatehomesales.com`. Code lives in `apps/admin/lib/notify.ts` and `apps/public/lib/notify.ts`. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`.
-- **Inbound email:** Cloudflare Email Routing → Cloudflare Worker at `workers/inbound-email-router/` → POST to `apps/public/app/api/webhooks/inbound-email/route.ts`. Env: `EMAIL_INBOUND_DOMAIN`, `INBOUND_WEBHOOK_SECRET`.
-- **DNS:** all records applied via `scripts/cloudflare-dns-apply.sh` using `CF_API_TOKEN` + `CF_ZONE_ID`. The `scripts/godaddy-dns-apply.sh` file is **deprecated** and exits 1 on run.
-- **Full setup walkthrough:** `docs/email-setup.md`.
+- **Outbound email:** Resend, verified sending domain **`mail.upstatehomecenter.com`**, from address `hello@mail.upstatehomecenter.com`. The old `mail.upstatehomesales.com` shows status **failed** in Resend and is dead — never point env at it, and never use the bare apex `upstatehomecenter.com` (not a verified sender; see incident note below). Code lives in `apps/admin/lib/notify.ts` and `apps/public/lib/notify.ts`. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`.
+- **Env values live in** Vercel project settings (**uhs-public** + **uhs-admin**, production *and* preview) and in `.env.local` at the repo root (`apps/public/.env.local` and `apps/admin/.env.local` are symlinks to it). Vercel env edits do nothing until a redeploy — after changing email env, run the checklist in `docs/email-setup.md` § "After changing email env". Resend send failures return `ok:false` without throwing, so a bad `RESEND_FROM_EMAIL` fails **silently**: in 2026-06 a stale apex value 403'd every production send for ~34 days before anyone noticed.
+- **Inbound email — currently NOT operational:** `EMAIL_INBOUND_DOMAIN=replies.upstatehomecenter.com` is configured, and the Worker (`workers/inbound-email-router/`) + webhook (`apps/public/app/api/webhooks/inbound-email/route.ts`) exist, but the subdomain has **no MX records** — the Cloudflare Email Routing setup died when DNS left Cloudflare and was never re-wired. Customer replies to `replies+{token}@…` bounce. See `docs/email-setup.md` § "Inbound replies".
+- **DNS:** both `upstatehomecenter.com` and `upstatehomesales.com` delegate to **GoDaddy nameservers** (`*.domaincontrol.com`) — manage records in the GoDaddy DNS dashboard. The Cloudflare-era scripts (`scripts/cloudflare-dns-apply.sh`, `scripts/cloudflare-dns-apply-newdomain.sh`) and `scripts/godaddy-dns-apply.sh` are all **deprecated** and exit 1 on run.
+- **Full walkthrough + incident history:** `docs/email-setup.md`.
 
-**Do NOT** add `SENDGRID_API_KEY` env vars, `@sendgrid/*` packages, SendGrid Inbound Parse webhooks, or DNS records pointing to `*.sendgrid.net`/`*.wlNNN.sendgrid.net`. Do not write GoDaddy DNS API code; DNS is on Cloudflare. If the user asks for SendGrid or GoDaddy DNS, surface this section and confirm before proceeding — they may not realize the migration happened.
+**Do NOT** add `SENDGRID_API_KEY` env vars, `@sendgrid/*` packages, SendGrid Inbound Parse webhooks, or DNS records pointing to `*.sendgrid.net`/`*.wlNNN.sendgrid.net`. If a session is asked to "set up SendGrid" or to re-point email at any `upstatehomesales.com` address, surface this section and confirm before proceeding — the requester may not realize the migrations happened.
 
 ---
 
