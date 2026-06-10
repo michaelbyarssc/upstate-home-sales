@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
-import dynamic from 'next/dynamic';
+import { useMemo, useState, useTransition } from 'react';
 import {
   formatCents,
   type ModelOption,
@@ -9,95 +8,27 @@ import {
   type OptionOverlay,
 } from '@uhs/db';
 import { saveDesign } from './actions';
-import { PhotoMode } from './photo-mode';
-
-// Lazy-load the 3D canvas — heavy R3F + three modules only land in the
-// chunk when the user is actually in 3D mode. Low-end mobiles never pay
-// the download cost.
-const Design3dCanvas = dynamic(() => import('./design-canvas-3d'), {
-  ssr: false,
-  loading: () => (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        background: '#1a1a1a',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'rgba(255,255,255,0.7)',
-        fontSize: 13,
-      }}
-    >
-      Loading 3D scene…
-    </div>
-  ),
-});
+import { HousePreview } from './house-preview';
 
 type Props = {
   homeId: string;
   homeName: string;
   baseListedPriceCents: number | null;
   pricesHidden: boolean;
-  glbUrl: string | null;
-  materialManifest: Record<string, string | string[]>;
   options: Array<ModelOption & { values: ModelOptionValue[] }>;
   heroPhotoUrl: string | null;
 };
 
 type SelectionMap = Record<string, string>;
-type Mode = '3d' | 'photo';
-
-/**
- * Decide which mode to default into based on the device's capability:
- *   - No WebGL2 → photo
- *   - save-data hint set → photo (respect the user's data preference)
- *   - viewport < 768 AND deviceMemory < 4 → photo (heuristic for low-end phones)
- *   - otherwise → 3D
- *
- * We can't read these on the server, so we render in 3D and downgrade on
- * mount if the heuristic says so. The downgrade is instant — the dynamic
- * `Design3dCanvas` import is skipped if we flip before it actually loads.
- */
-function detectPreferredMode(): Mode {
-  if (typeof window === 'undefined') return '3d';
-  try {
-    const canvas = document.createElement('canvas');
-    if (!canvas.getContext('webgl2')) return 'photo';
-  } catch {
-    return 'photo';
-  }
-  const conn = (navigator as Navigator & {
-    connection?: { saveData?: boolean; effectiveType?: string };
-  }).connection;
-  if (conn?.saveData === true) return 'photo';
-  if (conn?.effectiveType && /^(slow-2g|2g)$/i.test(conn.effectiveType)) return 'photo';
-  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-  if (window.innerWidth < 768 && typeof memory === 'number' && memory < 4) return 'photo';
-  return '3d';
-}
 
 export function DesignStudio({
   homeId,
   homeName,
   baseListedPriceCents,
   pricesHidden,
-  glbUrl,
-  materialManifest,
   options,
   heroPhotoUrl,
 }: Props) {
-  // Default to 3D for SSR, then immediately re-check on mount. The brief
-  // hydration mismatch is fine — the 3D canvas chunk won't actually start
-  // downloading until React's effects flush, and our effect runs first.
-  const [mode, setMode] = useState<Mode>('3d');
-  const [autoDecided, setAutoDecided] = useState(false);
-  useEffect(() => {
-    if (autoDecided) return;
-    setMode(detectPreferredMode());
-    setAutoDecided(true);
-  }, [autoDecided]);
-
   const initialSelections: SelectionMap = useMemo(() => {
     const out: SelectionMap = {};
     for (const opt of options) {
@@ -183,63 +114,13 @@ export function DesignStudio({
   return (
     <div className="design-grid">
       <div className="design-canvas" style={{ position: 'relative' }}>
-        {mode === '3d' ? (
-          <Design3dCanvas
-            glbUrl={glbUrl}
-            slotColors={slotColors}
-            materialManifest={materialManifest}
-          />
-        ) : (
-          <PhotoMode
-            heroPhotoUrl={heroPhotoUrl}
-            homeName={homeName}
-            slotColors={slotColors}
-            options={options}
-            selections={selections}
-          />
-        )}
-
-        {!glbUrl && mode === '3d' && (
-          <div className="design-placeholder-tag">
-            Demo mode — no 3D asset uploaded for this model yet. Material swaps still work on the placeholder.
-          </div>
-        )}
-
-        {/* Mode toggle */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            display: 'inline-flex',
-            background: 'rgba(20, 20, 20, 0.78)',
-            borderRadius: 999,
-            padding: 4,
-            backdropFilter: 'blur(4px)',
-            zIndex: 5,
-          }}
-        >
-          {(['3d', 'photo'] as Mode[]).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              aria-pressed={mode === m}
-              style={{
-                background: mode === m ? '#fff' : 'transparent',
-                color: mode === m ? '#1a1a1a' : '#fff',
-                border: 'none',
-                padding: '6px 14px',
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              {m === '3d' ? '3D' : 'Photo'}
-            </button>
-          ))}
-        </div>
+        <HousePreview
+          heroPhotoUrl={heroPhotoUrl}
+          homeName={homeName}
+          slotColors={slotColors}
+          options={options}
+          selections={selections}
+        />
       </div>
 
       <aside className="design-sidebar">
