@@ -4,8 +4,10 @@
 #
 #   bash scripts/vercel-env-resend.sh
 #
-# RESEND_API_KEY is prompted once so it never appears in shell history. The
-# other values are pre-filled below. Existing vars are overwritten (--force).
+# RESEND_API_KEY (and optionally RESEND_WEBHOOK_SECRET, the Svix signing
+# secret for the inbound webhook — uhs-public only) are prompted so they never
+# appear in shell history. The other values are pre-filled below. Existing
+# vars are overwritten (--force).
 #
 # ⚠ After running: redeploy both projects AND verify a real send — see
 # docs/email-setup.md § "After changing email env". A wrong RESEND_FROM_EMAIL
@@ -39,6 +41,11 @@ if [ -z "${RESEND_API_KEY:-}" ]; then
   echo "RESEND_API_KEY is required"; exit 1
 fi
 
+# Svix signing secret from Resend → Webhooks → (your endpoint) — only needed
+# by uhs-public, which hosts /api/webhooks/inbound-email.
+read -rsp "RESEND_WEBHOOK_SECRET (whsec_…, Enter to skip): " RESEND_WEBHOOK_SECRET
+echo
+
 for app in "${APPS[@]}"; do
   for env in "${ENVS[@]}"; do
     add_var "$app" "$env" RESEND_API_KEY      "$RESEND_API_KEY"
@@ -48,6 +55,9 @@ for app in "${APPS[@]}"; do
       add_var "$app" "$env" LEAD_NOTIFY_EMAIL "$NOTIFY_EMAIL"
     else
       echo "→ ${app} :: LEAD_NOTIFY_EMAIL skipped (NOTIFY_EMAIL empty)"
+    fi
+    if [ "$app" = "apps/public" ] && [ -n "${RESEND_WEBHOOK_SECRET:-}" ]; then
+      add_var "$app" "$env" RESEND_WEBHOOK_SECRET "$RESEND_WEBHOOK_SECRET"
     fi
   done
 done
