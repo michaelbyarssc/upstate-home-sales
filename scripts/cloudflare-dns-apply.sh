@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
+#
+# DEPRECATED — DO NOT RUN.
+#
+# This applied DNS records for upstatehomesales.com when that zone was hosted
+# on Cloudflare. As of 2026-05 the email stack moved to
+# mail.upstatehomecenter.com and BOTH domains delegate to GoDaddy nameservers
+# again — there is no active Cloudflare zone for these records to land in,
+# and mail.upstatehomesales.com shows "failed" in Resend.
+#
+# Manage DNS in the GoDaddy dashboard. Current setup: docs/email-setup.md.
+# Kept in repo for historical reference only.
+
+echo "This script is deprecated — DNS is managed in the GoDaddy dashboard now."
+echo "See docs/email-setup.md for the current email/DNS setup."
+exit 1
+
 # Apply all required DNS records for upstatehomesales.com via the Cloudflare API.
 #
 # Prereq:
