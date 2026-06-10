@@ -1,4 +1,4 @@
-# Email setup — Resend outbound on `mail.upstatehomecenter.com`
+# Email setup — Resend: outbound on `mail.`, inbound replies on `replies.upstatehomecenter.com`
 
 How customer email works for **Upstate Home Center** (legal entity: Upstate Home
 Sales LLC). Everything below was verified on **2026-06-10** against the Resend
@@ -12,7 +12,7 @@ doc has drifted again, re-check those two sources before trusting it.
 | Outbound provider                      | Resend                                                         | ✅ working |
 | Verified sending domain                | `mail.upstatehomecenter.com`                                   | ✅ `verified` in Resend |
 | From address (`RESEND_FROM_EMAIL`)     | `hello@mail.upstatehomecenter.com`                             | ✅ |
-| Reply domain (`EMAIL_INBOUND_DOMAIN`)  | `replies.upstatehomecenter.com`                                | ⚠ configured but **not receiving** — no MX records (see § Inbound replies) |
+| Reply domain (`EMAIL_INBOUND_DOMAIN`)  | `replies.upstatehomecenter.com`                                | ⚠ webhook code shipped; **activation pending** — needs Resend receiving domain + GoDaddy MX (§ Inbound replies checklist) |
 | Dealer mailbox (apex MX)               | Google Workspace (`aspmx.l.google.com`)                        | managed outside this repo |
 | DNS, both domains                      | **GoDaddy nameservers** (`*.domaincontrol.com`) — edit records in the GoDaddy DNS dashboard | |
 | Legacy `mail.upstatehomesales.com`     | status **`failed`** in Resend                                  | ❌ dead — do not use |
@@ -42,7 +42,8 @@ to it.
 | `RESEND_FROM_EMAIL`      | `hello@mail.upstatehomecenter.com`. **Must** be an address on the verified `mail.` subdomain — never the bare apex, never an `upstatehomesales.com` address. |
 | `LEAD_NOTIFY_EMAIL`      | Dealer inbox that receives new-lead alerts. Set in Vercel production; empty locally is fine (sends are skipped). |
 | `EMAIL_INBOUND_DOMAIN`   | `replies.upstatehomecenter.com`. Used to build `Reply-To: replies+{token}@…` headers. Receiving is not wired up — see § Inbound replies. |
-| `INBOUND_WEBHOOK_SECRET` | Shared secret between the inbound Worker and `/api/webhooks/inbound-email`. Only matters once inbound is re-enabled. |
+| `RESEND_WEBHOOK_SECRET`  | Svix signing secret (`whsec_…`) for the Resend inbound webhook, from <https://resend.com/webhooks>. **uhs-public only** — that app hosts the endpoint. Unset → Resend events are rejected with 503. |
+| `INBOUND_WEBHOOK_SECRET` | Bearer secret for the **legacy** Cloudflare Worker transport (dormant). Only needed if that path is ever revived. |
 
 `scripts/vercel-env-resend.sh` pushes these to both Vercel projects
 (production + preview) in one go, then reminds you to redeploy.
@@ -109,37 +110,84 @@ To re-create from scratch: Resend → **Domains** → **Add Domain** →
 `mail.upstatehomecenter.com` → add the records Resend shows (they're
 account-specific) in the GoDaddy DNS dashboard → **Verify**.
 
-## Inbound replies — NOT currently operational
+## Inbound replies — Resend Inbound (code shipped 2026-06-10; activation pending)
 
 The two-way email design: outbound mail carries
-`Reply-To: replies+{token}@replies.upstatehomecenter.com`; an inbound service
-receives the reply and POSTs it to
-`apps/public/app/api/webhooks/inbound-email/route.ts` (authed by
-`INBOUND_WEBHOOK_SECRET`), which writes a `lead_messages` row that appears in
-the admin lead timeline via realtime.
+`Reply-To: replies+{token}@replies.upstatehomecenter.com`; Resend receives the
+reply and POSTs an `email.received` webhook to
+`https://upstatehomecenter.com/api/webhooks/inbound-email`, which matches
+`{token}` against `leads.reply_token` and writes a `lead_messages` row that
+appears in the admin lead timeline via realtime.
 
-**What exists:** the webhook route, the Cloudflare Worker source
-(`workers/inbound-email-router/`), and the env vars.
+**Implemented in the app:** the webhook route
+(`apps/public/app/api/webhooks/inbound-email/route.ts`) natively accepts
+Resend Inbound events — it verifies the Svix-style signature
+(`svix-id`/`svix-timestamp`/`svix-signature` headers against
+`RESEND_WEBHOOK_SECRET`, 5-minute timestamp tolerance), handles
+`email.received`, fetches the message body from
+`GET https://api.resend.com/emails/receiving/{email_id}` (events carry
+metadata only, no body), dedupes retries on `email_id`, and returns non-2xx on
+transient failures so Resend re-delivers. Pure helpers (signature verify,
+HTML→text fallback) live in `apps/public/lib/inbound-email.ts`. The legacy
+Worker bearer transport still works in parallel (see fallback note below).
 
-**What's broken:** the original inbound transport was Cloudflare Email Routing,
-which requires the zone's DNS to be hosted on Cloudflare. Both domains now
-delegate to GoDaddy nameservers, so Email Routing is inactive and
-`replies.upstatehomecenter.com` has **no MX (or any) records**. Customer
-replies to `replies+{token}@…` addresses **bounce**. Mail sent directly to
-`hello@mail.upstatehomecenter.com` is also a dead end (its MX points at SES
-inbound, but the Resend domain has `receiving: disabled`).
+**Until the checklist below is done, replies still bounce** —
+`replies.upstatehomecenter.com` has no MX records and no Resend receiving
+domain exists. Treat app email as outbound-only until then.
 
-Until this is re-wired, treat app email as **outbound-only**: the admin "reply
-by email" thread can send but never receives the customer's answer.
+### Activation checklist (operator, ~15 min + DNS propagation)
 
-Options to re-enable (pick one, then update this doc):
+1. **Resend — add the receiving domain.** <https://resend.com/domains> →
+   **Add Domain** → `replies.upstatehomecenter.com`, region **us-east-1**
+   (must match the sending domain's region). Enable **Receiving** on the
+   domain page — a modal then shows the exact **MX record** to add. Only the
+   MX matters for inbound; if the dashboard also lists sending records
+   (SPF/DKIM on `send.replies…`/`resend._domainkey.replies…`), adding them is
+   harmless but not required for receiving.
+2. **GoDaddy — add the MX.** <https://dcc.godaddy.com> →
+   `upstatehomecenter.com` → **DNS** → add record: type **MX**, name
+   **`replies`**, value + priority **exactly as the Resend modal shows**
+   (us-east-1 accounts get SES inbound, e.g.
+   `inbound-smtp.us-east-1.amazonaws.com` priority 10 — but copy from the
+   modal, not from this doc). The `replies` host currently has zero records,
+   so nothing conflicts. After propagation, verify:
+   ```bash
+   dig MX replies.upstatehomecenter.com +short
+   ```
+3. **Resend — create the webhook.** <https://resend.com/webhooks> → **Add
+   Webhook** → endpoint
+   `https://upstatehomecenter.com/api/webhooks/inbound-email`, subscribe to
+   **`email.received`** only. Copy the signing secret (`whsec_…`).
+4. **Vercel — set the secret + redeploy.** Add
+   `RESEND_WEBHOOK_SECRET=whsec_…` to **uhs-public** (production + preview) —
+   `scripts/vercel-env-resend.sh` prompts for it — then **redeploy uhs-public**
+   (env edits do nothing until the next deployment).
+5. **Smoke-test the live endpoint** (no DB writes — uses a made-up reply
+   token; proves signature verification, parsing, and the lead lookup):
+   ```bash
+   node scripts/test-inbound-webhook.mjs \
+     https://upstatehomecenter.com/api/webhooks/inbound-email 'whsec_…'
+   ```
+   Expect all four checks to PASS.
+6. **End-to-end test:** admin → open a lead → reply via the email tab → send;
+   answer that email from your own inbox; the reply should appear in the lead
+   timeline within seconds. If it doesn't:
+   - Resend dashboard → **Emails → Received**: did the inbound mail arrive at
+     all? (No → DNS/MX problem, re-check step 2.)
+   - Resend dashboard → **Webhooks → your endpoint → deliveries**: delivery
+     status, response codes, retries. (401 → secret mismatch, re-do step 4.)
+   - `vercel logs` on uhs-public, grep `[inbound-email]` — `ignored: no token`
+     means the Reply-To header was lost; `ignored: no lead` means the token
+     doesn't match any `leads.reply_token`.
 
-- **Resend Inbound** — enable receiving on a Resend domain and point its
-  webhook at `/api/webhooks/inbound-email`. Keeps everything in one vendor; no
-  DNS-host move; the Cloudflare Worker becomes unnecessary.
-- **Move DNS back to Cloudflare** and re-enable Email Routing → Worker → webhook
-  (the original design, see § History). Touches nameservers for the live web
-  domain, so coordinate carefully.
+### Fallback option (not chosen)
+
+Moving DNS back to Cloudflare to restore Email Routing → Worker → webhook (the
+§ History design) would also work, but it moves nameservers for the **live web
+domain** — riskier than adding one MX record. The Worker
+(`workers/inbound-email-router/`) and its `INBOUND_WEBHOOK_SECRET` bearer path
+are kept dormant so that contingency stays a DNS-only change, no app deploy
+needed.
 
 ## Known DNS quirks (cleanup candidates, GoDaddy dashboard)
 
@@ -168,6 +216,11 @@ DKIM alignment, so these aren't breaking sends today, but they're wrong:
   GoDaddy nameservers, which silently killed the Cloudflare Email Routing
   inbound path (never re-wired — see § Inbound replies).
   `mail.upstatehomesales.com` now shows `failed` in Resend.
+- **Resend Inbound re-wire (2026-06-10)** — the webhook gained native Resend
+  `email.received` support (Svix signature verification, body fetch via the
+  Received Emails API, retry dedupe). The Cloudflare Worker path stays dormant
+  as a fallback. Receiving goes live once the § Inbound replies activation
+  checklist is completed.
 - All DNS helper scripts from earlier eras — `scripts/cloudflare-dns-apply.sh`,
   `scripts/cloudflare-dns-apply-newdomain.sh`, `scripts/godaddy-dns-apply.sh` —
   are **deprecated** and exit 1; they're kept for git history only.
@@ -176,7 +229,10 @@ DKIM alignment, so these aren't breaking sends today, but they're wrong:
 
 - Resend domains: <https://resend.com/domains> · API check:
   `curl -s -H "Authorization: Bearer $RESEND_API_KEY" https://api.resend.com/domains`
+- Resend receiving docs: <https://resend.com/docs/dashboard/receiving/introduction>
 - Outbound notify helpers: `apps/admin/lib/notify.ts`, `apps/public/lib/notify.ts`
 - Inbound webhook handler: `apps/public/app/api/webhooks/inbound-email/route.ts`
-- Inbound Worker source (dormant): `workers/inbound-email-router/src/index.ts`
+- Inbound helpers (Svix verify, HTML→text): `apps/public/lib/inbound-email.ts`
+- Inbound smoke test: `scripts/test-inbound-webhook.mjs`
+- Inbound Worker source (dormant fallback): `workers/inbound-email-router/src/index.ts`
 - Env push helper: `scripts/vercel-env-resend.sh`
