@@ -67,10 +67,11 @@ test.describe('public site smoke', () => {
     expect(errors).toEqual([]);
   });
 
-  test('design studio loads with placeholder geometry', async ({ page }) => {
-    const errors = attachConsoleAssertions(page);
-    // Discover an actual published stock_no from /inventory rather than
-    // hard-coding seed data (the original UH-1434-AS demo was deleted).
+  test('design studio renders or redirects cleanly (feature-flagged)', async ({ page }) => {
+    // The studio is behind DESIGN_STUDIO_ENABLED (apps/public/lib/flags.ts).
+    // This suite runs against production, which may be on either side of a
+    // flag flip — so assert the route never breaks: it either shows the
+    // studio shell or redirects to the home's detail page.
     await page.goto('/inventory');
     const firstLink = await page
       .locator('a[href^="/inventory/"][href*="-"]')
@@ -78,12 +79,13 @@ test.describe('public site smoke', () => {
       .getAttribute('href');
     expect(firstLink, 'expected at least one home card on /inventory').toBeTruthy();
     await page.goto(`${firstLink!}/design`);
-    // Wait for canvas to mount (Three.js takes a moment).
-    await expect(page.locator('canvas')).toBeVisible({ timeout: 15_000 });
-    // Side panel total should render.
-    await expect(page.getByText('Total')).toBeVisible();
-    // Don't assert empty errors — Three.js sometimes warns about WebGL extensions.
-    void errors;
+    const studioShell = page.locator('.design-shell');
+    const detailAnchor = page.getByText(/Get a quote/i).first();
+    await expect(studioShell.or(detailAnchor).first()).toBeVisible({ timeout: 15_000 });
+    if ((await studioShell.count()) === 0) {
+      // Feature off → must have landed back on the detail page.
+      expect(page.url()).not.toContain('/design');
+    }
   });
 
   test('financing calculator loads', async ({ page }) => {

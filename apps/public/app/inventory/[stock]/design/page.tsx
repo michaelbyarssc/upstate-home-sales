@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { createPublicClient, publicPhotoUrl } from '../../../../lib/supabase';
+import { DESIGN_STUDIO_ENABLED } from '../../../../lib/flags';
 import type { Home, ModelOption, ModelOptionValue } from '@uhs/db';
 import { DesignStudio } from './design-studio';
 import './design.css';
@@ -9,8 +10,13 @@ export const revalidate = 60;
 export const dynamic = 'force-dynamic';
 
 export default async function DesignPage({ params }: { params: { stock: string } }) {
-  const sb = createPublicClient();
   const stock = decodeURIComponent(params.stock);
+  // Feature is switched off (lib/flags.ts) — bounce direct URLs/bookmarks to
+  // the home's detail page until the studio relaunches.
+  if (!DESIGN_STUDIO_ENABLED) {
+    redirect(`/inventory/${encodeURIComponent(stock)}`);
+  }
+  const sb = createPublicClient();
   // Look up the home's display fields from public_homes (anon-safe; no model_id).
   const { data: homeRaw } = await sb
     .from('public_homes')
