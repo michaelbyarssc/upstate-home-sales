@@ -304,6 +304,8 @@ export async function POST(req: Request) {
         '',
         `Open in admin: ${inboxUrl}`,
       ].filter(Boolean).join('\n'),
+    }).then((r) => {
+      if (!r.ok || r.skipped) console.error('[lead-intake] dealer notify not sent:', JSON.stringify(r));
     }).catch((e) => console.error('[lead-intake] notify failed:', e));
   }
 
@@ -322,6 +324,11 @@ export async function POST(req: Request) {
       console.error('[lead-intake] customer ack failed:', e);
       return { ok: false };
     });
+    if (!sent.ok || ('skipped' in sent && sent.skipped)) {
+      // Surface WHY in the function logs — a silent ok:false (Resend 4xx)
+      // is indistinguishable from success without this.
+      console.error('[lead-intake] customer ack not sent:', JSON.stringify(sent));
+    }
     if (sent.ok && !('skipped' in sent && sent.skipped)) {
       // Log it on the lead's timeline so the dealer sees the auto-ack went out
       // (and the customer's eventual reply threads right under it).
