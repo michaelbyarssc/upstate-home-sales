@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
+#
+# DEPRECATED — DO NOT RUN.
+#
+# This applied web DNS records for upstatehomecenter.com when that zone was
+# hosted on Cloudflare. As of 2026-05 the zone delegates to GoDaddy
+# nameservers, so there is no active Cloudflare zone to apply records to.
+# (The "email stays on upstatehomesales.com" note this header used to carry
+# is also obsolete — email now sends from mail.upstatehomecenter.com.)
+#
+# Manage DNS in the GoDaddy dashboard. Current setup: docs/email-setup.md.
+# Kept in repo for historical reference only.
+
+echo "This script is deprecated — DNS is managed in the GoDaddy dashboard now."
+echo "See docs/email-setup.md for the current email/DNS setup."
+exit 1
+
 # Apply DNS records for the NEW web domain `upstatehomecenter.com` via the
-# Cloudflare API. Web-only — email is intentionally left on the old domain
-# (upstatehomesales.com) for now. See scripts/cloudflare-dns-apply.sh for
-# the old-domain (email-bearing) records.
+# Cloudflare API.
 #
 # Prereq:
 #   1. Domain `upstatehomecenter.com` added to Cloudflare (free plan).
