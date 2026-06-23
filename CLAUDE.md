@@ -27,7 +27,7 @@ Email is **Resend** (outbound), migrated from SendGrid in commit `81af731` and l
 
 - **Outbound email:** Resend, verified sending domain **`mail.upstatehomecenter.com`**, from address `hello@mail.upstatehomecenter.com`. The old `mail.upstatehomesales.com` shows status **failed** in Resend and is dead — never point env at it, and never use the bare apex `upstatehomecenter.com` (not a verified sender; see incident note below). Code lives in `apps/admin/lib/notify.ts` and `apps/public/lib/notify.ts`. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`.
 - **Env values live in** Vercel project settings (**uhs-public** + **uhs-admin**, production *and* preview) and in `.env.local` at the repo root (`apps/public/.env.local` and `apps/admin/.env.local` are symlinks to it). Vercel env edits do nothing until a redeploy — after changing email env, run the checklist in `docs/email-setup.md` § "After changing email env". Resend send failures return `ok:false` without throwing, so a bad `RESEND_FROM_EMAIL` fails **silently**: in 2026-06 a stale apex value 403'd every production send for ~34 days before anyone noticed.
-- **Inbound email — currently NOT operational:** `EMAIL_INBOUND_DOMAIN=replies.upstatehomecenter.com` is configured, and the Worker (`workers/inbound-email-router/`) + webhook (`apps/public/app/api/webhooks/inbound-email/route.ts`) exist, but the subdomain has **no MX records** — the Cloudflare Email Routing setup died when DNS left Cloudflare and was never re-wired. Customer replies to `replies+{token}@…` bounce. See `docs/email-setup.md` § "Inbound replies".
+- **Inbound email — code shipped, activation pending:** the webhook (`apps/public/app/api/webhooks/inbound-email/route.ts`) natively accepts **Resend Inbound** `email.received` events (Svix-signed, secret in `RESEND_WEBHOOK_SECRET` on uhs-public; body fetched from Resend's Received Emails API) and still accepts the dormant legacy Cloudflare Worker transport (`workers/inbound-email-router/`, bearer `INBOUND_WEBHOOK_SECRET`). Replies to `replies+{token}@replies.upstatehomecenter.com` **keep bouncing until** the operator finishes the activation checklist in `docs/email-setup.md` § "Inbound replies" (Resend receiving domain + GoDaddy MX + webhook secret). Do **not** re-introduce Cloudflare Email Routing or move nameservers to "fix" inbound — Resend Inbound is the chosen transport and DNS stays on GoDaddy.
 - **DNS:** both `upstatehomecenter.com` and `upstatehomesales.com` delegate to **GoDaddy nameservers** (`*.domaincontrol.com`) — manage records in the GoDaddy DNS dashboard. The Cloudflare-era scripts (`scripts/cloudflare-dns-apply.sh`, `scripts/cloudflare-dns-apply-newdomain.sh`) and `scripts/godaddy-dns-apply.sh` are all **deprecated** and exit 1 on run.
 - **Full walkthrough + incident history:** `docs/email-setup.md`.
 
@@ -80,7 +80,7 @@ These come straight from the prototype's defining decisions. Don't deviate witho
 Recommended in `handoff.html` section 01:
 - **Frontend**: Next.js 14 (App Router) on Vercel, two apps — `apps/public` (marketing + inventory) and `apps/admin` (dealer dashboard).
 - **Backend**: Supabase — Postgres + Auth + Storage + Edge Functions + Realtime.
-- **Email**: SendGrid (transactional + inbound parse webhook).
+- **Email**: ~~SendGrid~~ — handoff's original pick, superseded in production by **Resend** (see ⚠ Email + DNS section above).
 - **SMS**: Twilio.
 
 The repo structure is in **section 08**.
