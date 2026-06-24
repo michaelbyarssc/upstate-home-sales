@@ -28,7 +28,10 @@ export function ContactForm({ initialDesign }: { initialDesign?: InitialDesign |
     setMsg(null);
     setSubmitting(true);
     try {
-      const fd = new FormData(e.currentTarget);
+      // Capture the form before any await — React nulls e.currentTarget once
+      // the handler yields, which would make the later .reset() throw.
+      const form = e.currentTarget;
+      const fd = new FormData(form);
       const body = {
         // Tie to the design's home when present; fall back to 'general' for
         // free-form inquiries (the leads endpoint accepts both).
@@ -53,7 +56,7 @@ export function ContactForm({ initialDesign }: { initialDesign?: InitialDesign |
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message ?? 'Submission failed.');
       }
-      e.currentTarget.reset();
+      form.reset();
       setMsg({ kind: 'success', text: 'Thanks — we’ll be in touch within a business day.' });
     } catch (err) {
       setMsg({ kind: 'error', text: err instanceof Error ? err.message : 'Submission failed.' });

@@ -11,7 +11,10 @@ export function TradeInForm() {
     setMsg(null);
     setSubmitting(true);
     try {
-      const fd = new FormData(e.currentTarget);
+      // Capture the form before any await — React nulls e.currentTarget once
+      // the handler yields, which would make the later .reset() throw.
+      const form = e.currentTarget;
+      const fd = new FormData(form);
       const body = {
         contact_name: String(fd.get('name') ?? '').trim(),
         email: String(fd.get('email') ?? '').trim(),
@@ -34,7 +37,7 @@ export function TradeInForm() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message ?? 'Submission failed.');
       }
-      e.currentTarget.reset();
+      form.reset();
       setMsg({ kind: 'success', text: 'Thanks — we\'ll review and reach out within a business day.' });
     } catch (err) {
       setMsg({ kind: 'error', text: err instanceof Error ? err.message : 'Submission failed.' });
