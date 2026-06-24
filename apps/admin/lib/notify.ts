@@ -12,6 +12,7 @@ export async function sendEmail(args: {
   to: string;
   subject: string;
   text: string;
+  html?: string; // optional HTML alternative — needed for clickable links outside Gmail
   replyToToken: string; // becomes Reply-To: replies+{token}@EMAIL_INBOUND_DOMAIN
   fromName?: string;
 }): Promise<Result> {
@@ -25,13 +26,14 @@ export async function sendEmail(args: {
 
   const replyTo = `replies+${args.replyToToken}@${inboundDomain}`;
   const fromName = args.fromName ?? 'Upstate Home Center';
-  const body = {
+  const body: Record<string, unknown> = {
     from: `${fromName} <${fromAddr}>`,
     to: [args.to],
     reply_to: replyTo,
     subject: args.subject,
     text: args.text,
   };
+  if (args.html) body.html = args.html;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
