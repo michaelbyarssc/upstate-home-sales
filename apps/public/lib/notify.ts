@@ -10,6 +10,7 @@ export async function sendEmail(args: {
   to: string;
   subject: string;
   text: string;
+  html?: string; // optional HTML alternative — needed for clickable links outside Gmail
   replyToToken?: string;
   fromName?: string;
 }): Promise<Result> {
@@ -28,6 +29,7 @@ export async function sendEmail(args: {
     subject: args.subject,
     text: args.text,
   };
+  if (args.html) body.html = args.html;
   if (args.replyToToken && inboundDomain) {
     body.reply_to = `replies+${args.replyToToken}@${inboundDomain}`;
   }

@@ -5,6 +5,7 @@ import { createClient } from '@uhs/db/server';
 import { createServiceClient } from '@uhs/db/service';
 import type { CollabRole, LeadMessage, LeadPreferences, LeadPreferencesInput, LeadStage, LineItem, MessageChannel, MessageKind, MilestoneStatus, PaymentMethod } from '@uhs/db';
 import { sendEmail, sendSms } from '../../../../lib/notify';
+import { renderEmailHtml } from '../../../../lib/email-template';
 import { matchHomes, type HomeMatch, type MatchableHome } from '../../../../lib/match-homes';
 import { renderQuotePdf, type QuotePdfData } from '../../../../lib/quote-pdf';
 import { renderInvoicePdf, type InvoicePdfData } from '../../../../lib/invoice-pdf';
@@ -324,11 +325,25 @@ export async function createQuote(args: {
       '',
       '— Upstate Home Center',
     );
+    const html = renderEmailHtml({
+      heading: `Your quote for ${home.name}`,
+      paragraphs: [
+        `Hi ${lead.contact_name ?? 'there'},`,
+        `Here's your quote for ${home.name} (${home.stock_no}). Reply to this email with any questions — we'll get back to you the same business day.`,
+      ],
+      button: { label: 'View your quote', url: publicUrl },
+      secondaryLinks: signedPdfUrl
+        ? [{ label: 'Download PDF (good for 7 days)', url: signedPdfUrl }]
+        : undefined,
+      brandColor: org?.brand_color ?? null,
+      signature: '— Upstate Home Center',
+    });
     await sendEmail({
       to: lead.email,
       subject: `Your quote for ${home.name}`,
       replyToToken: lead.reply_token,
       text: lines.join('\n'),
+      html,
     }).catch((e) => console.error('[quote] customer email failed:', e));
   }
 
@@ -530,11 +545,25 @@ export async function createInvoice(args: {
       '',
       '— Upstate Home Center',
     );
+    const html = renderEmailHtml({
+      heading: `Invoice #${invoice.invoice_number} for ${home.name}`,
+      paragraphs: [
+        `Hi ${lead.contact_name ?? 'there'},`,
+        `Here's your invoice (#${invoice.invoice_number}) for ${home.name} (${home.stock_no}). Reply to this email with any questions — we'll get back to you the same business day.`,
+      ],
+      button: { label: 'View your invoice', url: publicUrl },
+      secondaryLinks: signedPdfUrl
+        ? [{ label: 'Download PDF (good for 7 days)', url: signedPdfUrl }]
+        : undefined,
+      brandColor: org?.brand_color ?? null,
+      signature: '— Upstate Home Center',
+    });
     await sendEmail({
       to: lead.email,
       subject: `Invoice #${invoice.invoice_number} for ${home.name}`,
       replyToToken: lead.reply_token,
       text: lines.join('\n'),
+      html,
     }).catch((e) => console.error('[invoice] customer email failed:', e));
   }
 
@@ -656,6 +685,17 @@ export async function sendSmsOptInLink(args: {
       '',
       `— ${orgName}`,
     ].join('\n'),
+    html: renderEmailHtml({
+      heading: `Confirm SMS updates from ${orgName}`,
+      paragraphs: [
+        `Hi ${buyerName},`,
+        `${orgName} would like your okay to send text-message updates about your home purchase (delivery timing, milestones, document requests).`,
+        `You can reply STOP to any text we send to opt out at any time. Message and data rates may apply.`,
+        `If you didn't expect this email, just ignore it.`,
+      ],
+      button: { label: 'Confirm SMS updates', url: link },
+      signature: `— ${orgName}`,
+    }),
   });
 
   if (!result.ok && !result.skipped) {
@@ -893,11 +933,26 @@ export async function createPurchaseOrder(args: {
       '',
       '— Upstate Home Center',
     );
+    const html = renderEmailHtml({
+      heading: `Purchase Order #${po.po_number} for ${home.name}`,
+      paragraphs: [
+        `Hi ${lead.contact_name ?? 'there'},`,
+        `Here's your purchase order (#${po.po_number}) for ${home.name} (${home.stock_no}).`,
+        ...(signedPdfUrl ? [] : ['Your PDF will be available shortly in your buyer portal.']),
+        "Reply to this email with any questions — we'll get back to you the same business day.",
+      ],
+      button: signedPdfUrl
+        ? { label: 'Download PDF (good for 7 days)', url: signedPdfUrl }
+        : undefined,
+      brandColor: org?.brand_color ?? null,
+      signature: '— Upstate Home Center',
+    });
     await sendEmail({
       to: lead.email,
       subject: `Purchase Order #${po.po_number} for ${home.name}`,
       replyToToken: lead.reply_token,
       text: lines.join('\n'),
+      html,
     }).catch((e) => console.error('[po] customer email failed:', e));
   }
 
@@ -1148,6 +1203,16 @@ export async function inviteBuyerToPortal(args: { leadId: string }):
       '',
       `— ${orgName}`,
     ].join('\n'),
+    html: renderEmailHtml({
+      heading: `Your ${orgName} buyer portal is ready`,
+      paragraphs: [
+        `Hi ${buyerName},`,
+        `${orgName} set you up with a buyer portal. From there you'll see homes we've shortlisted, upload documents securely, and track your milestones.`,
+        `This link signs you in automatically. If you didn't expect this email, just ignore it.`,
+      ],
+      button: { label: 'Open your portal', url: actionLink },
+      signature: `— ${orgName}`,
+    }),
   });
 
   if (!emailResult.ok && !emailResult.skipped) {
