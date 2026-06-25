@@ -12,7 +12,7 @@ doc has drifted again, re-check those two sources before trusting it.
 | Outbound provider                      | Resend                                                         | ✅ working |
 | Verified sending domain                | `mail.upstatehomecenter.com`                                   | ✅ `verified` in Resend |
 | From address (`RESEND_FROM_EMAIL`)     | `hello@mail.upstatehomecenter.com`                             | ✅ |
-| Reply domain (`EMAIL_INBOUND_DOMAIN`)  | `replies.upstatehomecenter.com`                                | ⚠ webhook code shipped; **activation pending** — needs Resend receiving domain + GoDaddy MX (§ Inbound replies checklist) |
+| Reply domain (`EMAIL_INBOUND_DOMAIN`)  | `replies.upstatehomecenter.com`                                | ✅ **LIVE — E2E-verified 2026-06-24** (real reply → lead timeline). MX `verified`; webhook + secret live. ⚠ Resend domain reads `failed` but receiving works anyway — only the MX matters (§ Inbound replies) |
 | Dealer mailbox (apex MX)               | Google Workspace (`aspmx.l.google.com`)                        | managed outside this repo |
 | DNS, both domains                      | **GoDaddy nameservers** (`*.domaincontrol.com`) — edit records in the GoDaddy DNS dashboard | |
 | Legacy `mail.upstatehomesales.com`     | status **`failed`** in Resend                                  | ❌ dead — do not use |
@@ -110,7 +110,7 @@ To re-create from scratch: Resend → **Domains** → **Add Domain** →
 `mail.upstatehomecenter.com` → add the records Resend shows (they're
 account-specific) in the GoDaddy DNS dashboard → **Verify**.
 
-## Inbound replies — Resend Inbound (code shipped 2026-06-10; activation pending)
+## Inbound replies — Resend Inbound (LIVE; E2E-verified 2026-06-24)
 
 The two-way email design: outbound mail carries
 `Reply-To: replies+{token}@replies.upstatehomecenter.com`; Resend receives the
@@ -131,11 +131,38 @@ transient failures so Resend re-delivers. Pure helpers (signature verify,
 HTML→text fallback) live in `apps/public/lib/inbound-email.ts`. The legacy
 Worker bearer transport still works in parallel (see fallback note below).
 
-**Until the checklist below is done, replies still bounce** —
-`replies.upstatehomecenter.com` has no MX records and no Resend receiving
-domain exists. Treat app email as outbound-only until then.
+**Status: LIVE — end-to-end verified 2026-06-24.** A real reply to
+`replies+{token}@replies.upstatehomecenter.com` was received and written to the
+matching lead's timeline as an `inbound`/`email` `lead_messages` row. Config was
+done 2026-06-23; it started actually flowing 2026-06-24 once AWS SES finished
+provisioning the receipt rule (see the "took hours" note below). Live config
+(for reference / disaster recovery):
 
-### Activation checklist (operator, ~15 min + DNS propagation)
+- Resend receiving domain id `cd6d584b-ae9e-4b61-806c-612bc1627ae8`
+  (`replies.upstatehomecenter.com`, us-east-1). Enable receiving via API:
+  `PATCH /domains/{id}` body `{"capabilities":{"receiving":"enabled"}}`.
+- GoDaddy MX: host `replies` → `inbound-smtp.us-east-1.amazonaws.com` prio 10
+  (verified at authoritative NS + Resend). GoDaddy has no API creds in this
+  repo — the record was added through the GoDaddy DNS dashboard.
+- Resend webhook id `8c977877-f4a6-4854-9d8d-5fcba202f9c9` →
+  `https://upstatehomecenter.com/api/webhooks/inbound-email`, event
+  `email.received`. ⚠ Resend webhooks are **account-wide**; this shared account
+  also has an `email.received` webhook for another product, so both endpoints
+  receive every inbound event (handlers ignore non-matching tokens). The
+  signing secret is re-readable via `GET /webhooks/{id}`.
+- ⚠ **The Resend domain reads `status: failed` (and DKIM `failed`) — IGNORE IT.**
+  Receiving needs only the **verified MX**, not full domain verification. A DKIM
+  TXT (`resend._domainkey.replies`) was added and is byte-for-byte correct +
+  resolves on Google/Cloudflare/Quad9, yet Resend won't mark it verified — a
+  Resend-side quirk that's cosmetic for a receive-only domain. Do **not** chase
+  the `failed` status; inbound works (proven by the E2E above).
+- **The activation delay was AWS SES, not DNS.** For ~hours after the MX went in,
+  test sends to `replies+…@` **bounced instantly** (hard SMTP reject) because the
+  SES receipt rule hadn't provisioned. Resend's dashboard said *"Looking for DNS
+  records: may take a few hours."* Once provisioned, sends return `delivered`.
+  `POST /domains/{id}/verify` does not speed this up — just wait.
+
+### Activation checklist (operator, ~15 min + DNS propagation) — ✅ completed 2026-06-23
 
 1. **Resend — add the receiving domain.** <https://resend.com/domains> →
    **Add Domain** → `replies.upstatehomecenter.com`, region **us-east-1**
@@ -221,6 +248,15 @@ DKIM alignment, so these aren't breaking sends today, but they're wrong:
   Received Emails API, retry dedupe). The Cloudflare Worker path stays dormant
   as a fallback. Receiving goes live once the § Inbound replies activation
   checklist is completed.
+- **Inbound activated (2026-06-23) + verified live (2026-06-24)** — PR #50 merged
+  to `main`; the § Inbound replies checklist was completed: Resend receiving
+  domain created (`receiving: enabled`, sending disabled), GoDaddy
+  MX `replies → inbound-smtp.us-east-1.amazonaws.com` `verified`, Resend
+  `email.received` webhook registered, `RESEND_WEBHOOK_SECRET` set on uhs-public
+  (prod+preview) + redeploy, smoke test 4/4. Mail bounced for ~hours afterward
+  (AWS SES receipt-rule provisioning), then began flowing on 2026-06-24; a
+  real-reply E2E confirmed an `inbound` `lead_messages` row. Note: the Resend
+  domain still shows `failed` (DKIM) but receiving works on the verified MX alone.
 - All DNS helper scripts from earlier eras — `scripts/cloudflare-dns-apply.sh`,
   `scripts/cloudflare-dns-apply-newdomain.sh`, `scripts/godaddy-dns-apply.sh` —
   are **deprecated** and exit 1; they're kept for git history only.
