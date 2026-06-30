@@ -28,6 +28,13 @@ export default async function TradeInDetail({ params }: { params: { id: string }
         <p>
           {t.email ?? '—'}{t.phone ? ` · ${t.phone}` : ''} · submitted {new Date(t.created_at).toLocaleString()}
         </p>
+        {t.lead_id && (
+          <p style={{ marginTop: 6 }}>
+            <Link href={`/leads/${t.lead_id}`} style={{ color: 'var(--adm-accent)', fontSize: 13, fontWeight: 500 }}>
+              View conversation in leads inbox →
+            </Link>
+          </p>
+        )}
       </div>
 
       <div className="ti-detail">
