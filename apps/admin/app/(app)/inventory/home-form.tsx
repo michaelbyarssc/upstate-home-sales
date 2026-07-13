@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { formatCents, formatBedsOrBaths, type Home, type HomeAddon, type HomePhoto, type Lot, type Manufacturer } from '@uhs/db';
 import { uploadPhotos } from './photo-upload';
 import { createHome, updateHome, archiveHome, restoreHome, deletePhoto, reorderPhotos } from './actions';
+import { matterportUrlError } from '../../../lib/matterport';
 
 type Props = {
   mode: 'create' | 'edit';
@@ -98,6 +99,13 @@ export function HomeForm(props: Props) {
     e.preventDefault();
     setError(null);
     const fd = new FormData(e.currentTarget);
+    // Validate client-side too: production server actions redact thrown
+    // error messages, so this is the copy the dealer actually sees.
+    const tourErr = matterportUrlError(String(fd.get('matterport_url') ?? ''));
+    if (tourErr) {
+      setError(tourErr);
+      return;
+    }
     startTransition(async () => {
       try {
         if (mode === 'create') await createHome(fd);
@@ -656,7 +664,8 @@ export function HomeForm(props: Props) {
                   placeholder="https://my.matterport.com/show/?m=..."
                 />
                 <div className="sub" style={{ marginTop: 4 }}>
-                  Optional. When set, the public detail page shows a &ldquo;View 3D Tour&rdquo; button.
+                  Optional. Must be a Matterport link (my.matterport.com) — when set, the public
+                  detail page shows a &ldquo;View 3D Tour&rdquo; button.
                 </div>
               </div>
             </div>

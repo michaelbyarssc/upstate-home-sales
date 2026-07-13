@@ -36,7 +36,7 @@ const csp = [
   // 'self': the SignWell kiosk iframe navigates to OUR /sign/return on
   // completion, and child-frame navigation is checked against frame-src.
   // Wildcards don't match apexes, so apex + wildcard are both listed.
-  `frame-src 'self' ${SUPABASE_ORIGIN} https://signwell.com https://*.signwell.com https://my.matterport.com https://*.matterport.com https://www.google.com https://www.googletagmanager.com https://www.facebook.com`,
+  `frame-src 'self' ${SUPABASE_ORIGIN} https://signwell.com https://*.signwell.com https://matterport.com https://*.matterport.com https://www.google.com https://www.googletagmanager.com https://www.facebook.com`,
   "worker-src 'self' blob:",
   "media-src 'self'",
   "object-src 'none'",

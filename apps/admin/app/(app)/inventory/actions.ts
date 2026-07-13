@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createClient } from '@uhs/db/server';
 import { ACTIVE_ORG_COOKIE, type HomeAddon, type HomeStatus, type HomeType } from '@uhs/db';
+import { matterportUrlError } from '../../../lib/matterport';
 
 type HomeFields = {
   stock_no: string;
@@ -156,6 +157,8 @@ export async function createHome(fd: FormData) {
   if (!fields.stock_no || !fields.name) {
     throw new Error('Stock # and Listing name are required');
   }
+  const tourErr = matterportUrlError(fields.matterport_url);
+  if (tourErr) throw new Error(tourErr);
 
   const { data, error } = await supabase
     .from('homes')
@@ -174,6 +177,8 @@ export async function updateHome(id: string, fd: FormData) {
   if (!fields.stock_no || !fields.name) {
     throw new Error('Stock # and Listing name are required');
   }
+  const tourErr = matterportUrlError(fields.matterport_url);
+  if (tourErr) throw new Error(tourErr);
 
   const { error } = await supabase.from('homes').update(fields).eq('id', id);
   if (error) throw new Error(error.message);
