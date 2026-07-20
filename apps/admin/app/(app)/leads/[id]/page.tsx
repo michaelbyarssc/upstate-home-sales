@@ -52,13 +52,14 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
       .eq('lead_id', params.id)
       .order('sort_order')
       .order('created_at'),
+    // No row cap — the quote/invoice home picker filters client-side, so a
+    // cap silently hides homes late in the alphabet once inventory outgrows it.
     supabase
       .from('homes')
       .select('id, name, stock_no, listed_price_cents, beds, baths, beds_options, baths_options, sqft')
       .is('deleted_at', null)
       .eq('status', 'published')
-      .order('name')
-      .limit(50),
+      .order('name'),
     supabase
       .from('lead_collaborators')
       .select('*')
