@@ -40,8 +40,13 @@ export function ImportForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url.trim() }),
       });
-      const body = (await res.json()) as DiscoverResponse;
-      if (res.ok && 'adapter' in body) {
+      let body: DiscoverResponse | null = null;
+      try {
+        body = (await res.json()) as DiscoverResponse;
+      } catch {
+        // Non-JSON body — e.g. the platform's plain-text timeout page.
+      }
+      if (res.ok && body && 'adapter' in body) {
         setDiscovery({
           kind: 'ok',
           adapter: {
@@ -51,11 +56,19 @@ export function ImportForm() {
           },
           models: body.models,
         });
-      } else if (!res.ok && 'error' in body && body.error === 'no_adapter') {
+      } else if (!res.ok && body && 'error' in body && body.error === 'no_adapter') {
         setDiscovery({ kind: 'no_adapter', url: body.url ?? url.trim() });
-      } else {
+      } else if (body) {
         const msg = ('detail' in body && body.detail) || ('error' in body && body.error) || `HTTP ${res.status}`;
         setDiscovery({ kind: 'error', message: String(msg) });
+      } else {
+        setDiscovery({
+          kind: 'error',
+          message:
+            res.status === 504
+              ? 'The server timed out before finishing discovery. Discovery respects the manufacturer site’s crawl-delay, so large catalogs can exceed the time limit — try a more specific URL (a single model line or series) and retry.'
+              : `The server returned an unexpected response (HTTP ${res.status}). Please try again.`,
+        });
       }
     } catch (e) {
       setDiscovery({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
