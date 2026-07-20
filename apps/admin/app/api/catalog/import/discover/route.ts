@@ -4,7 +4,11 @@ import { findAdapter, runDiscovery } from '../../../../../lib/catalog-importer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// Discovery honors each adapter's robots.txt crawl-delay (10s for the
+// Clayton/OwnTru sites), so a 13-model line needs ~2.5 minutes. 300s matches
+// the apply route — the highest the project's plan allows. Catalogs too big
+// for this window need a narrower URL (single series/region).
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const supabase = createClient();
