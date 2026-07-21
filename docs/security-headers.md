@@ -33,7 +33,7 @@ Shared by both apps:
 Public only:
 - **GA4 / GTM** (`www.googletagmanager.com`, `www.google-analytics.com`, `region1.google-analytics.com`, `analytics.google.com`, `stats.g.doubleclick.net`) and **Meta Pixel** (`connect.facebook.net`, `www.facebook.com`) — allowlisted even when the dealer hasn't enabled them, since they're toggled at runtime from admin → Marketing → Integrations.
 - **SignWell** (`static.signwell.com` script; `signwell.com` + `*.signwell.com` frame) — embedded signing kiosk on `/sign/[sessionToken]`.
-- **Matterport** (`my.matterport.com` + `*.matterport.com` frame) — 3D tour modal. The URL is dealer-pasted; a non-Matterport URL will render a blank modal under CSP.
+- **Matterport** (`matterport.com` + `*.matterport.com` frame) — 3D tour modal. The URL is dealer-pasted but validated at save time (`apps/admin/lib/matterport.ts`: https, default port, matterport.com or a subdomain), so it always matches this allowlist.
 - **`frame-src 'self'`** — load-bearing: SignWell's iframe navigates to our `/sign/return` on completion, and that navigation is checked against our `frame-src`.
 
 CSP notes: wildcards (`*.signwell.com`) do not match the apex, so apex + wildcard are listed separately. `'unsafe-inline'` in `script-src`/`style-src` is required by Next.js bootstrap scripts, JSON-LD blocks, and inline style attributes; a nonce-based strict CSP would force dynamic rendering of every page (product decision, not a quick fix). `'unsafe-eval'` is dev-only (React Refresh) — production verified working without it, including Google Maps.
