@@ -23,6 +23,13 @@ import { InvoiceFormModal } from './invoice-form-modal';
 import { ShareLeadModal } from './share-lead-modal';
 import { removeCollaborator } from './actions';
 
+// Customer-facing links (/q/, /inv/) live on the PUBLIC site, not the admin
+// origin — deriving them from window.location only worked on localhost.
+// trim() guards against env values stored with a trailing newline.
+const PUBLIC_BASE = (process.env.NEXT_PUBLIC_PUBLIC_URL ?? 'https://upstatehomecenter.com')
+  .trim()
+  .replace(/\/+$/, '');
+
 type EnrollmentRow = {
   id: string;
   campaign_id: string;
@@ -229,8 +236,7 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   }
 
   function handleQuoteCreated(result: { id: string; public_token: string; expires_at: string; listed_price_cents: number; created_at: string; home_id: string }) {
-    const publicBase = window.location.origin.replace(':3001', ':3000');
-    const url = `${publicBase}/q/${result.public_token}`;
+    const url = `${PUBLIC_BASE}/q/${result.public_token}`;
     navigator.clipboard.writeText(url).catch(() => {});
     setLead((l) => ({ ...l, stage: 'quoted' }));
     // Prepend new quote to list with home info from the homes prop
@@ -260,8 +266,7 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
   }
 
   function handleInvoiceCreated(token: string, invoiceNumber: number) {
-    const publicBase = window.location.origin.replace(':3001', ':3000');
-    const url = `${publicBase}/inv/${token}`;
+    const url = `${PUBLIC_BASE}/inv/${token}`;
     navigator.clipboard.writeText(url).catch(() => {});
     setShowInvoiceModal(false);
     setErr(null);
@@ -781,8 +786,7 @@ export function LeadDetailClient({ lead: initialLead, initialMessages, members, 
                   type="button"
                   className="btn-secondary"
                   onClick={() => {
-                    const publicBase = window.location.origin.replace(':3001', ':3000');
-                    const url = `${publicBase}/q/${viewingQuote.public_token}`;
+                    const url = `${PUBLIC_BASE}/q/${viewingQuote.public_token}`;
                     navigator.clipboard.writeText(url).catch(() => {});
                     alert(`Quote link copied:\n${url}`);
                   }}
