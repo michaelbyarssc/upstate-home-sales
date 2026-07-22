@@ -142,7 +142,7 @@ function HomeSelect({
               >
                 <div style={{ fontWeight: 500 }}>{h.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--adm-ink-mute)' }}>
-                  {h.stock_no} &bull; {fmtDollars(h.listed_price_cents)}
+                  {h.stock_no} &bull; {h.listed_price_cents > 0 ? fmtDollars(h.listed_price_cents) : 'Call for Price'}
                 </div>
               </div>
             ))}

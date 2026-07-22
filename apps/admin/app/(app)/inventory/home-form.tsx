@@ -248,7 +248,7 @@ export function HomeForm(props: Props) {
                 </div>
                 <div className="field">
                   <label className="label">Status <span className="req">*</span></label>
-                  <select className="select" name="status" defaultValue={home?.status ?? 'draft'}>
+                  <select className="select" name="status" defaultValue={home?.status ?? 'published'}>
                     <option value="draft">Draft</option>
                     <option value="published">Published</option>
                     <option value="hold">Hold</option>

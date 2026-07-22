@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { createClient } from '@uhs/db/server';
 import { publicPhotoUrl } from '../../../lib/supabase';
-import { formatCompactPrice, formatMonthly } from '../../../lib/finance';
+import { formatCompactPrice, formatMonthly, priceFallbackLabel } from '../../../lib/finance';
 
 export const metadata = { title: 'Dashboard · Buyer portal' };
 export const dynamic = 'force-dynamic';
@@ -143,8 +143,8 @@ export default async function PortalDashboard() {
                       {s.home.sqft ? ` · ${s.home.sqft.toLocaleString()} sqft` : ''}
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6, fontVariantNumeric: 'tabular-nums' }}>
-                      {s.home.prices_hidden || s.home.listed_price_cents == null
-                        ? <span style={{ color: 'var(--c-ink-mute)', fontWeight: 500 }}>Contact for pricing</span>
+                      {priceFallbackLabel(s.home)
+                        ? <span style={{ color: 'var(--c-ink-mute)', fontWeight: 500 }}>{priceFallbackLabel(s.home)}</span>
                         : <>{formatCompactPrice(s.home.listed_price_cents)} <span style={{ color: 'var(--c-ink-mute)', fontWeight: 500 }}>| {formatMonthly(s.home.listed_price_cents)}</span></>}
                     </div>
                     {s.note && (

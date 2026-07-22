@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createPublicClient, publicPhotoUrl } from '../../lib/supabase';
+import { priceFallbackLabel } from '../../lib/finance';
 import { formatCents } from '@uhs/db';
 
 export const revalidate = 120;
@@ -99,7 +100,7 @@ export default async function MarketplacePage({ searchParams }: { searchParams: 
                     marginTop: 10, fontFamily: 'var(--f-display)',
                     fontSize: 'var(--t-h3)', fontVariantNumeric: 'tabular-nums',
                   }}>
-                    {h.prices_hidden ? 'Contact for pricing' : (
+                    {priceFallbackLabel(h) ?? (
                       <>{h.starting_from ? 'from ' : ''}{formatCents(h.listed_price_cents)}</>
                     )}
                   </div>

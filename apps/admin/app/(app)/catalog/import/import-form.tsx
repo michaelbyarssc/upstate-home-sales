@@ -77,66 +77,88 @@ export function ImportForm() {
     }
   }
 
+  // Each apply request is capped by the platform's maxDuration (300s), so the
+  // import is split into batches of models via the apply route's `only` filter.
+  const IMPORT_CHUNK_SIZE = 8;
+
   async function onImport() {
     if (discovery?.kind !== 'ok') return;
     setImporting(true);
     setLog([]);
     setSummary(null);
+    const names = discovery.models.map((m) => m.name);
+    const chunks: string[][] = [];
+    for (let i = 0; i < names.length; i += IMPORT_CHUNK_SIZE) chunks.push(names.slice(i, i + IMPORT_CHUNK_SIZE));
+    const totals = { created: 0, updated: 0, skipped: 0, errors: 0 };
+    setLog([
+      {
+        tag: 'i',
+        text: `Importing ${names.length} model(s)${chunks.length > 1 ? ` in ${chunks.length} batches` : ''}…`,
+      },
+    ]);
     try {
-      const res = await fetch('/api/catalog/import/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim(), update }),
-      });
-      if (!res.ok || !res.body) {
-        let detail = `HTTP ${res.status}`;
+      for (const chunk of chunks) {
         try {
-          const j = await res.json();
-          if (j?.error) detail = String(j.detail ?? j.error);
-        } catch {}
-        setLog([{ tag: '!', text: detail }]);
-        return;
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = buf.indexOf('\n')) >= 0) {
-          const line = buf.slice(0, nl).trim();
-          buf = buf.slice(nl + 1);
-          if (!line) continue;
-          handleEvent(line);
+          const res = await fetch('/api/catalog/import/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url.trim(), update, only: chunk }),
+          });
+          if (!res.ok || !res.body) {
+            let detail = `HTTP ${res.status}`;
+            try {
+              const j = await res.json();
+              if (j?.error) detail = String(j.detail ?? j.error);
+            } catch {}
+            totals.errors += chunk.length;
+            setLog((prev) => [...prev, { tag: '!', text: `Batch failed (${detail}): ${chunk.join(', ')}` }]);
+            continue;
+          }
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = '';
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            let nl: number;
+            while ((nl = buf.indexOf('\n')) >= 0) {
+              const line = buf.slice(0, nl).trim();
+              buf = buf.slice(nl + 1);
+              if (!line) continue;
+              handleEvent(line, totals);
+            }
+          }
+          const tail = buf.trim();
+          if (tail) handleEvent(tail, totals);
+        } catch (e) {
+          totals.errors += chunk.length;
+          setLog((prev) => [...prev, { tag: '!', text: e instanceof Error ? e.message : String(e) }]);
         }
       }
-      const tail = buf.trim();
-      if (tail) handleEvent(tail);
-    } catch (e) {
-      setLog((prev) => [...prev, { tag: '!', text: e instanceof Error ? e.message : String(e) }]);
+      setSummary({ ...totals });
     } finally {
       setImporting(false);
     }
   }
 
-  function handleEvent(line: string) {
+  function handleEvent(line: string, totals: { created: number; updated: number; skipped: number; errors: number }) {
     let event: ProgressEvent | { type: 'fatal'; detail: string };
     try {
       event = JSON.parse(line);
     } catch {
       return;
     }
-    if (event.type === 'start') {
-      setLog((prev) => [...prev, { tag: 'i', text: `Importing ${event.total} model(s)…` }]);
-      return;
-    }
-    if (event.type === 'summary') {
-      setSummary({ created: event.created, updated: event.updated, skipped: event.skipped, errors: event.errors });
+    // Totals come from per-model events (robust to a batch dying mid-stream);
+    // per-batch 'start'/'summary' events are noise here.
+    if (event.type === 'start' || event.type === 'summary') {
       return;
     }
     if (event.type === 'model') {
+      if (event.action === 'created') totals.created++;
+      else if (event.action === 'updated') totals.updated++;
+      else if (event.action === 'skipped') totals.skipped++;
+      else totals.errors++;
       const tag = event.action === 'created' ? '+' : event.action === 'updated' ? '~' : event.action === 'skipped' ? '=' : '!';
       const photos = event.action === 'created' || event.action === 'updated' ? ` (${event.photos}/${event.totalPhotos} photos)` : '';
       const err = event.action === 'error' ? ` — ${event.error ?? 'error'}` : '';
@@ -199,7 +221,8 @@ export function ImportForm() {
         </div>
         <p style={{ fontSize: 11, color: 'var(--adm-ink-mute)', marginTop: 8 }}>
           Examples: <code>https://claytonepicjourney.com/homes/?region=3</code>,{' '}
-          <code>https://owntru.com/model-lines/tru-origin/</code>
+          <code>https://owntru.com/model-lines/tru-origin/</code>,{' '}
+          <code>https://www.cavcohomes.com/building-center/moultrie/floorplans</code>
         </p>
       </section>
 
@@ -335,7 +358,8 @@ export function ImportForm() {
             </button>
           </div>
           <p style={{ fontSize: 11, color: 'var(--adm-ink-mute)', marginTop: 8 }}>
-            Heads up: imports respect the source site&apos;s crawl-delay. A ~15 model run typically takes 3–5 minutes.
+            Heads up: imports run in batches and respect the source site&apos;s crawl-delay. Large catalogs can take
+            several minutes — keep this tab open until the summary appears.
           </p>
         </section>
       )}

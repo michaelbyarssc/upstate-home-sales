@@ -138,7 +138,7 @@ function readFields(fd: FormData): HomeFields {
     headline: parseStr(fd.get('headline')),
     description: parseStr(fd.get('description')),
     matterport_url: parseStr(fd.get('matterport_url')),
-    status: (parseStr(fd.get('status')) as HomeStatus) ?? 'draft',
+    status: (parseStr(fd.get('status')) as HomeStatus) ?? 'published',
     on_lot_since: parseStr(fd.get('on_lot_since')),
     is_featured: parseChecked(fd, 'is_featured'),
     hide_from_search: parseChecked(fd, 'hide_from_search'),

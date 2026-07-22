@@ -107,9 +107,10 @@ export function DesignStudio({
     });
   }
 
-  const priceLabel = pricesHidden
-    ? 'Contact for pricing'
-    : (totalCents != null ? formatCents(totalCents) : '—');
+  const priceLabel =
+    pricesHidden || !baseListedPriceCents || baseListedPriceCents <= 0
+      ? 'Call for Price'
+      : (totalCents != null ? formatCents(totalCents) : '—');
 
   return (
     <div className="design-grid">

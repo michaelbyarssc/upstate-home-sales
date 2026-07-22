@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createPublicClient, publicPhotoUrl } from '../../lib/supabase';
-import { formatCompactPrice, formatMonthly } from '../../lib/finance';
+import { formatCompactPrice, formatMonthly, priceFallbackLabel } from '../../lib/finance';
 import type { PublicHome } from '@uhs/db';
 
 export const revalidate = 60;
@@ -53,9 +53,9 @@ export default async function KioskHome() {
                 <div className="photo" style={url ? { backgroundImage: `url(${url})` } : undefined} />
                 <div className="body">
                   <div className="name">{h.name}</div>
-                  {h.prices_hidden || h.listed_price_cents == null ? (
+                  {priceFallbackLabel(h) ? (
                     <div className="price" style={{ fontSize: 18, color: 'var(--c-ink-mute)', fontWeight: 500 }}>
-                      Contact for pricing
+                      {priceFallbackLabel(h)}
                     </div>
                   ) : (
                     <div className="price">

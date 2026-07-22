@@ -149,7 +149,7 @@ export async function POST(req: Request) {
             beds: h.beds,
             baths: h.baths,
             sqft: h.sqft,
-            price: h.prices_hidden || !h.listed_price_cents ? 'Contact for pricing' : `$${Math.round(h.listed_price_cents / 100).toLocaleString()}`,
+            price: h.prices_hidden || !h.listed_price_cents ? 'Call for Price' : `$${Math.round(h.listed_price_cents / 100).toLocaleString()}`,
             url: absoluteUrl(`/inventory/${encodeURIComponent(h.stock_no)}`),
           }));
         },
@@ -168,7 +168,7 @@ export async function POST(req: Request) {
           const d = data as { stock_no: string; name: string; type: string; beds: number | null; baths: number | null; sqft: number | null; width_ft: number | null; length_ft: number | null; year_built: number | null; headline: string | null; description: string | null; listed_price_cents: number | null; prices_hidden: boolean };
           return {
             ...d,
-            price: d.prices_hidden || !d.listed_price_cents ? 'Contact for pricing' : `$${Math.round(d.listed_price_cents / 100).toLocaleString()}`,
+            price: d.prices_hidden || !d.listed_price_cents ? 'Call for Price' : `$${Math.round(d.listed_price_cents / 100).toLocaleString()}`,
             url: absoluteUrl(`/inventory/${encodeURIComponent(d.stock_no)}`),
           };
         },

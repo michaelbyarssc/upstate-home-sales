@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { formatCents } from '@uhs/db';
 import { getAttribution } from '../../../lib/attribution';
-import { formatCompactPrice, formatMonthly } from '../../../lib/finance';
+import { formatCompactPrice, formatMonthly, priceFallbackLabel } from '../../../lib/finance';
 
 type Props = {
   homeId: string;
@@ -42,7 +42,8 @@ export function QuoteForm({
   heroUrl,
   designReady = false,
 }: Props) {
-  const isHidden = pricesHidden || listedPriceCents == null;
+  const priceFallback = priceFallbackLabel({ prices_hidden: pricesHidden, listed_price_cents: listedPriceCents });
+  const isHidden = priceFallback != null;
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
@@ -121,7 +122,7 @@ export function QuoteForm({
         {isHidden ? (
           <div style={{ marginTop: 2, marginBottom: 4 }}>
             <span style={{ font: '600 16px/1.3 var(--f-body)', color: 'var(--c-ink)' }}>
-              Contact for pricing
+              {priceFallback}
             </span>
             <p style={{ fontSize: 12, color: 'var(--c-ink-mute)', marginTop: 4, marginBottom: 0 }}>
               Tap &ldquo;Get a quote&rdquo; below — we&rsquo;ll send a written number within one business day.
@@ -204,7 +205,7 @@ export function QuoteForm({
             <h3>{homeName}</h3>
             {specsLine && <div className="specs">{specsLine}</div>}
             <div className="price">
-              {isHidden ? 'Contact for pricing' : formatCents(listedPriceCents)}
+              {priceFallback ?? formatCents(listedPriceCents)}
             </div>
             <div className="caveat">
               {isHidden
