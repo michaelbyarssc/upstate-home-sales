@@ -45,6 +45,20 @@ export function formatMonthly(priceCents: number | null | undefined, opts: Estim
   return `$${Math.round(m / 100).toLocaleString()}/mo`;
 }
 
+/**
+ * Fallback label when a numeric price shouldn't render — either the dealer
+ * hides prices org-wide (prices_hidden) or the home has no price set yet
+ * (listed price null or $0). Returns null when the real price should render.
+ */
+export function priceFallbackLabel(home: {
+  prices_hidden?: boolean | null;
+  listed_price_cents?: number | null;
+}): string | null {
+  if (home.prices_hidden) return 'Call for Price';
+  if (home.listed_price_cents == null || home.listed_price_cents <= 0) return 'Call for Price';
+  return null;
+}
+
 /** "$58K" — Trove-style compact total. Price expected in cents. */
 export function formatCompactPrice(priceCents: number | null | undefined): string {
   if (priceCents == null || priceCents <= 0) return '—';

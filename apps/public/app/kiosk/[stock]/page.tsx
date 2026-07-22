@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createPublicClient, publicPhotoUrl } from '../../../lib/supabase';
-import { formatCompactPrice, formatMonthly } from '../../../lib/finance';
+import { formatCompactPrice, formatMonthly, priceFallbackLabel } from '../../../lib/finance';
 import { type PublicHome, type PublicHomePhoto } from '@uhs/db';
 import { KioskContactForm } from './kiosk-contact-form';
 
@@ -82,9 +82,9 @@ export default async function KioskHomeDetail({ params }: { params: Params }) {
 
           <aside className="kiosk-detail-aside">
             <h2>{h.name}</h2>
-            {h.prices_hidden || h.listed_price_cents == null ? (
+            {priceFallbackLabel(h) ? (
               <div className="price" style={{ fontSize: 22, color: 'var(--c-ink-mute)' }}>
-                Contact for pricing
+                {priceFallbackLabel(h)}
               </div>
             ) : (
               <div className="price">

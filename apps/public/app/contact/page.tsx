@@ -99,7 +99,9 @@ export default async function ContactPage({
                 Stock #{designContext.stockNo}
               </p>
               {!designContext.pricesHidden && (
-                <p style={{ marginTop: 8, fontWeight: 600 }}>{formatCents(designContext.totalPriceCents)}</p>
+                <p style={{ marginTop: 8, fontWeight: 600 }}>
+                  {designContext.totalPriceCents > 0 ? formatCents(designContext.totalPriceCents) : 'Call for Price'}
+                </p>
               )}
               {designContext.selections.length > 0 && (
                 <ul style={{ listStyle: 'none', margin: '12px 0 0', padding: 0, display: 'grid', gap: 4, fontSize: 13 }}>

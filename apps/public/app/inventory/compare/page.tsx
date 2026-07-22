@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createPublicClient, publicPhotoUrl } from '../../../lib/supabase';
-import { formatCompactPrice, formatMonthly } from '../../../lib/finance';
+import { formatCompactPrice, formatMonthly, priceFallbackLabel } from '../../../lib/finance';
 import type { PublicHome } from '@uhs/db';
 
 export const metadata = { title: 'Compare homes' };
@@ -70,7 +70,8 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
     const ns = vals.filter((v): v is number => v != null);
     return ns.length ? Math.max(...ns) : null;
   };
-  const minPrice = min(homes.map((h) => h.listed_price_cents));
+  // Unpriced homes ($0 / "Call for Price") can't win the best-price pill.
+  const minPrice = min(homes.map((h) => (h.listed_price_cents && h.listed_price_cents > 0 ? h.listed_price_cents : null)));
   const maxSqft = max(homes.map((h) => h.sqft));
   const maxBeds = max(homes.map((h) => h.beds));
   const maxBaths = max(homes.map((h) => h.baths));
@@ -133,8 +134,8 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
           <CompareRow
             label="Price"
             cells={homes.map((h) => (
-              h.prices_hidden || h.listed_price_cents == null ? (
-                <span key={h.id} style={{ color: 'var(--c-ink-mute)', fontSize: 13 }}>Contact for pricing</span>
+              priceFallbackLabel(h) ? (
+                <span key={h.id} style={{ color: 'var(--c-ink-mute)', fontSize: 13 }}>{priceFallbackLabel(h)}</span>
               ) : (
                 <span key={h.id} style={{ fontWeight: 600 }}>
                   {formatCompactPrice(h.listed_price_cents)}
@@ -146,7 +147,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
           <CompareRow
             label="Est. monthly"
             cells={homes.map((h) => (
-              h.prices_hidden || h.listed_price_cents == null
+              priceFallbackLabel(h)
                 ? <span key={h.id} style={{ color: 'var(--c-ink-mute)' }}>—</span>
                 : <span key={h.id}>{formatMonthly(h.listed_price_cents)}</span>
             ))}

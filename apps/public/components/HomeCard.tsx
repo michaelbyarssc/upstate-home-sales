@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { type PublicHome, formatBedsOrBaths } from '@uhs/db';
 import { publicPhotoUrl } from '../lib/supabase';
-import { formatCompactPrice, formatMonthly } from '../lib/finance';
+import { formatCompactPrice, formatMonthly, priceFallbackLabel } from '../lib/finance';
 import { CompareToggle } from './CompareToggle';
 
 type Props = {
@@ -44,9 +44,9 @@ export function HomeCard({ home, index = 0, designReady = false }: Props) {
   if (home.sqft) specBits.push(`${home.sqft.toLocaleString()} Sq. Ft.`);
   if (home.width_ft && home.length_ft) specBits.push(`${home.width_ft}' × ${home.length_ft}'`);
 
-  const pricesHidden = home.prices_hidden || home.listed_price_cents == null;
-  const compactPrice = pricesHidden ? null : formatCompactPrice(home.listed_price_cents);
-  const monthly = pricesHidden ? null : formatMonthly(home.listed_price_cents);
+  const priceFallback = priceFallbackLabel(home);
+  const compactPrice = priceFallback ? null : formatCompactPrice(home.listed_price_cents);
+  const monthly = priceFallback ? null : formatMonthly(home.listed_price_cents);
 
   return (
     <article className="home-card">
@@ -78,9 +78,9 @@ export function HomeCard({ home, index = 0, designReady = false }: Props) {
           <Link href={detailHref} className="home-card-name">
             {home.name}
           </Link>
-          {pricesHidden ? (
+          {priceFallback ? (
             <div className="home-card-price" style={{ color: 'var(--c-ink-mute)', fontWeight: 500, fontSize: 13 }}>
-              Contact for pricing
+              {priceFallback}
             </div>
           ) : (
             <div className="home-card-price">

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createPublicClient, publicPhotoUrl } from '../../../../lib/supabase';
+import { priceFallbackLabel } from '../../../../lib/finance';
 import { formatCents } from '@uhs/db';
 import { VisitorTracker } from '../../../../components/VisitorTracker';
 
@@ -93,7 +94,7 @@ export default async function MarketplaceDetailPage({ params }: { params: Params
             }}>
               <div className="eyebrow">Price</div>
               <div style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-display-s)', marginTop: 'var(--s-2)' }}>
-                {home.prices_hidden ? 'Contact for pricing' : (
+                {priceFallbackLabel(home) ?? (
                   <>{home.starting_from && <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--c-ink-mute)' }}>from </span>}{formatCents(home.listed_price_cents)}</>
                 )}
               </div>

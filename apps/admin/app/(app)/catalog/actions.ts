@@ -139,8 +139,10 @@ export async function deleteModelPhoto(photoId: string, modelId: string) {
 }
 
 /**
- * Bulk-stock catalog models onto a lot. Creates one homes row per model
- * with auto-generated stock_no, copies photos.
+ * Bulk-stock catalog models onto a lot. Creates one published homes row
+ * per model with auto-generated stock_no, copies photos. Homes start at
+ * $0 pricing — the public site shows "Call for Price" until the dealer
+ * sets a base price, and the status select allows unpublishing.
  *
  * Tenant isolation: enforced via RLS (the user's session client) AND an
  * explicit pre-check that every modelId + the lotId belongs to the active
@@ -213,7 +215,7 @@ export async function stockModelsOnLot(input: {
         addons_cents: 0,
         setup_cents: 0,
         include_setup_in_price: true,
-        status: 'draft',
+        status: 'published',
         on_lot_since: new Date().toISOString().slice(0, 10),
         headline: m.headline,
         description: m.description,

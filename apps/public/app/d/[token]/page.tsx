@@ -47,8 +47,8 @@ export default async function DesignSharePage({ params }: { params: { token: str
         }}>
           <div className="eyebrow">Total</div>
           <div style={{ fontFamily: 'var(--f-display)', fontSize: 'var(--t-display-s)', marginTop: 'var(--s-2)' }}>
-            {d.design_price_display === 'hidden'
-              ? 'Contact for pricing'
+            {d.design_price_display === 'hidden' || !d.total_price_cents
+              ? 'Call for Price'
               : formatCents(d.total_price_cents)}
           </div>
 
